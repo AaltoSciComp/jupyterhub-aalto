@@ -6,7 +6,9 @@ data:
   config: |-
     c.JupyterHub.ip = '0.0.0.0'
     c.JupyterHub.port = 8000
-
+    c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
+    c.JupyterHub.cleanup_servers = False
+    c.KubeSpawner.start_timeout = 60 * 5
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -26,13 +28,14 @@ spec:
     spec:
       containers:
       - name: jupyterhub
-        image: jupyterhub/jupyterhub
+        image: jupyterhub-mlbp
         ports:
         - containerPort: 8000
         volumeMounts:
         - name: jupyterhub-config
           mountPath: /srv/jupyterhub/jupyterhub_config.py
           subPath: config
+        imagePullPolicy: Never
       tolerations:
       - key: jupyterhub
         operator: Exists
@@ -41,6 +44,8 @@ spec:
       - name: jupyterhub-config
         configMap:
           name: jupyterhub-config
+      nodeSelector:
+        app: jupyterhub
 ---
 apiVersion: v1
 kind: Service
