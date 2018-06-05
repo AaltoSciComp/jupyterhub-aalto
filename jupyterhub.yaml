@@ -46,6 +46,7 @@ spec:
           name: jupyterhub-config
       nodeSelector:
         app: jupyterhub
+      serviceAccountName: jupyter-notebook-spawner
 ---
 apiVersion: v1
 kind: Service
@@ -58,3 +59,30 @@ spec:
   - protocol: TCP
     port: 80
     targetPort: 8000
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: jupyter-notebook-spawner
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["list"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jupyter-notebook-spawner
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: notebook-spawner-binding
+roleRef:
+  name: jupyter-notebook-spawner
+  kind: Role
+  apiGroup: ""
+subjects:
+- kind: User
+  name: jupyter-notebook-spawner
+  apiGroup: ""
