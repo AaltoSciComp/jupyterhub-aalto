@@ -1,8 +1,18 @@
 FROM jupyterhub/jupyterhub:0.9
 
 # Install dependencies
+
+# Jupyterhub & co
 RUN pip install jupyter
+
+# kube-spawner
 RUN pip install https://github.com/jupyterhub/kubespawner/archive/cff7f01.tar.gz
+
+# nbgrader & enable it
+RUN pip install nbgrader
+RUN jupyter nbextension install --sys-prefix --py nbgrader --overwrite
+RUN jupyter nbextension enable --sys-prefix --py nbgrader
+RUN jupyter serverextension enable --sys-prefix --py nbgrader
 
 # Create /notebooks dir
 RUN mkdir /notebooks
