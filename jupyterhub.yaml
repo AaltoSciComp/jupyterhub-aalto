@@ -80,6 +80,14 @@ data:
     c.KubeSpawner.volume_mounts = [ { "mountPath": "/notebooks", "name": "notebook" } ]
     c.KubeSpawner.singleuser_working_dir = '/notebooks'
 
+    c.JupyterHub.services = [
+      {
+        'name': 'cull-idle',
+        'admin': True,
+        'command': 'python3 /cull_idle_servers.py --timeout=3600'.split(),
+      }
+    ]
+
 ---
 apiVersion: apps/v1
 kind: Deployment
