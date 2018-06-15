@@ -107,7 +107,7 @@ spec:
     spec:
       containers:
       - name: jupyterhub
-        image: jupyterhub-mlbp
+        image: jupyterhub-cs
         ports:
         - containerPort: 8000
         volumeMounts:

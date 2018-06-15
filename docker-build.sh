@@ -1,1 +1,1 @@
-docker build -t jupyterhub-mlbp .
+docker build -t jupyterhub-cs .
