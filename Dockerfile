@@ -18,6 +18,12 @@ RUN jupyter serverextension enable --sys-prefix --py nbgrader
 RUN mkdir /notebooks
 RUN chown 1000 /notebooks
 
+# Enable SSH stuff
+COPY files/known_hosts /root/.ssh/known_hosts
+COPY files/id_rsa_hub /root/.ssh/id_rsa
+RUN chmod go-rwx /root/.ssh/*
+
+
 COPY cull_idle_servers.py /cull_idle_servers.py
 RUN chmod +x /cull_idle_servers.py
 
