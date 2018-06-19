@@ -25,7 +25,7 @@ data:
     def add_user(self, user):
         print("Adding user: user {} being added".format(user))
         os.system('ssh jupyter-k8s-admin.cs.aalto.fi "hostname ; echo adding user {} ; /root/jupyterhub/scripts/adduser.py"'.format(user))
-    c.Authenticator.add_user = add_user
+    #c.Authenticator.add_user = add_user
 
     # Spawner config
     c.KubeSpawner.start_timeout = 60 * 5
@@ -35,11 +35,22 @@ data:
     c.KubeSpawner.hub_connect_port = 80
     c.KubeSpawner.http_timeout = 60 * 5
     # Volume mounts
-    c.KubeSpawner.volumes = [ { "name": "notebook", "nfs": { "server": "jupyter-k8s-admin.cs.aalto.fi", "path": "/srv/jupyter-tw/user/{username}" } } ]
-    c.KubeSpawner.volume_mounts = [ { "mountPath": "/notebooks", "name": "notebook" } ]
-    c.KubeSpawner.singleuser_working_dir = '/notebooks'
+    c.KubeSpawner.volumes = [
+      {
+        "name": "user",
+        "nfs": {
+          "server": "jupyter-k8s-admin.cs.aalto.fi",
+          "path": "/srv/jupyter-tw/user/{username}"
+        }
+      },
+      {
+        ""
+      }
+    ]
+    c.KubeSpawner.volume_mounts = [ { "mountPath": "/user", "name": "user" } ]
+    c.KubeSpawner.singleuser_working_dir = '/user'
 
-    c.KubeSpawner.profile_list = [
+    c.KubeSpawner.profile_list = [{
         'display_name': 'MLBP 2018',
         'kubespawner_override': {
             # if callable is here, set spawner.k = v(spawner)
@@ -48,12 +59,12 @@ data:
             #'mem_limit': '512M',
             'course_slug': 'mlbp2018',
         }
-    ]
+    }]
 
     # profile_list --> use this instead of ProfileSpawner ?
     def pre_spawn_hook(spawner):
-        course = self.course_slug
-        self.uid = 1000
+        course = spawner.course_slug
+        spawner.uid = 1000
         #self.gid = xxx
         #storage_capacity = ???
         # For instructors
