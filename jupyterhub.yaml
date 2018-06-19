@@ -107,6 +107,8 @@ spec:
         - name: jupyterhub-config
           mountPath: /srv/jupyterhub/jupyterhub_config.py
           subPath: config
+        - name: jupyter-nfs-course
+          mountPath: /m/jupyter/course/
         imagePullPolicy: Never
       tolerations:
       - key: jupyterhub
@@ -116,6 +118,10 @@ spec:
       - name: jupyterhub-config
         configMap:
           name: jupyterhub-config
+      - name: jupyter-nfs-course
+        nfs:
+          server: jupyter-k8s-admin.cs.aalto.fi
+          path: /srv/jupyter-tw/course/
       nodeSelector:
         app: jupyterhub
       serviceAccountName: jupyter-notebook-spawner
