@@ -1,0 +1,6 @@
+bkubectl get pod
+kubectl delete -f jupyterhub.yaml
+kubectl create -f jupyterhub.yaml
+
+
+docker images

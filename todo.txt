@@ -1,0 +1,19 @@
+- run notebook as right UID
+- mount notebook home based on user $HOME
+- pin versions of jupyterhub/notebook
+- mount a shared directory per course
+- mount a shored course dir: /m/course/mlbp2018
+- copy nbgrader_config.py to user
+- create profilespawner for courses
+
+- how to we restart
+
+Epics:
+- create sigle user imeage
+- configure JH with all the user and spawn hooks
+
+
+
+Delayed:
+- config JH code version
+- config notebook version
