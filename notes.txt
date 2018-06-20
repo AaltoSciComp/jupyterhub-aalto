@@ -1,6 +1,10 @@
 bkubectl get pod
+kubectl get pod --all-namespaces
 kubectl delete -f jupyterhub.yaml
 kubectl create -f jupyterhub.yaml
 
+kubectl describe pod
+kubectl logs jupyterhub-5bd9d4ff6-8qzf2
+kubectl exec -it jupyterhub-5bd9d4ff6-nvc8r bash
 
 docker images

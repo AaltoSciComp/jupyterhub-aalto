@@ -44,10 +44,25 @@ data:
         }
       },
       {
-        ""
+        "name": "exchange",
+        "nfs": {
+          "server": "jupyter-k8s-admin.cs.aalto.fi",
+          "path": "/srv/jupyter-tw/exchange"
+        }
+      },
+      {
+        "name": "course",
+        "nfs": {
+          "server": "jupyter-k8s-admin.cs.aalto.fi",
+          "path": "/srv/jupyter-tw/course"
+        }
       }
     ]
-    c.KubeSpawner.volume_mounts = [ { "mountPath": "/user", "name": "user" } ]
+    c.KubeSpawner.volume_mounts = [
+      { "mountPath": "/user", "name": "user" },
+      { "mountPath": "/exchange", "name": "exchange" },
+      { "mountPath": "/course", "name": "course" },
+    ]
     c.KubeSpawner.singleuser_working_dir = '/user'
 
     c.KubeSpawner.profile_list = [{
@@ -71,13 +86,14 @@ data:
         #supplemental_gids = xxx  # course instructors
     c.KubeSpawner.pre_spawn_hook = pre_spawn_hook
 
+    c.Authenticator.admin_users = ['test']
 
     # Culler service
     c.JupyterHub.services = [
       {
         'name': 'cull-idle',
         'admin': True,
-        'command': 'python3 /cull_idle_servers.py --timeout=300 --cull_every=150'.split(),
+        'command': 'python3 /cull_idle_servers.py --timeout=3600 --cull_every=300'.split(),
       }
     ]
 
@@ -97,6 +113,7 @@ spec:
     metadata:
       labels:
         app: jupyterhub
+      name: jupyterhub
     spec:
       containers:
       - name: jupyterhub
