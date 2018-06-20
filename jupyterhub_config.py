@@ -69,10 +69,15 @@ c.KubeSpawner.profile_list = [{
   }
 }]
 
+#c.KubeSpawner.uid = 1001
+#c.KubeSpawner.singleuser_uid = 1001
+
 # profile_list --> use this instead of ProfileSpawner ?
 def pre_spawn_hook(spawner):
   course = spawner.course_slug
-  spawner.uid = 1000
+  spawner.log.info(dir(spawner.user))
+  spawner.log.info(spawner.user.id)
+  spawner.log.info(spawner.user.name) # jupyterhub login name, can use to setup mounts etc?
   #self.gid = xxx
   #storage_capacity = ???
   # For instructors
