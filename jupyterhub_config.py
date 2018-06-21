@@ -53,9 +53,9 @@ c.KubeSpawner.volumes = [
 ]
 c.KubeSpawner.volume_mounts = [
   { "mountPath": "/user", "name": "user" },
-  { "mountPath": "/exchange", "name": "exchange" },
-  { "mountPath": "/course", "name": "course" },
+  { "mountPath": "/exchange", "name": "exchange" }
 ]
+
 c.KubeSpawner.singleuser_working_dir = '/user'
 
 c.KubeSpawner.profile_list = [{
@@ -74,10 +74,11 @@ c.KubeSpawner.profile_list = [{
 
 # profile_list --> use this instead of ProfileSpawner ?
 def pre_spawn_hook(spawner):
+  if (spawner.user.name == "test"):
+    spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
+  if (spawner.user.name == "student"):
+    spawner.cmd = ["bash", "-c", "disable_formgrader.sh && start-notebook.sh"]
   course = spawner.course_slug
-  spawner.log.info(dir(spawner.user))
-  spawner.log.info(spawner.user.id)
-  spawner.log.info(spawner.user.name) # jupyterhub login name, can use to setup mounts etc?
   #self.gid = xxx
   #storage_capacity = ???
   # For instructors
