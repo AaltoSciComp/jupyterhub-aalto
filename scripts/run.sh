@@ -1,3 +1,3 @@
-cat /etc/adpw.txt | join-ad.sh
+cat /etc/adpw.txt | join_ad.sh
 service sssd start
 jupyterhub

@@ -47,4 +47,4 @@ RUN echo "test:test" | chpasswd
 RUN adduser --quiet --disabled-password --shell /bin/bash --home /home/student --gecos "Test student" student
 RUN echo "student:student" | chpasswd
 
-CMD ["/run.sh"]
+CMD ["bash", "-c", "/run.sh"]
