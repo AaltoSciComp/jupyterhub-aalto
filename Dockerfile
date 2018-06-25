@@ -29,6 +29,10 @@ RUN apt-get install adcli sssd sssd-krb5 krb5-config sssd-ldap sssd-ad libpam-ss
 COPY krb5.conf /etc/krb5.conf
 COPY krb5.keytab /etc/krb5.keytab
 COPY sssd.conf /etc/sssd/sssd.conf
+RUN chmod 600 /etc/sssd/sssd.conf
+
+COPY scripts/join_ad.sh /usr/local/bin/join_ad.sh
+RUN chmod +x /usr/local/bin/join_ad.sh
 
 COPY cull_idle_servers.py /cull_idle_servers.py
 RUN chmod +x /cull_idle_servers.py
