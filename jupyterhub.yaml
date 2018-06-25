@@ -16,6 +16,7 @@ spec:
         app: jupyterhub
       name: jupyterhub
     spec:
+      hostname: jupyterhub-cs-aalto-fi
       containers:
       - name: jupyterhub
         image: jupyterhub-cs

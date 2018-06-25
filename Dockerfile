@@ -24,6 +24,11 @@ COPY files/known_hosts /root/.ssh/known_hosts
 COPY files/id_rsa_hub /root/.ssh/id_rsa
 RUN chmod go-rwx /root/.ssh/*
 
+# Enable aalto domain join
+RUN apt-get install adcli sssd sssd-krb5 krb5-config sssd-ldap sssd-ad libpam-sss
+COPY krb5.conf /etc/krb5.conf
+COPY krb5.keytab /etc/krb5.keytab
+COPY sssd.conf /etc/sssd/sssd.conf
 
 COPY cull_idle_servers.py /cull_idle_servers.py
 RUN chmod +x /cull_idle_servers.py
