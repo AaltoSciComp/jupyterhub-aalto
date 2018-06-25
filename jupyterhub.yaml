@@ -30,6 +30,7 @@ spec:
           mountPath: /m/jupyter/course/
         - name: adpw
           mountPath: /etc/adpw.txt
+          subPath: adpw.txt
           readOnly: true
         imagePullPolicy: Never
       tolerations:

@@ -34,6 +34,9 @@ RUN chmod 600 /etc/sssd/sssd.conf
 COPY scripts/join_ad.sh /usr/local/bin/join_ad.sh
 RUN chmod +x /usr/local/bin/join_ad.sh
 
+COPY scripts/run.sh /run.sh
+RUN chmod +x /run.sh
+
 COPY cull_idle_servers.py /cull_idle_servers.py
 RUN chmod +x /cull_idle_servers.py
 
@@ -44,3 +47,4 @@ RUN echo "test:test" | chpasswd
 RUN adduser --quiet --disabled-password --shell /bin/bash --home /home/student --gecos "Test student" student
 RUN echo "student:student" | chpasswd
 
+CMD ["/run.sh"]
