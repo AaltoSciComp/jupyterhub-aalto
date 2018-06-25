@@ -4,6 +4,7 @@ FROM jupyterhub/jupyterhub:0.9
 
 # Jupyterhub & co
 RUN pip install jupyter
+RUN pip install jhub_remote_user_authenticator
 
 # kube-spawner
 RUN pip install https://github.com/jupyterhub/kubespawner/archive/cff7f01.tar.gz

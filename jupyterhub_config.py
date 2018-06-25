@@ -15,10 +15,13 @@ host_ip = s.getsockname()[0]
 s.close()
 
 # Authenticator config
-def add_user(self, user):
-    print("Adding user: user {} being added".format(user))
-    os.system('ssh jupyter-k8s-admin.cs.aalto.fi "hostname ; echo adding user {} ; /root/jupyterhub/scripts/adduser.py"'.format(user))
-c.Authenticator.add_user = add_user
+
+c.JupyterHub.authenticator_class = 'jhub_remote_user_authenticator.remote_user_auth.RemoteUserAuthenticator'
+
+#def add_user(self, user):
+#    print("Adding user: user {} being added".format(user))
+#    os.system('ssh jupyter-k8s-admin.cs.aalto.fi "hostname ; echo adding user {} ; /root/jupyterhub/scripts/adduser.py"'.format(user))
+#c.Authenticator.add_user = add_user
 
 # Spawner config
 c.KubeSpawner.start_timeout = 60 * 5
