@@ -23,7 +23,10 @@ s.close()
 #    os.system('ssh jupyter-k8s-admin.cs.aalto.fi "hostname ; echo adding user {} ; /root/jupyterhub/scripts/adduser.py"'.format(user))
 #c.Authenticator.add_user = add_user
 
-c.PAMAuthenticator.open_sessions = False
+# If whitelist undefined, any user can login
+c.Authenticator.whitelist = set()
+
+c.LocalAuthenticator.group_whitelist = { 't313-wa' }
 
 # Spawner config
 c.KubeSpawner.start_timeout = 60 * 5
