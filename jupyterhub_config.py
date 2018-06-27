@@ -1,6 +1,7 @@
 import socket
 import os
 import pwd # for resolving username --> uid
+import yaml
 
 # Basic JupyterHub config
 c.JupyterHub.ip = '0.0.0.0'
@@ -29,7 +30,8 @@ c.Authenticator.whitelist = set()
 
 for f in os.listdir('/courses'):
   if (f.endswith('.yaml')):
-    course_data = yaml.load(f)
+    course_data = yaml.load(open('/courses/{}'.format(f)))
+    print(course_data)
     for username in course_data.get('students', []):
       c.Authenticator.whitelist.add(username)
     for username in course_data.get('instructors', []):

@@ -28,7 +28,7 @@ spec:
           subPath: jupyterhub_config.py
         - name: jupyter-nfs-course
           mountPath: /m/jupyter/course/
-        - name: courses
+        - name: course-list
           mountPath: /courses
         - name: adpw
           mountPath: /etc/adpw.txt
