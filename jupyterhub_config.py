@@ -94,10 +94,12 @@ def pre_spawn_hook(spawner):
   # set notebook container user
   username = spawner.user.name
   uid = pwd.getpwnam(username).pw_uid
-  c.KubeSpawner.singleuser_uid = uid
+  spawner.singleuser_uid = uid
+  spawner.singleuser_supplemental_gids = [100] # group 'users' required in order to write config files etc
 
   course = spawner.course_slug
-  course_data = yaml.load("{}.yaml".format(course))
+  filename = "/courses/{}.yaml".format(course)
+  course_data = yaml.load(open(filename))
 
   if username in course_data.get('instructors', {}):
     spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
