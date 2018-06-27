@@ -36,11 +36,6 @@ RUN chmod +x /run.sh
 COPY cull_idle_servers.py /cull_idle_servers.py
 RUN chmod +x /cull_idle_servers.py
 
-# Create test user
-RUN adduser --quiet --disabled-password --shell /bin/bash --home /home/test --gecos "Test" test
-RUN echo "test:test" | chpasswd
-
-RUN adduser --quiet --disabled-password --shell /bin/bash --home /home/student --gecos "Test student" student
-RUN echo "student:student" | chpasswd
+RUN mkdir /courses
 
 CMD ["bash", "-c", "/run.sh"]

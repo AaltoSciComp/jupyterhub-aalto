@@ -27,7 +27,13 @@ s.close()
 # If whitelist undefined, any user can login
 c.Authenticator.whitelist = set()
 
-c.LocalAuthenticator.group_whitelist = { 't313-wa' }
+for f in os.listdir('/courses'):
+  if (f.endswith('.yaml')):
+    course_data = yaml.load(f)
+    for username in course_data.get('students', []):
+      c.Authenticator.whitelist.add(username)
+    for username in course_data.get('instructors', []):
+      c.Authenticator.whitelist.add(username)
 
 # Spawner config
 c.KubeSpawner.start_timeout = 60 * 5
@@ -93,7 +99,7 @@ def pre_spawn_hook(spawner):
 
   if username in course_data.get('instructors', {}):
     spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
-  else if username in course_data.get('students', {}):
+  elif username in course_data.get('students', {}):
     spawner.cmd = ["bash", "-c", "disable_formgrader.sh && start-notebook.sh"]
   else:
     pass # TODO: Stop user access, preferably just don't show logged in user the course in the profile list
