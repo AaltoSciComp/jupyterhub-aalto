@@ -78,8 +78,8 @@ c.KubeSpawner.profile_list = [{
   }
 }]
 
-#c.KubeSpawner.uid = 1001
-#c.KubeSpawner.singleuser_uid = 1001
+def create_user_dir(username, uid):
+  os.system('ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid))
 
 # profile_list --> use this instead of ProfileSpawner ?
 def pre_spawn_hook(spawner):
@@ -87,19 +87,24 @@ def pre_spawn_hook(spawner):
   username = spawner.user.name
   uid = pwd.getpwnam(username).pw_uid
   c.KubeSpawner.singleuser_uid = uid
-  
-  if (spawner.user.name == "test"):
-    spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
-  if (spawner.user.name == "student"):
-    spawner.cmd = ["bash", "-c", "disable_formgrader.sh && start-notebook.sh"]
+
   course = spawner.course_slug
+  course_data = yaml.load("{}.yaml".format(course))
+
+  if username in course_data.get('instructors', {}):
+    spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
+  else if username in course_data.get('students', {}):
+    spawner.cmd = ["bash", "-c", "disable_formgrader.sh && start-notebook.sh"]
+  else:
+    pass # TODO: Stop user access, preferably just don't show logged in user the course in the profile list
+
+  create_user_dir(username, uid) # TODO: Define path / server / type in yaml?
+  
   #self.gid = xxx
   #storage_capacity = ???
   # For instructors
   #supplemental_gids = xxx  # course instructors
 c.KubeSpawner.pre_spawn_hook = pre_spawn_hook
-
-c.Authenticator.admin_users = ['test']
 
 # Culler service
 c.JupyterHub.services = [
