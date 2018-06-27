@@ -1,5 +1,6 @@
 import socket
 import os
+import pwd # for resolving username --> uid
 
 # Basic JupyterHub config
 c.JupyterHub.ip = '0.0.0.0'
@@ -82,6 +83,11 @@ c.KubeSpawner.profile_list = [{
 
 # profile_list --> use this instead of ProfileSpawner ?
 def pre_spawn_hook(spawner):
+  # set notebook container user
+  username = spawner.user.name
+  uid = pwd.getpwnam(username).pw_uid
+  c.KubeSpawner.singleuser_uid = uid
+  
   if (spawner.user.name == "test"):
     spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
   if (spawner.user.name == "student"):

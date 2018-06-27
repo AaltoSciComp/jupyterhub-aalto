@@ -32,6 +32,10 @@ spec:
           mountPath: /etc/adpw.txt
           subPath: adpw.txt
           readOnly: true
+        - name: krb5.keytab
+          mountPath: /etc/krb5.keytab
+          subPath: krb5.keytab
+          readOnly: true
         imagePullPolicy: Never
       tolerations:
       - key: jupyterhub
@@ -48,6 +52,9 @@ spec:
       - name: adpw
         secret:
           secretName: adpw.txt
+      - name: krb5.keytab
+        secret:
+          secretName: krb5.keytab
       nodeSelector:
         app: jupyterhub
       serviceAccountName: jupyter-notebook-spawner
