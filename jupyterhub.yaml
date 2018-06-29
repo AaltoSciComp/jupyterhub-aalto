@@ -26,8 +26,6 @@ spec:
         - name: jupyterhub-config
           mountPath: /srv/jupyterhub/jupyterhub_config.py
           subPath: jupyterhub_config.py
-        - name: jupyter-nfs-course
-          mountPath: /m/jupyter/course/
         - name: course-list
           mountPath: /courses
         - name: adpw
@@ -43,10 +41,6 @@ spec:
       - name: jupyterhub-config
         configMap:
           name: jupyterhub-config
-      - name: jupyter-nfs-course
-        nfs:
-          server: jupyter-k8s-admin.cs.aalto.fi
-          path: /srv/jupyter-tw/course/
       - name: course-list
         nfs:
           server: jupyter-k8s-admin.cs.aalto.fi

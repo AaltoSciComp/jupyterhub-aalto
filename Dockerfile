@@ -38,4 +38,10 @@ RUN chmod +x /cull_idle_servers.py
 
 RUN mkdir /courses
 
+RUN adduser --quiet --disabled-password --shell /bin/bash --home /home/student --gecos "Test student" teststudent
+RUN echo "teststudent:teststudent" | chpasswd
+
+RUN adduser --quiet --disabled-password --shell /bin/bash --home /home/student --gecos "Test instructor" testinstructor
+RUN echo "testinstructor:testinstructor" | chpasswd
+
 CMD ["bash", "-c", "/run.sh"]

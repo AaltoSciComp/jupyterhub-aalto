@@ -39,7 +39,7 @@ for f in os.listdir('/courses'):
 
 # Spawner config
 c.KubeSpawner.start_timeout = 60 * 5
-c.KubeSpawner.singleuser_image_spec = 'nbgrader-mlbp'
+c.KubeSpawner.singleuser_image_spec = 'fissio/notebook-server:0.1.2'
 c.KubeSpawner.hub_connect_ip = host_ip
 c.JupyterHub.hub_connect_ip = c.KubeSpawner.hub_connect_ip
 c.KubeSpawner.hub_connect_port = 80
@@ -49,22 +49,22 @@ c.KubeSpawner.volumes = [
   {
     "name": "user",
     "nfs": {
-      "server": "jupyter-k8s-admin.cs.aalto.fi",
-      "path": "/srv/jupyter-tw/user/{username}"
+      "server": "jhnas.org.aalto.fi",
+      "path": "/vol/jupyter/user/{username}"
     }
   },
   {
     "name": "exchange",
     "nfs": {
-      "server": "jupyter-k8s-admin.cs.aalto.fi",
-      "path": "/srv/jupyter-tw/exchange"
+      "server": "jhnas.org.aalto.fi",
+      "path": "/vol/jupyter/exchange"
     }
   },
   {
     "name": "course",
     "nfs": {
-      "server": "jupyter-k8s-admin.cs.aalto.fi",
-      "path": "/srv/jupyter-tw/course"
+      "server": "jhnas.org.aalto.fi",
+      "path": "/vol/jupyter/course"
     }
   }
 ]
@@ -77,6 +77,7 @@ c.KubeSpawner.singleuser_working_dir = '/user'
 
 c.KubeSpawner.profile_list = [{
   'display_name': 'MLBP 2018',
+  'default': True,
   'kubespawner_override': {
     # if callable is here, set spawner.k = v(spawner)
     #'image_spec': 'training/python:label',
