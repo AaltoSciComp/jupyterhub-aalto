@@ -1,10 +1,14 @@
-- run notebook as right UID
-- mount notebook home based on user $HOME
+X run notebook as right UID
+X mount notebook home based on user $HOME
+  * done based on user UID
 - pin versions of jupyterhub/notebook
 - mount a shared directory per course
 - mount a shored course dir: /m/course/mlbp2018
 - copy nbgrader_config.py to user
 - create profilespawner for courses
+
+- Request Aalto SSL cert
+- 
 
 - how to we restart
 
