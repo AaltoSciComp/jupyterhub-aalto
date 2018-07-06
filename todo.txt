@@ -2,15 +2,18 @@ X run notebook as right UID
 X mount notebook home based on user $HOME
   * done based on user UID
 - pin versions of jupyterhub/notebook
-- mount a shared directory per course
-- mount a shored course dir: /m/course/mlbp2018
+X mount a shared directory per course  (done, /course)
 - copy nbgrader_config.py to user
-- create profilespawner for courses
-
+X create profilespawner for courses
 - Request Aalto SSL cert
-- 
+X how to we restart
+- Use kubernetes proxy instead of jupyterhub hub proxy
+X set uid
+- set default exchange to /srv/nbgrader/exchange
+- course management
+  - script to create course
+- limit ssh key to only run the init function
 
-- how to we restart
 
 Epics:
 - create sigle user imeage
@@ -21,3 +24,8 @@ Epics:
 Delayed:
 - config JH code version
 - config notebook version
+
+
+
+MVP stories:
+- for student, mount /user and /exchange based on course
