@@ -1,16 +1,40 @@
 #!/bin/bash
-set -x
-username=$1
-uid=$(id -u $username)
 
+set -x  # debugging
+
+# Place this in ssh/authorised_keys with this key:
+#   restrict,command="bash path/to/this.sh" ssh-rsa ...
+if [ -n "$SSH_ORIGINAL_COMMAND" ] ; then
+    set -- $SSH_ORIGINAL_COMMAND
+    original_cmd="$1"
+    shift
+else
+    # Change to false to *require* command=.
+    true
+fi
+
+
+echo "$@"
+
+# validate username
+username="$1"
+if echo "$username" | egrep -v '^[a-z0-9]+$' ; then
+    echo "ERROR: bad username"
+    exit 2
+fi
+
+# Get uid from PAM, but if that fails then use the supplied uid (for
+# local users).
+uid=$(id -u $username)
 if [ -z "$uid" ] ; then
   uid="$2"
 fi
 
-dir_name=/mnt/jupyter/user/$username
+dir_name="/mnt/jupyter/u/$username"
+default_group=70000
 
-#if [ ! -d $dir_name ]; then
-  mkdir -p $dir_name 2>/dev/null
-  chown $uid $dir_name
-  chmod 700 $dir_name
+#if [ ! -d "$dir_name" ]; then
+  mkdir --mode 0700 -p "$dir_name"
+  chown "$uid:$default_group" "$dir_name"
+  chmod 700 "$dir_name"
 #fi

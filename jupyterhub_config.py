@@ -56,7 +56,7 @@ DEFAULT_VOLUMES = [
     "name": "user",
     "nfs": {
       "server": "jhnas.org.aalto.fi",
-      "path": "/vol/jupyter/user/{username}"
+      "path": "/vol/jupyter/u/{username}"
     }
   },
   #{
@@ -85,7 +85,7 @@ c.KubeSpawner.singleuser_working_dir = '/user'
 
 
 PROFILE_LIST = [
-    {'display_name': 'Generic',
+    {'display_name': 'Generic (for anyone to use)',
      'default': True,
      'kubespawner_override': {
          # if callable is here, set spawner.k = v(spawner)
