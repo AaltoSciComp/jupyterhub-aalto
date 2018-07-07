@@ -1,0 +1,1 @@
+kubectl exec -it $(kubectl get pods -o name | grep jupyterhub | tail -1 | cut -d/ -f2) bash
