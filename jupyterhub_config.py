@@ -125,13 +125,18 @@ def pre_spawn_hook(spawner):
     spawner.singleuser_supplemental_gids = [100] # group 'users' required in order to write config files etc
     #self.gid = xxx
     #storage_capacity = ???
+    cmds = [ "start-notebook.sh" ]
 
     create_user_dir(username, uid) # TODO: Define path / server / type in yaml?
 
 
-    # Course configuration - only if it is a course
     course_slug = spawner.course_slug
-    if course_slug:
+    if not course_slug:
+        # We are not part of a course, so do only generic stuff
+        cmds.insert(0, "disable_formgrader.sh")
+
+    else:
+        # Course configuration - only if it is a course
         course_data = COURSES[course_slug]
         #filename = "/courses/{}.yaml".format(course_slug)
         #course_data = yaml.load(open(filename))
@@ -151,7 +156,9 @@ def pre_spawn_hook(spawner):
         })
         spawner.volume_mounts.append({ "mountPath": "/exchange", "name": "exchange" })
 
+
         # Instructors
+        allow_spawn = False
         if username in course_data.get('instructors', {}):
             spawner.volumes.append({
                 "name": "course",
@@ -161,13 +168,22 @@ def pre_spawn_hook(spawner):
                 }
             })
             spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
-            #supplemental_gids = os.stat('/courses/{}'.format(course_slug)).st_gid
+            course_gid = os.stat('/courses/{}'.format(course_slug)).st_gid
+            allow_spawn = True
+            spawner.singleuser_supplemental_gids.append(course_gid)
         else:
-            spawner.cmd = ["bash", "-c", "disable_formgrader.sh && start-notebook.sh"]
+            cmds.insert(0, "disable_formgrader.sh")
 
         # Student config
         if username in course_data.get('students', {}):
-            pass
+            allow_spawn = True
+
+        if not allow_spawn and course_data.get('deny_others', False):
+            raise RuntimeError("You ({}) are not allowed to use the {} environment".format(username, course_slug))
+
+    # Common final setup
+    spawner.cmd = ["bash", "-c", ] + " && ".join(cmds)
+
     
 c.KubeSpawner.pre_spawn_hook = pre_spawn_hook
 
