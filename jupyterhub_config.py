@@ -83,8 +83,9 @@ DEFAULT_VOLUME_MOUNTS = [
 c.KubeSpawner.volumes = DEFAULT_VOLUMES
 c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
 
-# doesn't work with root, do in startup script
-c.KubeSpawner.singleuser_working_dir = '/notebooks'
+# doesn't work, because we start as root, this happens as root but we
+# have root_squash.
+#c.KubeSpawner.singleuser_working_dir = '/notebooks'
 
 
 def get_profile_list(spawner):
@@ -129,19 +130,28 @@ def pre_spawn_hook(spawner):
     uid = userinfo.pw_uid
 
     # Set basic spawner properties
-    spawner.singleuser_supplemental_gids = [100] # group 'users' required in order to write config files etc
-    #self.gid = xxx
     #storage_capacity = ???
     spawner.environment = environ = { }  # override env
     print(spawner.cmd)
-    cmds = [ "start-notebook.sh --notebook-dir=/notebooks" ]
+    cmds = [ "source start-notebook.sh --notebook-dir=/notebooks" ]
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
     c.KubeSpawner.working_dir = '/'
 
+    # Note: current (summer 2018) conda version of kubespawner does
+    # not use "uid" or "gid" options as you see in the latest
+    # kubespawner.
+
+    # Default setup of /etc/passwd: jovyan:x:1000:0
+    # Default setup of /etc/group: users:x:100
+
     if 0:
         # Manually run as uid from outside the container
         spawner.singleuser_uid = uid
+        # default of user in docker image (note: not in image kubespawer yet!)
+        #spawner.gid = 100
+        # group 'users' required in order to write config files etc
+        spawner.singleuser_supplemental_gids = [100]
         #cmds.insert(0, "adduser --uid {} --gid=70000 --no-create-home " # --home=/user
         #               "--disabled-password --disabled-login  {}".format(uid, username))
     else:
@@ -152,13 +162,20 @@ def pre_spawn_hook(spawner):
         #environ['GRANT_SUDO'] = 'yes'
         # The default jupyter image will use root access in order to su to the user as defined above.
         spawner.singleuser_uid = 0
+        # add default user to group 100 for file access. (Required
+        # because sudo prevents supplemental_gids from taking effect
+        # after the sudo).  The "jovyan" user is renamed to $NB_USER
+        # on startup.
+        cmds.insert(-1, "adduser jovyan users")
 
     create_user_dir(username, uid) # TODO: Define path / server / type in yaml?
+    #cmds.insert(-1, r'echo "if [ \"\$SHLVL\" = 2 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.profile')
+    cmds.insert(-1, r'echo "if [ \"\$SHLVL\" = 2 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.bashrc')
 
     course_slug = spawner.course_slug
     # We are not part of a course, so do only generic stuff
     if not course_slug:
-        cmds.insert(0, "disable_formgrader.sh")
+        cmds.insert(-1, "disable_formgrader.sh")
 
     # Course configuration - only if it is a course
     else:
@@ -196,13 +213,21 @@ def pre_spawn_hook(spawner):
             })
             spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
             course_gid = os.stat('/courses/{}'.format(course_slug)).st_gid
-            cmds.insert(0, "addgroup --gid {} {}".format(course_gid, 'jupyter-'+course_slug))
             if 'NB_GID' in environ:
+                # This branch happens only if we are root (see above)
                 environ['NB_GID'] = str(course_gid)
+                # The start.sh script renumbers the default group 100 to $NB_GID.  We rename it first.
+                cmds.insert(-1, "groupmod -n {} users".format('jupyter-'+course_slug))
+                # We *need* to be in group 100, because a lot of the
+                # default files (conda, etc) are group=rw=100.  We add
+                # a *duplicate* group 100, and only the first one is
+                # renamed in the image (in the jupyter start.sh)
+                cmds.insert(-1, "groupadd --gid 100 --non-unique users")
+                cmds.insert(-1, "adduser jovyan users")
             else:
                 spawner.singleuser_supplemental_gids.append(course_gid)
         else:
-            cmds.insert(0, "disable_formgrader.sh")
+            cmds.insert(-1, "disable_formgrader.sh")
 
         # Student config
         if username in course_data.get('students', {}):
