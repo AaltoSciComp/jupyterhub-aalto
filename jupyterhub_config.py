@@ -76,8 +76,8 @@ DEFAULT_VOLUMES = [
   #}
 ]
 DEFAULT_VOLUME_MOUNTS = [
-  #{ "mountPath": "/user", "name": "user" },
-  { "mountPath": "/home/{username}", "name": "user" },
+  { "mountPath": "/user", "name": "user" },
+  #{ "mountPath": "/home/{username}", "name": "user" },
   #{ "mountPath": "/exchange", "name": "exchange" }
 ]
 c.KubeSpawner.volumes = DEFAULT_VOLUMES
@@ -136,7 +136,7 @@ def pre_spawn_hook(spawner):
     cmds = [ "start-notebook.sh" ]
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
-    c.KubeSpawner.working_dir = '/home/{username}'
+    c.KubeSpawner.working_dir = '/'
 
     if 0:
         # Manually run as uid from outside the container
