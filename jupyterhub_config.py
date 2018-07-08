@@ -76,7 +76,7 @@ DEFAULT_VOLUMES = [
   #}
 ]
 DEFAULT_VOLUME_MOUNTS = [
-  { "mountPath": "/user", "name": "user" },
+  { "mountPath": "/notebooks", "name": "user" },
   #{ "mountPath": "/home/{username}", "name": "user" },
   #{ "mountPath": "/exchange", "name": "exchange" }
 ]
@@ -84,7 +84,7 @@ c.KubeSpawner.volumes = DEFAULT_VOLUMES
 c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
 
 # doesn't work with root, do in startup script
-#c.KubeSpawner.singleuser_working_dir = '/user'
+c.KubeSpawner.singleuser_working_dir = '/notebooks'
 
 
 def get_profile_list(spawner):
@@ -133,7 +133,8 @@ def pre_spawn_hook(spawner):
     #self.gid = xxx
     #storage_capacity = ???
     spawner.environment = environ = { }  # override env
-    cmds = [ "start-notebook.sh" ]
+    print(spawner.cmd)
+    cmds = [ "start-notebook.sh --notebook-dir=/notebooks" ]
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
     c.KubeSpawner.working_dir = '/'

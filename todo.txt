@@ -13,8 +13,9 @@ X set uid
 - course management
   - script to create course
 X limit ssh key to only run the init function
-- logs: how to get logs of a container that fails immediately?, or old
-  container?  Needed for eventually debugging
+- set up kubernetes pod logging.
+  - logs: how to get logs of a container that fails immediately?, or
+    old container?  Needed for eventually debugging
 
 
 Epics:
