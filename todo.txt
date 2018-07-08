@@ -12,7 +12,9 @@ X set uid
 - set default exchange to /srv/nbgrader/exchange
 - course management
   - script to create course
-- limit ssh key to only run the init function
+X limit ssh key to only run the init function
+- logs: how to get logs of a container that fails immediately?, or old
+  container?  Needed for eventually debugging
 
 
 Epics:

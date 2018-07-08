@@ -49,6 +49,7 @@ c.KubeSpawner.hub_connect_ip = host_ip
 c.JupyterHub.hub_connect_ip = c.KubeSpawner.hub_connect_ip
 c.KubeSpawner.hub_connect_port = 80
 c.KubeSpawner.http_timeout = 60 * 5
+c.KubeSpawner.disable_user_config = True
 
 # Volume mounts
 DEFAULT_VOLUMES = [
@@ -75,39 +76,44 @@ DEFAULT_VOLUMES = [
   #}
 ]
 DEFAULT_VOLUME_MOUNTS = [
-  { "mountPath": "/user", "name": "user" },
+  #{ "mountPath": "/user", "name": "user" },
+  { "mountPath": "/home/{username}", "name": "user" },
   #{ "mountPath": "/exchange", "name": "exchange" }
 ]
 c.KubeSpawner.volumes = DEFAULT_VOLUMES
 c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
 
-c.KubeSpawner.singleuser_working_dir = '/user'
+# doesn't work with root, do in startup script
+#c.KubeSpawner.singleuser_working_dir = '/user'
 
 
-PROFILE_LIST = [
-    {'display_name': 'Generic (for anyone to use)',
-     'default': True,
-     'kubespawner_override': {
-         # if callable is here, set spawner.k = v(spawner)
-         #'image_spec': 'training/python:label',
-         #'cpu_limit': 1,
-         #'mem_limit': '512M',
-         'course_slug': '',
-     }
-    }
-]
-PROFILE_LIST.extend([{
-    'display_name': course_data.get('name', course_slug),
-    'kubespawner_override': {
-        # if callable is here, set spawner.k = v(spawner)
-        #'image_spec': 'training/python:label',
-        #'cpu_limit': 1,
-        #'mem_limit': '512M',
-        'course_slug': course_slug,}
-    } for (course_slug, course_data) in COURSES.items()])
-c.KubeSpawner.profile_list = PROFILE_LIST
+def get_profile_list(spawner):
+    PROFILE_LIST = [
+        {'display_name': 'Generic (for anyone to use)',
+         'default': True,
+         'kubespawner_override': {
+             # if callable is here, set spawner.k = v(spawner)
+             #'image_spec': 'training/python:label',
+             #'cpu_limit': 1,
+             #'mem_limit': '512M',
+             'course_slug': '',
+         }
+        }
+    ]
+    PROFILE_LIST.extend([{
+        'display_name': course_data.get('name', course_slug),
+        'kubespawner_override': {
+            # if callable is here, set spawner.k = v(spawner)
+            #'image_spec': 'training/python:label',
+            #'cpu_limit': 1,
+            #'mem_limit': '512M',
+            'course_slug': course_slug,}
+        } for (course_slug, course_data) in COURSES.items() if course_data.get('active', True)])
+    return PROFILE_LIST
+c.KubeSpawner.profile_list = get_profile_list(None)  # leave as callable to regen every time, without restart.
 if len(c.KubeSpawner.profile_list) < 2:
-    raise RuntimeError("Startup error: no profiles found")
+    raise RuntimeError("Startup error: no course profiles found")
+
 
 
 def create_user_dir(username, uid):
@@ -115,29 +121,48 @@ def create_user_dir(username, uid):
 
 # profile_list --> use this instead of ProfileSpawner ?
 def pre_spawn_hook(spawner):
-    # set notebook container user
+    # Get basic info
     username = spawner.user.name
     userinfo = pwd.getpwnam(username)
-    uid = userinfo.pw_uid
     homedir = userinfo.pw_dir
     if homedir.startswith('/u/'): homedir = homedir[3:]
-    spawner.singleuser_uid = uid
+    uid = userinfo.pw_uid
+
+    # Set basic spawner properties
     spawner.singleuser_supplemental_gids = [100] # group 'users' required in order to write config files etc
     #self.gid = xxx
     #storage_capacity = ???
+    spawner.environment = environ = { }  # override env
     cmds = [ "start-notebook.sh" ]
+
+    if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
+    c.KubeSpawner.working_dir = '/home/{username}'
+
+    if 0:
+        # Manually run as uid from outside the container
+        spawner.singleuser_uid = uid
+        #cmds.insert(0, "adduser --uid {} --gid=70000 --no-create-home " # --home=/user
+        #               "--disabled-password --disabled-login  {}".format(uid, username))
+    else:
+        # To do this, you should have /home/$username exist...
+        environ['NB_USER'] = username
+        environ['NB_UID'] = str(uid)
+        environ['NB_GID'] = '70000'
+        #environ['GRANT_SUDO'] = 'yes'
+        # The default jupyter image will use root access in order to su to the user as defined above.
+        spawner.singleuser_uid = 0
 
     create_user_dir(username, uid) # TODO: Define path / server / type in yaml?
 
-
     course_slug = spawner.course_slug
+    # We are not part of a course, so do only generic stuff
     if not course_slug:
-        # We are not part of a course, so do only generic stuff
         cmds.insert(0, "disable_formgrader.sh")
 
+    # Course configuration - only if it is a course
     else:
-        # Course configuration - only if it is a course
         course_data = COURSES[course_slug]
+        #self.name = course_slug   # causes this to be added to pod name
         #filename = "/courses/{}.yaml".format(course_slug)
         #course_data = yaml.load(open(filename))
 
@@ -160,6 +185,7 @@ def pre_spawn_hook(spawner):
         # Instructors
         allow_spawn = False
         if username in course_data.get('instructors', {}):
+            allow_spawn = True
             spawner.volumes.append({
                 "name": "course",
                 "nfs": {
@@ -169,8 +195,11 @@ def pre_spawn_hook(spawner):
             })
             spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
             course_gid = os.stat('/courses/{}'.format(course_slug)).st_gid
-            allow_spawn = True
-            spawner.singleuser_supplemental_gids.append(course_gid)
+            cmds.insert(0, "addgroup --gid {} {}".format(course_gid, 'jupyter-'+course_slug))
+            if 'NB_GID' in environ:
+                environ['NB_GID'] = str(course_gid)
+            else:
+                spawner.singleuser_supplemental_gids.append(course_gid)
         else:
             cmds.insert(0, "disable_formgrader.sh")
 
@@ -178,11 +207,11 @@ def pre_spawn_hook(spawner):
         if username in course_data.get('students', {}):
             allow_spawn = True
 
-        if not allow_spawn and course_data.get('deny_others', False):
+        if not allow_spawn and course_data.get('private', False):
             raise RuntimeError("You ({}) are not allowed to use the {} environment".format(username, course_slug))
 
     # Common final setup
-    spawner.cmd = ["bash", "-c", ] + " && ".join(cmds)
+    spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
 
     
 c.KubeSpawner.pre_spawn_hook = pre_spawn_hook
