@@ -123,7 +123,9 @@ if len(c.KubeSpawner.profile_list) < 2:
 
 
 def create_user_dir(username, uid):
-  os.system('ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid))
+    os.system('ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid))
+
+
 
 # profile_list --> use this instead of ProfileSpawner ?
 def pre_spawn_hook(spawner):
@@ -138,6 +140,7 @@ def pre_spawn_hook(spawner):
     #storage_capacity = ???
     spawner.environment = environ = { }  # override env
     cmds = [ "source start-notebook.sh" ]  # args added later in KubeSpawner
+    cmds.insert(-1, "mv /home/jovyan/.jupyter/ /home/jovyan/.jupyter2")
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
     c.KubeSpawner.working_dir = '/'
@@ -183,6 +186,7 @@ def pre_spawn_hook(spawner):
 
     # Course configuration - only if it is a course
     else:
+        spawner.log.info("Pre-spawn hook for course=%s", course_slug)
         course_data = COURSES[course_slug]
         #self.name = course_slug   # causes this to be added to pod name
         #filename = "/courses/{}.yaml".format(course_slug)
@@ -204,6 +208,12 @@ def pre_spawn_hook(spawner):
         # /srv/nbgrader/exchange is the default path
         spawner.volume_mounts.append({ "mountPath": "/srv/nbgrader/exchange", "name": "exchange" })
 
+        # Jupyter/nbgrader config
+        for line in ['c = get_config()',
+                     'c.CourseDirectory.root = "/course"',
+                     'c.Exchange.course_id = "{}"'.format(course_slug),
+                     'c.NbGrader.logfile = "/course/.nbgraber.log"']:
+            cmds.insert(-1, r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
 
         # Instructors
         allow_spawn = False
