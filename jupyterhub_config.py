@@ -19,6 +19,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(("8.8.8.8", 80))
 host_ip = s.getsockname()[0]
 s.close()
+c.JupyterHub.cleanup_servers = False  # leave servers running if hub restarts
 
 # Authenticator config
 
@@ -142,6 +143,7 @@ def pre_spawn_hook(spawner):
     spawner.default_url = ""
     spawner.notebook_dir = "/notebooks"
     cmds = [ "source start-notebook.sh" ]  # args added later in KubeSpawner
+    # Remove the .jupyter config that is already there
     cmds.insert(-1, "mv /home/jovyan/.jupyter/ /home/jovyan/.jupyter2")
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)

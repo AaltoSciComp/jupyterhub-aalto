@@ -19,6 +19,11 @@ X limit ssh key to only run the init function
 - "kubectl exec -it ... bash" does not work on user pods, because the
   user home directory has been moved, and docker tries to
   unconditionally cd before running your command.
+- /srv/jupyterhub is mounted from jhnas:/vol/jupyter/admin/hubdata/.
+  But the hub has root_squash, so these are currently owned by
+  nobody/nogroup.  Fix the security.
+- Change to use kubernetes as the ingress proxy, instead of the
+  jupyterhub built in one.
 
 
 Epics:

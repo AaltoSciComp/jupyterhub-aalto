@@ -23,6 +23,8 @@ spec:
         ports:
         - containerPort: 8000
         volumeMounts:
+        - name: jupyterhub-hubdata
+          mountPath: /srv/jupyterhub/
         - name: jupyterhub-config
           mountPath: /srv/jupyterhub/jupyterhub_config.py
           subPath: jupyterhub_config.py
@@ -38,6 +40,10 @@ spec:
         operator: Exists
         effect: NoSchedule
       volumes:
+      - name: jupyterhub-hubdata
+        nfs:
+          server: jhnas.org.aalto.fi
+          path: /vol/jupyter/admin/hubdata/
       - name: jupyterhub-config
         configMap:
           name: jupyterhub-config
