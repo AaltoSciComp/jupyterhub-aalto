@@ -178,8 +178,8 @@ def pre_spawn_hook(spawner):
         cmds.insert(-1, "adduser jovyan users")
 
     create_user_dir(username, uid) # TODO: Define path / server / type in yaml?
-    #cmds.insert(-1, r'echo "if [ \"\$SHLVL\" = 2 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.profile')
-    cmds.insert(-1, r'echo "if [ \"\$SHLVL\" = 2 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.bashrc')
+    #cmds.insert(-1, r'echo "if [ \"\$SHLVL\" = 1 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.profile')
+    cmds.insert(-1, r'echo "if [ \"\$SHLVL\" = 1 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.bashrc')
 
     course_slug = spawner.course_slug
     # We are not part of a course, so do only generic stuff
