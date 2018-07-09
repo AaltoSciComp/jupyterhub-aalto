@@ -195,6 +195,7 @@ def pre_spawn_hook(spawner):
         #self.name = course_slug   # causes this to be added to pod name
         #filename = "/courses/{}.yaml".format(course_slug)
         #course_data = yaml.load(open(filename))
+        spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
 
         # Make a copy of the *default* class volumes.  The "spawner" object
         # is constantly reused.
