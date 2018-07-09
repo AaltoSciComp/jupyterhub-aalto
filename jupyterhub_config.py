@@ -197,7 +197,8 @@ def pre_spawn_hook(spawner):
                 "path": "/vol/jupyter/exchange/{}".format(course_slug)
             }
         })
-        spawner.volume_mounts.append({ "mountPath": "/exchange", "name": "exchange" })
+        # /srv/nbgrader/exchange is the default path
+        spawner.volume_mounts.append({ "mountPath": "/srv/nbgrader/exchange", "name": "exchange" })
 
 
         # Instructors
