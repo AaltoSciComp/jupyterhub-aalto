@@ -139,6 +139,8 @@ def pre_spawn_hook(spawner):
     # Set basic spawner properties
     #storage_capacity = ???
     spawner.environment = environ = { }  # override env
+    spawner.default_url = ""
+    spawner.notebook_dir = "/notebooks"
     cmds = [ "source start-notebook.sh" ]  # args added later in KubeSpawner
     cmds.insert(-1, "mv /home/jovyan/.jupyter/ /home/jovyan/.jupyter2")
 
@@ -219,6 +221,11 @@ def pre_spawn_hook(spawner):
         allow_spawn = False
         if username in course_data.get('instructors', {}):
             allow_spawn = True
+            # Instructors get the whole filesystem tree, because they
+            # need to be able to access "/course", too.  Warning, you
+            # will have different paths!  (fix later...)
+            spawner.default_url = "/notebooks"
+            spawner.notebook_dir = "/"
             spawner.volumes.append({
                 "name": "course",
                 "nfs": {
