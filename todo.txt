@@ -16,6 +16,9 @@ X limit ssh key to only run the init function
 - set up kubernetes pod logging.
   - logs: how to get logs of a container that fails immediately?, or
     old container?  Needed for eventually debugging
+- "kubectl exec -it ... bash" does not work on user pods, because the
+  user home directory has been moved, and docker tries to
+  unconditionally cd before running your command.
 
 
 Epics:

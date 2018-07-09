@@ -1,8 +1,11 @@
 import glob
-import socket
 import os
 import pwd # for resolving username --> uid
+import socket
+import sys
 import yaml
+
+c.Application.log_level = 'DEBUG'
 
 # Basic JupyterHub config
 c.JupyterHub.ip = '0.0.0.0'
@@ -50,6 +53,8 @@ c.JupyterHub.hub_connect_ip = c.KubeSpawner.hub_connect_ip
 c.KubeSpawner.hub_connect_port = 80
 c.KubeSpawner.http_timeout = 60 * 5
 c.KubeSpawner.disable_user_config = True
+c.KubeSpawner.default_url = "/notebooks"
+c.KubeSpawner.notebook_dir = "/"
 
 # Volume mounts
 DEFAULT_VOLUMES = [
@@ -132,8 +137,7 @@ def pre_spawn_hook(spawner):
     # Set basic spawner properties
     #storage_capacity = ???
     spawner.environment = environ = { }  # override env
-    print(spawner.cmd)
-    cmds = [ "source start-notebook.sh --notebook-dir=/notebooks" ]
+    cmds = [ "source start-notebook.sh" ]  # args added later in KubeSpawner
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
     c.KubeSpawner.working_dir = '/'
