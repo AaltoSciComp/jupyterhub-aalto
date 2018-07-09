@@ -19,6 +19,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(("8.8.8.8", 80))
 host_ip = s.getsockname()[0]
 s.close()
+c.Authenticator.admin_users = {'darstr1', 'murhum1'}
 c.JupyterHub.cleanup_servers = False  # leave servers running if hub restarts
 
 # Authenticator config
