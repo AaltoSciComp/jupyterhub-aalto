@@ -140,6 +140,7 @@ c.KubeSpawner.cpu_guarantee = .2
 c.KubeSpawner.mem_guarantee = '256M'
 
 def get_profile_list(spawner):
+    #c.JupyterHub.log.debug("Recreating profile list")
     PROFILE_LIST = [
         {'display_name': 'Generic (for anyone to use)',
          'default': True,
@@ -180,6 +181,7 @@ def pre_spawn_hook(spawner):
     homedir = userinfo.pw_dir
     if homedir.startswith('/u/'): homedir = homedir[3:]
     uid = userinfo.pw_uid
+    spawner.log.debug("Running pre-spawn hook for {}".format(username))
 
     # Set basic spawner properties
     #storage_capacity = ???
@@ -207,8 +209,6 @@ def pre_spawn_hook(spawner):
         #spawner.gid = 100
         # group 'users' required in order to write config files etc
         spawner.singleuser_supplemental_gids = [100]
-        #cmds.insert(0, "adduser --uid {} --gid=70000 --no-create-home " # --home=/user
-        #               "--disabled-password --disabled-login  {}".format(uid, username))
     else:
         # To do this, you should have /home/$username exist...
         environ['NB_USER'] = username
