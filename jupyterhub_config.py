@@ -94,6 +94,11 @@ c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
 # have root_squash.
 #c.KubeSpawner.singleuser_working_dir = '/notebooks'
 
+# Note: instructors get different limits, see below.
+c.KubeSpawner.cpu_limit = 1
+c.KubeSpawner.mem_limit = '512M'
+c.KubeSpawner.cpu_guarantee = .2
+c.KubeSpawner.mem_guarantee = '256M'
 
 def get_profile_list(spawner):
     PROFILE_LIST = [
@@ -101,9 +106,6 @@ def get_profile_list(spawner):
          'default': True,
          'kubespawner_override': {
              # if callable is here, set spawner.k = v(spawner)
-             #'image_spec': 'training/python:label',
-             #'cpu_limit': 1,
-             #'mem_limit': '512M',
              'course_slug': '',
          }
         }
@@ -111,10 +113,6 @@ def get_profile_list(spawner):
     PROFILE_LIST.extend([{
         'display_name': course_data.get('name', course_slug),
         'kubespawner_override': {
-            # if callable is here, set spawner.k = v(spawner)
-            #'image_spec': 'training/python:label',
-            #'cpu_limit': 1,
-            #'mem_limit': '512M',
             'course_slug': course_slug,}
         } for (course_slug, course_data) in COURSES.items() if course_data.get('active', True)])
     return PROFILE_LIST
@@ -230,6 +228,10 @@ def pre_spawn_hook(spawner):
             # will have different paths!  (fix later...)
             spawner.default_url = "/notebooks"
             spawner.notebook_dir = "/"
+            spawner.cpu_limit = 1
+            spawner.mem_limit = '2048M'
+            spawner.cpu_guarantee = .5
+            spawner.mem_guarantee = '512M'
             spawner.volumes.append({
                 "name": "course",
                 "nfs": {
