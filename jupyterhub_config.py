@@ -1,8 +1,10 @@
 import glob
 import os
 import pwd # for resolving username --> uid
+import re
 import socket
 import sys
+import time
 import yaml
 
 c.Application.log_level = 'DEBUG'
@@ -36,16 +38,53 @@ c.Authenticator.whitelist = set()
 
 # Add usernames to whitelist - /courses is in k8s-jupyter-admin:/srv/courses
 COURSES = { }
+COURSES_TS = None
 METADIR = "/courses/meta"
-for course_yaml in glob.glob(os.path.join(METADIR, '*.yaml')):
-    course_data = yaml.load(open(course_yaml))
-    course_slug = os.path.splitext(os.path.basename(course_yaml))[0]
-    COURSES[course_slug] = course_data
-    print(course_data)
-    for username in course_data.get('students', []):
-      c.Authenticator.whitelist.add(username)
-    for username in course_data.get('instructors', []):
-      c.Authenticator.whitelist.add(username)
+#for course_yaml in glob.glob(os.path.join(METADIR, '*.yaml')):
+#    course_data = yaml.load(open(course_yaml))
+#    course_slug = os.path.splitext(os.path.basename(course_yaml))[0]
+#    COURSES[course_slug] = course_data
+#    print(course_data)
+#    for username in course_data.get('students', []):
+#      c.Authenticator.whitelist.add(username)
+#    for username in course_data.get('instructors', []):
+#      c.Authenticator.whitelist.add(username)
+def GET_COURSES():
+    """Update the global COURSES dictionary.
+
+    Wrapped in a function so that we can update even while the process
+    is running.  Has some basic caching, so that we do not constantly
+    regenerate this data.
+
+    """
+    global COURSES, COURSES_TS
+    # Cache, don't unconditionally reload every time.
+    # Regenerate if Check if we must regenerate data
+    if COURSES_TS and COURSES_TS > time.time() - 10:
+        return COURSES
+    latest_yaml_ts = max(os.stat(course_file).st_mtime
+                         for course_file in glob.glob(os.path.join(METADIR, '*.yaml')))
+    if COURSES_TS and COURSES_TS > latest_yaml_ts:
+        return COURSES
+    COURSES_TS = time.time()
+    #c.JupyterHub.log.debug("Re-generating course data")
+    courses = { }
+    for course_file in glob.glob(os.path.join(METADIR, '*.yaml')):
+        course_slug = os.path.splitext(os.path.basename(course_file))[0]
+        if course_slug.endswith('-users'):
+            course_slug = course_slug[:-6]
+        course_data = yaml.load(open(course_file))
+        if course_slug not in courses:
+            courses[course_slug] = { }
+        courses[course_slug].update(course_data)
+        #for username in course_data.get('students', []):
+        #    c.Authenticator.whitelist.add(username)
+        #for username in course_data.get('instructors', []):
+        #    c.Authenticator.whitelist.add(username)
+    COURSES = courses
+    return COURSES
+GET_COURSES()
+
 
 # Spawner config
 c.KubeSpawner.start_timeout = 60 * 5
@@ -114,11 +153,17 @@ def get_profile_list(spawner):
         'display_name': course_data.get('name', course_slug),
         'kubespawner_override': {
             'course_slug': course_slug,}
-        } for (course_slug, course_data) in COURSES.items() if course_data.get('active', True)])
+        } for (course_slug, course_data) in GET_COURSES().items()
+          if course_data.get('active', True) #and (not course_data.get('private', False)  # requires next kubespawner
+                                             #     or spawner.user.name in course_data['instructors']
+                                             #     or spawner.user.name in course_data['instructors'])
+    ])
     return PROFILE_LIST
-c.KubeSpawner.profile_list = get_profile_list(None)  # leave as callable to regen every time, without restart.
-if len(c.KubeSpawner.profile_list) < 2:
-    raise RuntimeError("Startup error: no course profiles found")
+# In next version of kubespawner, leave as callable to regen every
+# time, without restart.
+c.KubeSpawner.profile_list = get_profile_list(None)
+#if len(c.KubeSpawner.profile_list) < 2:
+#    raise RuntimeError("Startup error: no course profiles found")
 
 
 
@@ -190,8 +235,7 @@ def pre_spawn_hook(spawner):
     # Course configuration - only if it is a course
     else:
         spawner.log.info("Pre-spawn hook for course=%s", course_slug)
-        course_data = COURSES[course_slug]
-        #self.name = course_slug   # causes this to be added to pod name
+        course_data = GET_COURSES()[course_slug]
         #filename = "/courses/{}.yaml".format(course_slug)
         #course_data = yaml.load(open(filename))
         spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
