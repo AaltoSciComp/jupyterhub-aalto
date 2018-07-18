@@ -5,7 +5,8 @@ X mount notebook home based on user $HOME
 X mount a shared directory per course  (done, /course)
 X copy nbgrader_config.py to user
 X create profilespawner for courses
-- Request Aalto SSL cert
+X Request Aalto SSL cert
+  - Install Aalto SSL cert from secrets/ directory
 X how to we restart
 - Split the proxy from the hub
   - Option 1: Use kubernetes proxy instead of jupyterhub hub proxy
@@ -35,6 +36,10 @@ X limit ssh key to only run the init function
 - Set quotas on directories
 - Warn on quotas when logging in
 - Set announcement on page text
+- Check zero to jupyterhub security and see what applies to us:
+  https://zero-to-jupyterhub.readthedocs.io/en/latest/security.html
+- Separate the teststudent/testinstructor from the Dockerfile so that
+  we can publish this git repository publically
 
 
 Epics:
