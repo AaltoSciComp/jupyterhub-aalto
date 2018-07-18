@@ -44,4 +44,11 @@ RUN echo "teststudent:teststudent" | chpasswd
 RUN adduser --quiet --disabled-password --shell /bin/bash --home /home/student --gecos "Test instructor" testinstructor
 RUN echo "testinstructor:testinstructor" | chpasswd
 
+RUN adduser --quiet --disabled-password --shell /bin/bash --home /home/student1 --gecos "Student 1" student1
+RUN adduser --quiet --disabled-password --shell /bin/bash --home /home/student2 --gecos "Student 2" student2
+RUN adduser --quiet --disabled-password --shell /bin/bash --home /home/student3 --gecos "Student 3" student3
+RUN echo "student1:passwordA1" | chpasswd
+RUN echo "student2:passwordA1" | chpasswd
+RUN echo "student3:passwordA1" | chpasswd
+
 CMD ["bash", "-c", "/run.sh"]
