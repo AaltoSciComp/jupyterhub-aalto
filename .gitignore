@@ -3,3 +3,5 @@
 .#*#
 adpw.txt
 krb5.keytab
+secrets/*
+
