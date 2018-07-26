@@ -35,11 +35,12 @@ X limit ssh key to only run the init function
 - optional shared coursedata directoryu
 - Set quotas on directories
 - Warn on quotas when logging in
-- Set announcement on page text
+X Set announcement on page text
 - Check zero to jupyterhub security and see what applies to us:
   https://zero-to-jupyterhub.readthedocs.io/en/latest/security.html
 - Separate the teststudent/testinstructor from the Dockerfile so that
   we can publish this git repository publically
+X Run "fix-permissions $CONDA_DIR /home/jovyan" in the image creation
 
 
 Epics:
