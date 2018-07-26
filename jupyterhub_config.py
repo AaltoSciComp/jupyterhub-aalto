@@ -211,7 +211,7 @@ def pre_spawn_hook(spawner):
         # Manually run as uid from outside the container
         spawner.singleuser_uid = uid
         # default of user in docker image (note: not in image kubespawer yet!)
-        #spawner.gid = 100
+        spawner.gid = 70000
         # group 'users' required in order to write config files etc
         spawner.singleuser_supplemental_gids = [100]
     else:
