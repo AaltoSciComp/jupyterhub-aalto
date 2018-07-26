@@ -294,7 +294,7 @@ def pre_spawn_hook(spawner):
             # Instructors get the whole filesystem tree, because they
             # need to be able to access "/course", too.  Warning, you
             # will have different paths!  (fix later...)
-            spawner.default_url = "/notebooks"
+            spawner.default_url = "tree/notebooks"
             spawner.notebook_dir = "/"
             spawner.cpu_limit = 1
             spawner.mem_limit = '2048M'
