@@ -191,6 +191,8 @@ def pre_spawn_hook(spawner):
     spawner.notebook_dir = "/notebooks"
     cmds = [ "source start-notebook.sh" ]  # args added later in KubeSpawner
     # Remove the .jupyter config that is already there
+    cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.bashrc")
+    cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.profile")
     cmds.insert(-1, "mv /home/jovyan/.jupyter/ /home/jovyan/.jupyter2")
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
