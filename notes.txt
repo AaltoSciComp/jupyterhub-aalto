@@ -7,4 +7,8 @@ kubectl describe pod
 kubectl logs jupyterhub-5bd9d4ff6-8qzf2
 kubectl exec -it jupyterhub-5bd9d4ff6-nvc8r bash
 
-docker images
+docker images:
+  hub: ssh to jupyter.cs.aalto.fi and ./docker-build to update h
+  singleuser: currently markus needs to update
+
+to ssh to nodes: ssh manager.cs.aalto.fi and then to node (all as root)
