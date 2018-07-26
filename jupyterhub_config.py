@@ -193,7 +193,9 @@ def pre_spawn_hook(spawner):
     # Remove the .jupyter config that is already there
     cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.bashrc")
     cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.profile")
-    cmds.insert(-1, "mv /home/jovyan/.jupyter/ /home/jovyan/.jupyter2")
+    #cmds.insert(-1, "echo 'pip install https://github.com/rkdarst/nbgrader/archive/live.zip' > /usr/local/bin/update-nbgrader && chmod a+x /usr/local/bin/update-nbgrader")
+    # Fixed in latest base-notebook image.  Remove later:
+    environ["XDG_CACHE_HOME"] = "/home/{}/.cache/".format(username)
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
     c.KubeSpawner.working_dir = '/'
