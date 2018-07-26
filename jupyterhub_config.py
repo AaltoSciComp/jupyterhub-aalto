@@ -89,7 +89,7 @@ GET_COURSES()
 
 # Spawner config
 c.KubeSpawner.start_timeout = 60 * 5
-c.KubeSpawner.singleuser_image_spec = 'fissio/notebook-server:0.1.4'
+c.KubeSpawner.singleuser_image_spec = 'fissio/notebook-server:0.2'
 c.KubeSpawner.hub_connect_ip = host_ip
 c.JupyterHub.hub_connect_ip = c.KubeSpawner.hub_connect_ip
 c.KubeSpawner.hub_connect_port = 80
