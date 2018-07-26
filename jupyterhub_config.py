@@ -274,7 +274,9 @@ def pre_spawn_hook(spawner):
         for line in ['c = get_config()',
                      'c.CourseDirectory.root = "/course"',
                      'c.Exchange.course_id = "{}"'.format(course_slug),
-                     'c.NbGrader.logfile = "/course/.nbgraber.log"']:
+                     'c.NbGrader.logfile = "/course/.nbgraber.log"',
+                     'c.Exchange.multiuser = True',
+                     ]:
             cmds.insert(-1, r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
 
         # Instructors
