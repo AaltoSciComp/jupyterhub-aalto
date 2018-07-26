@@ -222,6 +222,10 @@ def pre_spawn_hook(spawner):
         #environ['GRANT_SUDO'] = 'yes'
         # The default jupyter image will use root access in order to su to the user as defined above.
         spawner.singleuser_uid = 0
+        # Fix permissions.  Uses NB_GID only, and should not run on any NFS filesystems!
+        #cmds.insert(-1, "fix-permissions /home/jovyan")
+        #cmds.insert(-1, "fix-permissions $CONDA_DIR")
+
         # add default user to group 100 for file access. (Required
         # because sudo prevents supplemental_gids from taking effect
         # after the sudo).  The "jovyan" user is renamed to $NB_USER
