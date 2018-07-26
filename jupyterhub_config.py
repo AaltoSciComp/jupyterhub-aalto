@@ -241,6 +241,8 @@ def pre_spawn_hook(spawner):
         course_data = GET_COURSES()[course_slug]
         #filename = "/courses/{}.yaml".format(course_slug)
         #course_data = yaml.load(open(filename))
+        if 'image' in course_data:
+            spawner.singleuser_image_spec = course_data['image']
         spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
 
         # Make a copy of the *default* class volumes.  The "spawner" object
@@ -292,6 +294,8 @@ def pre_spawn_hook(spawner):
             spawner.mem_limit = '2048M'
             spawner.cpu_guarantee = .5
             spawner.mem_guarantee = '512M'
+            if 'image_instructor' in course_data:
+                spawner.singleuser_image_spec = course_data['image_instructor']
             spawner.volumes.append({
                 "name": "course",
                 "nfs": {
