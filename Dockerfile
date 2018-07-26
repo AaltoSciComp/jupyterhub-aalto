@@ -1,4 +1,4 @@
-FROM jupyterhub/jupyterhub:0.9
+FROM jupyterhub/jupyterhub:0.9.1
 
 # Install dependencies
 
