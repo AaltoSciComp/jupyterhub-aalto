@@ -267,12 +267,12 @@ def pre_spawn_hook(spawner):
         # /srv/nbgrader/exchange is the default path
         spawner.volume_mounts.append({ "mountPath": "/srv/nbgrader/exchange", "name": "exchange" })
         # Add course shared data, if it exists
-        if os.path.exists("/courses/coursedata/{}".format(course_slug)):
+        if os.path.exists("/coursedata/{}".format(course_slug)):
             spawner.volumes.append({
                 "name": "coursedata",
                 "nfs": {
                     "server": "jhnas.org.aalto.fi",
-                    "path": "/vol/jupyter/course/coursedata/{}".format(course_slug)
+                    "path": "/vol/jupyter/coursedata/{}".format(course_slug)
                 }
             })
             spawner.volume_mounts.append({ "mountPath": "/coursedata", "name": "coursedata", "readOnly": True })

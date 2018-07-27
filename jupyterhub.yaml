@@ -28,8 +28,10 @@ spec:
         - name: jupyterhub-config
           mountPath: /srv/jupyterhub/jupyterhub_config.py
           subPath: jupyterhub_config.py
-        - name: course-list
+        - name: jupyterhub-course-list
           mountPath: /courses/
+        - name: jupyterhub-coursedata
+          mountPath: /coursedata/
         - name: adpw
           mountPath: /etc/adpw.txt
           subPath: adpw.txt
@@ -47,10 +49,14 @@ spec:
       - name: jupyterhub-config
         configMap:
           name: jupyterhub-config
-      - name: course-list
+      - name: jupyterhub-course-list
         nfs:
           server: jhnas.org.aalto.fi
           path: /vol/jupyter/course/
+      - name: jupyterhub-coursedata
+        nfs:
+          server: jhnas.org.aalto.fi
+          path: /vol/jupyter/coursedata/
       - name: adpw
         secret:
           secretName: adpw.txt
