@@ -89,7 +89,7 @@ GET_COURSES()
 
 # Spawner config
 c.KubeSpawner.start_timeout = 60 * 5
-c.KubeSpawner.singleuser_image_spec = 'fissio/notebook-server:0.2'
+c.KubeSpawner.image_spec = 'fissio/notebook-server:0.2.1'
 c.KubeSpawner.hub_connect_ip = host_ip
 c.JupyterHub.hub_connect_ip = c.KubeSpawner.hub_connect_ip
 c.KubeSpawner.hub_connect_port = 80
@@ -248,7 +248,7 @@ def pre_spawn_hook(spawner):
         #filename = "/courses/{}.yaml".format(course_slug)
         #course_data = yaml.load(open(filename))
         if 'image' in course_data:
-            spawner.singleuser_image_spec = course_data['image']
+            spawner.image_spec = course_data['image']
         spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
 
         # Make a copy of the *default* class volumes.  The "spawner" object
@@ -301,7 +301,7 @@ def pre_spawn_hook(spawner):
             spawner.cpu_guarantee = .5
             spawner.mem_guarantee = '512M'
             if 'image_instructor' in course_data:
-                spawner.singleuser_image_spec = course_data['image_instructor']
+                spawner.image_spec = course_data['image_instructor']
             spawner.volumes.append({
                 "name": "course",
                 "nfs": {
