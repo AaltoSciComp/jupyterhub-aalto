@@ -41,6 +41,10 @@ X Set announcement on page text
   we can publish this git repository publically
 X Run "fix-permissions $CONDA_DIR /home/jovyan" in the image creation
 - Investigate NFS uid/gids and figure out why it does not work.
+- Security of autograding
+  - check kernel swapping when executing
+  - remote mount the assignment files
+  - run in isolated environment
 - 
 
 Epics:
