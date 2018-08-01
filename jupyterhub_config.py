@@ -282,7 +282,6 @@ def pre_spawn_hook(spawner):
         for line in ['c = get_config()',
                      'c.CourseDirectory.root = "/course"',
                      'c.Exchange.course_id = "{}"'.format(course_slug),
-                     'c.NbGrader.logfile = "/course/.nbgraber.log"',
                      'c.Exchange.multiuser = True',
                      ]:
             cmds.insert(-1, r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
@@ -300,6 +299,9 @@ def pre_spawn_hook(spawner):
             spawner.mem_limit = '2048M'
             spawner.cpu_guarantee = .5
             spawner.mem_guarantee = '512M'
+            for line in ['c.NbGrader.logfile = "/course/.nbgraber.log"',
+                        ]:
+                cmds.insert(-1, r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
             if 'image_instructor' in course_data:
                 spawner.image_spec = course_data['image_instructor']
             spawner.volumes.append({
