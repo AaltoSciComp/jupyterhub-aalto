@@ -193,7 +193,7 @@ def pre_spawn_hook(spawner):
     # Remove the .jupyter config that is already there
     cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.bashrc")
     cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.profile")
-    #cmds.insert(-1, "echo 'pip install https://github.com/rkdarst/nbgrader/archive/live.zip' > /usr/local/bin/update-nbgrader && chmod a+x /usr/local/bin/update-nbgrader")
+    #cmds.insert(-1, "pip install --upgrade --no-deps https://github.com/rkdarst/nbgrader/archive/live.zip")
     # Fixed in latest base-notebook image.  Remove later:
     environ["XDG_CACHE_HOME"] = "/home/{}/.cache/".format(username)
 
