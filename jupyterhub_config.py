@@ -313,6 +313,7 @@ def pre_spawn_hook(spawner):
             })
             spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
             course_gid = os.stat('/courses/{}'.format(course_slug)).st_gid
+            spawner.log.debug("Course gid for {} is {}".format(course_slug, course_gid))
             if 'NB_UID' in environ:
                 # This branch happens only if we are root (see above)
                 environ['NB_GID'] = str(course_gid)
@@ -336,6 +337,7 @@ def pre_spawn_hook(spawner):
         if not allow_spawn and course_data.get('private', False):
             raise RuntimeError("You ({}) are not allowed to use the {} environment".format(username, course_slug))
 
+    print(vars(spawner.__dict__))
     # Common final setup
     spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
 
