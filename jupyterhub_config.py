@@ -89,13 +89,13 @@ GET_COURSES()
 
 # Spawner config
 c.KubeSpawner.start_timeout = 60 * 5
-c.KubeSpawner.image_spec = 'fissio/notebook-server:0.2.1'
+c.KubeSpawner.image_spec = 'aaltoscienceit/notebook-server:0.2.6'
 c.KubeSpawner.hub_connect_ip = host_ip
 c.JupyterHub.hub_connect_ip = c.KubeSpawner.hub_connect_ip
 c.KubeSpawner.hub_connect_port = 80
 c.KubeSpawner.http_timeout = 60 * 5
 c.KubeSpawner.disable_user_config = True
-c.KubeSpawner.default_url = "/notebooks"
+c.KubeSpawner.default_url = "tree/notebooks"
 c.KubeSpawner.notebook_dir = "/"
 
 # Volume mounts
