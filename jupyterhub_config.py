@@ -211,9 +211,9 @@ def pre_spawn_hook(spawner):
         # Manually run as uid from outside the container
         spawner.singleuser_uid = uid
         # default of user in docker image (note: not in image kubespawer yet!)
-        spawner.gid = 70000
+        spawner.gid = spawner.fs_gid = 70000
         # group 'users' required in order to write config files etc
-        spawner.singleuser_supplemental_gids = [100]
+        spawner.supplemental_gids = [70000, 100]
     else:
         # To do this, you should have /home/$username exist...
         environ['NB_USER'] = username
@@ -326,7 +326,8 @@ def pre_spawn_hook(spawner):
                 cmds.insert(-1, "groupadd --gid 100 --non-unique users")
                 cmds.insert(-1, "adduser jovyan users")
             else:
-                spawner.singleuser_supplemental_gids.append(course_gid)
+                spawner.gid = spawner.fs_gid = course_gid
+                spawner.supplemental_gids.insert(0, course_gid)
         else:
             cmds.insert(-1, "disable_formgrader.sh")
 
