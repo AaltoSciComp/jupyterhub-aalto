@@ -45,7 +45,7 @@ X Run "fix-permissions $CONDA_DIR /home/jovyan" in the image creation
   - check kernel swapping when executing
   - remote mount the assignment files
   - run in isolated environment
-- 
+- Security: do we log everything sufficiently?
 
 Epics:
 X create single user imeage
