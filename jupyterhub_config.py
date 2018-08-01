@@ -7,9 +7,6 @@ import sys
 import time
 import yaml
 
-# Add new users (should be idempotent)
-os.system('bash -x /etc/localusers.sh')
-
 c.Application.log_level = 'DEBUG'
 
 # Basic JupyterHub config
