@@ -1,4 +1,6 @@
-cat /etc/adpw.txt | join_ad.sh
+echo "Begin jupyterhub logs"
+source /etc/localusers.sh        # k8s mounted secret
+cat /etc/adpw.txt | join_ad.sh   # k8s mounted secret
 service sssd start
 tries=0
 while true;

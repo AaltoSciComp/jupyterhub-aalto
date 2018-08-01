@@ -38,17 +38,4 @@ RUN chmod +x /cull_idle_servers.py
 
 RUN mkdir /courses
 
-RUN groupadd -r -g 1100 teststudent && adduser --uid 1100 --gid 1100 --quiet --disabled-password --shell /bin/bash --no-create-home --gecos "Test student,,," teststudent
-RUN echo "teststudent:teststudent" | chpasswd
-
-RUN groupadd -r -g 1101 testinstructor && adduser --uid 1101 --gid 1101 --quiet --disabled-password --shell /bin/bash --no-create-home --gecos "Test instructor,,," testinstructor
-RUN echo "testinstructor:testinstructor" | chpasswd
-
-RUN groupadd -r -g 1102 student1 && adduser --uid 1102 --gid 1102 --quiet --disabled-password --shell /bin/bash --no-create-home --gecos "Student 1,,," student1
-RUN groupadd -r -g 1103 student2 && adduser --uid 1103 --gid 1103 --quiet --disabled-password --shell /bin/bash --no-create-home --gecos "Student 2,,," student2
-RUN groupadd -r -g 1104 student3 && adduser --uid 1104 --gid 1104 --quiet --disabled-password --shell /bin/bash --no-create-home --gecos "Student 3,,," student3
-RUN echo "student1:passwordA1" | chpasswd
-RUN echo "student2:passwordA1" | chpasswd
-RUN echo "student3:passwordA1" | chpasswd
-
 CMD ["bash", "-c", "/run.sh"]

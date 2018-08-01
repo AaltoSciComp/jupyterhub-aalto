@@ -36,6 +36,10 @@ spec:
           mountPath: /etc/adpw.txt
           subPath: adpw.txt
           readOnly: true
+        - name: localusers
+          mountPath: /etc/localusers.sh
+          subPath: localusers.sh
+          readOnly: true
         imagePullPolicy: Never
       tolerations:
       - key: jupyterhub
@@ -60,6 +64,9 @@ spec:
       - name: adpw
         secret:
           secretName: adpw.txt
+      - name: localusers
+        secret:
+          secretName: localusers
       nodeSelector:
         app: jupyterhub
       serviceAccountName: jupyter-notebook-spawner
