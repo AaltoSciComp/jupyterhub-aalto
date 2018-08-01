@@ -7,7 +7,7 @@ RUN pip install jupyter
 RUN pip install pyyaml
 
 # kube-spawner
-RUN pip install https://github.com/jupyterhub/kubespawner/archive/66b6d6a.tar.gz
+RUN pip install https://github.com/jupyterhub/kubespawner/archive/27056a7.tar.gz
 
 # nbgrader & enable it
 RUN pip install git+https://github.com/rkdarst/nbgrader@live
