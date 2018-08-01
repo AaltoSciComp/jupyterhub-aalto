@@ -187,8 +187,6 @@ def pre_spawn_hook(spawner):
     # Set basic spawner properties
     #storage_capacity = ???
     spawner.environment = environ = { }  # override env
-    spawner.default_url = ""
-    spawner.notebook_dir = "/notebooks"
     cmds = [ "source start-notebook.sh" ]  # args added later in KubeSpawner
     # Remove the .jupyter config that is already there
     cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.bashrc")
@@ -293,8 +291,6 @@ def pre_spawn_hook(spawner):
             # Instructors get the whole filesystem tree, because they
             # need to be able to access "/course", too.  Warning, you
             # will have different paths!  (fix later...)
-            spawner.default_url = "tree/notebooks"
-            spawner.notebook_dir = "/"
             spawner.cpu_limit = 1
             spawner.mem_limit = '2048M'
             spawner.cpu_guarantee = .5
