@@ -228,7 +228,7 @@ def pre_spawn_hook(spawner):
         # because sudo prevents supplemental_gids from taking effect
         # after the sudo).  The "jovyan" user is renamed to $NB_USER
         # on startup.
-        cmds.insert(-1, "adduser jovyan users")
+        #cmds.insert(-1, "adduser jovyan users")
 
     create_user_dir(username, uid) # TODO: Define path / server / type in yaml?
     #cmds.insert(-1, r'echo "if [ \"\$SHLVL\" = 1 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.profile')
@@ -313,14 +313,15 @@ def pre_spawn_hook(spawner):
             if 'NB_UID' in environ:
                 # This branch happens only if we are root (see above)
                 environ['NB_GID'] = str(course_gid)
+                environ['NB_GROUP'] = 'jupyter-'+course_slug
                 # The start.sh script renumbers the default group 100 to $NB_GID.  We rename it first.
-                cmds.insert(-1, "groupmod -n {} users".format('jupyter-'+course_slug))
+                #cmds.insert(-1, "groupmod -n {} users".format('jupyter-'+course_slug))
                 # We *need* to be in group 100, because a lot of the
                 # default files (conda, etc) are group=rw=100.  We add
                 # a *duplicate* group 100, and only the first one is
                 # renamed in the image (in the jupyter start.sh)
-                cmds.insert(-1, "groupadd --gid 100 --non-unique users")
-                cmds.insert(-1, "adduser jovyan users")
+                #cmds.insert(-1, "groupadd --gid 100 --non-unique users")
+                #cmds.insert(-1, "adduser jovyan users")
             else:
                 spawner.gid = spawner.fs_gid = course_gid
                 spawner.supplemental_gids.insert(0, course_gid)
@@ -334,7 +335,7 @@ def pre_spawn_hook(spawner):
         if not allow_spawn and course_data.get('private', False):
             raise RuntimeError("You ({}) are not allowed to use the {} environment".format(username, course_slug))
 
-    print(vars(spawner.__dict__))
+    print(vars(spawner))
     # Common final setup
     spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
 
