@@ -192,8 +192,6 @@ def pre_spawn_hook(spawner):
     cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.bashrc")
     cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.profile")
     #cmds.insert(-1, "pip install --upgrade --no-deps https://github.com/rkdarst/nbgrader/archive/live.zip")
-    # Fixed in latest base-notebook image.  Remove later:
-    environ["XDG_CACHE_HOME"] = "/home/{}/.cache/".format(username)
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
     c.KubeSpawner.working_dir = '/'
