@@ -89,7 +89,7 @@ GET_COURSES()
 
 # Spawner config
 c.KubeSpawner.start_timeout = 60 * 5
-c.KubeSpawner.image_spec = 'aaltoscienceit/notebook-server:0.2.6'
+c.KubeSpawner.image_spec = 'aaltoscienceit/notebook-server:0.2.7'
 c.KubeSpawner.hub_connect_ip = host_ip
 c.JupyterHub.hub_connect_ip = c.KubeSpawner.hub_connect_ip
 c.KubeSpawner.hub_connect_port = 80
@@ -189,8 +189,8 @@ def pre_spawn_hook(spawner):
     spawner.environment = environ = { }  # override env
     cmds = [ "source start-notebook.sh" ]  # args added later in KubeSpawner
     # Remove the .jupyter config that is already there
-    cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.bashrc")
-    cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.profile")
+    #cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.bashrc")
+    #cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.profile")
     #cmds.insert(-1, "pip install --upgrade --no-deps https://github.com/rkdarst/nbgrader/archive/live.zip")
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
@@ -230,7 +230,7 @@ def pre_spawn_hook(spawner):
 
     create_user_dir(username, uid) # TODO: Define path / server / type in yaml?
     #cmds.insert(-1, r'echo "if [ \"\$SHLVL\" = 1 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.profile')
-    cmds.insert(-1, r'echo "if [ \"\$SHLVL\" = 1 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.bashrc')
+    cmds.insert(-1, r'echo "if [ \"\$SHLVL\" = 1 -a \( \"\$PWD\" = \"\$HOME\" -o \"\$PWD\" = / \)  ] ; then cd /notebooks ; fi" >> /home/jovyan/.bashrc')
 
     course_slug = spawner.course_slug
     # We are not part of a course, so do only generic stuff
@@ -308,6 +308,7 @@ def pre_spawn_hook(spawner):
             spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
             course_gid = os.stat('/courses/{}'.format(course_slug)).st_gid
             spawner.log.debug("Course gid for {} is {}".format(course_slug, course_gid))
+            cmds.insert(-1, r"umask 0007")  # also used through sudo
             if 'NB_UID' in environ:
                 # This branch happens only if we are root (see above)
                 environ['NB_GID'] = str(course_gid)
@@ -320,9 +321,15 @@ def pre_spawn_hook(spawner):
                 # renamed in the image (in the jupyter start.sh)
                 #cmds.insert(-1, "groupadd --gid 100 --non-unique users")
                 #cmds.insert(-1, "adduser jovyan users")
+                cmds.insert(-1, r"sed -r -i 's/^(UMASK.*)022/\1007/' /etc/login.defs")
+                cmds.insert(-1, r"echo Defaults umask=0007, umask_override >> /etc/sudoers")
+                #cmds.insert(-1, r"{{ test ! -e /course/gradebook.db && sudo -u nobody touch /course/gradebook.db && chown {} /course/gradebook.db && chmod 660 /course/gradebook.db ; true ; }}".format(username))  # {{ and }} escape .format()
+                environ['NB_PRE_START_HOOK'] =  r"set -x ; sudo -u {username} bash -c 'set -x ; test ! -e /course/gradebook.db && touch /course/gradebook.db && chmod 660 /course/gradebook.db || true ;'".format(username=username)  # {{ and }} escape .format()
             else:
                 spawner.gid = spawner.fs_gid = course_gid
                 spawner.supplemental_gids.insert(0, course_gid)
+                cmds.insert(-1, r"test ! -e /course/gradebook.db && touch /course/gradebook.db && chmod 660 /course/gradebook.db || true")
+                # umask 0007 inserted above
         else:
             cmds.insert(-1, "disable_formgrader.sh")
 
