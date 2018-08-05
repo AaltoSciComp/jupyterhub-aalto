@@ -14,4 +14,4 @@ docker images:
 to ssh to nodes: ssh manager.cs.aalto.fi and then to node (all as root)
 
 Parallel shell across nodes:
-  pdsh -R ssh -w jupyter-k8s-node[1-4].cs.aalto.fi 'docker pull fissio/notebook-server:0.2'
+  pdsh -R ssh -w jupyter-k8s-node[1-4].cs.aalto.fi 'docker pull aaltoscienceit/notebook-server:0.3.0'
