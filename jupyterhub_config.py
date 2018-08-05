@@ -21,7 +21,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(("8.8.8.8", 80))
 host_ip = s.getsockname()[0]
 s.close()
-c.Authenticator.admin_users = {'darstr1', 'murhum1'}
+c.Authenticator.admin_users = {'darstr1', }
 c.JupyterHub.cleanup_servers = False  # leave servers running if hub restarts
 c.JupyterHub.template_paths = ["/srv/jupyterhub/templates/"]
 
@@ -215,6 +215,7 @@ def pre_spawn_hook(spawner):
         environ['NB_USER'] = username
         environ['NB_UID'] = str(uid)
         environ['NB_GID'] = '70000'
+        environ['NB_GROUP'] = 'domain-users'
         #environ['GRANT_SUDO'] = 'yes'
         # The default jupyter image will use root access in order to su to the user as defined above.
         spawner.singleuser_uid = 0

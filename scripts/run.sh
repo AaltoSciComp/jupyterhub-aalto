@@ -5,7 +5,7 @@ service sssd start
 tries=0
 while true;
 do
-  id murhum1
+  id darstr1
   if [ $? -eq 0 ]; then
     break;
   fi
