@@ -280,8 +280,15 @@ def pre_spawn_hook(spawner):
                      'c.CourseDirectory.root = "/course"',
                      'c.Exchange.course_id = "{}"'.format(course_slug),
                      'c.Exchange.multiuser = True',
+                     'c.Exchange.groupshared = True',
+                     'c.BaseConverter.groupshared = True',
+                     'c.Exchange.assignment_dir = "/notebooks/"',
+                     'c.AssignmentList.assignment_dir = "/notebooks/"',
                      ]:
             cmds.insert(-1, r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
+        for line in ['c.AssignmentList.assignment_dir = "/notebooks/"',
+                     ]:
+            cmds.insert(-1, r"echo '{}' >> /etc/jupyter/jupyter_notebook_config.py".format(line))
 
         # Instructors
         allow_spawn = False
