@@ -6,6 +6,7 @@ metadata:
 spec:
   selector:
     app: jupyterhub
+  clusterIP: "10.104.184.130"
   ports:
   - protocol: TCP
     port: 80
