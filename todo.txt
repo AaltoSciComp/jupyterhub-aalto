@@ -46,6 +46,7 @@ X Run "fix-permissions $CONDA_DIR /home/jovyan" in the image creation
   - remote mount the assignment files
   - run in isolated environment
 - Security: do we log everything sufficiently?
+X Solve mysteriously disappearing server problem
 
 Epics:
 X create single user imeage

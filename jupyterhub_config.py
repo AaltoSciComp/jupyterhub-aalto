@@ -10,12 +10,10 @@ import yaml
 c.Application.log_level = 'DEBUG'
 
 # Basic JupyterHub config
-c.JupyterHub.ip = '0.0.0.0'
-c.JupyterHub.port = 8000
+c.JupyterHub.bind_url = 'http://:8000'
 c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
 c.JupyterHub.cleanup_servers = False
-c.JupyterHub.hub_ip = '0.0.0.0'
-c.JupyterHub.hub_port = 8081
+c.JupyterHub.hub_bind_url = 'http://0.0.0.0:8081'
 # Find our IP
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(("8.8.8.8", 80))
@@ -90,9 +88,9 @@ GET_COURSES()
 # Spawner config
 c.KubeSpawner.start_timeout = 60 * 5
 c.KubeSpawner.image_spec = 'aaltoscienceit/notebook-server:0.3.1'
-c.KubeSpawner.hub_connect_ip = host_ip
-c.JupyterHub.hub_connect_ip = c.KubeSpawner.hub_connect_ip
-c.KubeSpawner.hub_connect_port = 80
+#c.KubeSpawner.hub_connect_ip = "jupyter-svc.default"
+c.JupyterHub.hub_connect_ip = os.environ['JUPYTERHUB_SVC_SERVICE_HOST']
+c.KubeSpawner.hub_connect_port = 8081
 c.KubeSpawner.http_timeout = 60 * 5
 c.KubeSpawner.disable_user_config = True
 c.KubeSpawner.default_url = "tree/notebooks"

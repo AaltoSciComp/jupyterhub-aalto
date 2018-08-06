@@ -22,6 +22,7 @@ spec:
         image: jupyterhub-cs
         ports:
         - containerPort: 8000
+        - containerPort: 8081
         volumeMounts:
         - name: jupyterhub-hubdata
           mountPath: /srv/jupyterhub/
