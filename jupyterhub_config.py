@@ -97,6 +97,7 @@ c.KubeSpawner.http_timeout = 60 * 5
 c.KubeSpawner.disable_user_config = True
 c.KubeSpawner.default_url = "tree/notebooks"
 c.KubeSpawner.notebook_dir = "/"
+c.KubeSpawner.common_labels = { "app": "notebook-server" }
 
 # Volume mounts
 DEFAULT_VOLUMES = [
