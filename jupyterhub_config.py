@@ -345,13 +345,13 @@ def pre_spawn_hook(spawner):
             allow_spawn = True
 
         if not allow_spawn and course_data.get('private', False):
-            raise RuntimeError("You ({}) are not allowed to use the {} environment".format(username, course_slug))
+            raise RuntimeError("You ({}) are not allowed to use the {} environment.  Please contact the course instructors".format(username, course_slug))
 
-    print(vars(spawner))
+    #print(vars(spawner))
     # Common final setup
     spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
 
-    
+
 c.KubeSpawner.pre_spawn_hook = pre_spawn_hook
 
 # Culler service
