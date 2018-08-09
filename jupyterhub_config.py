@@ -1,3 +1,4 @@
+import copy
 import glob
 import os
 import pwd # for resolving username --> uid
@@ -142,14 +143,18 @@ c.KubeSpawner.mem_guarantee = '256M'
 def get_profile_list(spawner):
     #c.JupyterHub.log.debug("Recreating profile list")
     PROFILE_LIST = [
-        {'display_name': 'Generic (for anyone to use)',
+        {'display_name': 'General use + JupyterLab',
          'default': True,
          'kubespawner_override': {
              # if callable is here, set spawner.k = v(spawner)
              'course_slug': '',
+             'default_url': "lab/tree/notebooks",
          }
         }
     ]
+    PROFILE_LIST.append(copy.deepcopy(PROFILE_LIST[0]))
+    PROFILE_LIST[0]['display_name'] = 'General use'
+    del PROFILE_LIST[0]['kubespawner_override']['default_url']
     PROFILE_LIST.extend([{
         'display_name': course_data.get('name', course_slug),
         'kubespawner_override': {
