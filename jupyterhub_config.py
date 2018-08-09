@@ -296,7 +296,9 @@ def pre_spawn_hook(spawner):
                     "path": "/vol/jupyter/coursedata/{}".format(course_slug)
                 }
             })
-            spawner.volume_mounts.append({ "mountPath": "/coursedata", "name": "coursedata", "readOnly": True })
+            spawner.volume_mounts.append({"mountPath": "/coursedata",
+                                          "name": "coursedata",
+                                          "readOnly": username not in course_data.get('instructors', {})})
 
 
         # Jupyter/nbgrader config
