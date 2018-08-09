@@ -282,7 +282,11 @@ def pre_spawn_hook(spawner):
             }
         })
         # /srv/nbgrader/exchange is the default path
-        spawner.volume_mounts.append({ "mountPath": "/srv/nbgrader/exchange", "name": "exchange" })
+        exchange_readonly = course_data.get('restrict_submit', False) and 'username' not in course_data.get('students', {})
+                                                                      and 'username' not in course_data.get('instructors', {})
+        spawner.volume_mounts.append({"mountPath": "/srv/nbgrader/exchange",
+                                      "name": "exchange",
+                                      "readOnly": exchange_readonly})
         # Add course shared data, if it exists
         if os.path.exists("/coursedata/{}".format(course_slug)):
             spawner.volumes.append({
