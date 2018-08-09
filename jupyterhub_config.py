@@ -341,6 +341,8 @@ def pre_spawn_hook(spawner):
             })
             spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
             course_gid = os.stat('/courses/{}'.format(course_slug)).st_gid
+            if 'gid' in course_data:
+                course_gid = int(course_data['gid'])
             spawner.log.debug("Course gid for {} is {}".format(course_slug, course_gid))
             cmds.insert(-1, r"umask 0007")  # also used through sudo
             if 'NB_UID' in environ:
