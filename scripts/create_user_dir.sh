@@ -23,6 +23,8 @@ if echo "$username" | egrep -v '^[a-z0-9]+$' ; then
     exit 2
 fi
 
+touch "/mnt/jupyter/admin/lastlogin/$username"
+
 # Get uid from PAM, but if that fails then use the supplied uid (for
 # local users).
 uid=$(id -u $username)
