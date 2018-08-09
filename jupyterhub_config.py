@@ -1,5 +1,6 @@
 import copy
 import glob
+import grp
 import os
 import pwd # for resolving username --> uid
 import re
@@ -69,18 +70,33 @@ def GET_COURSES():
     COURSES_TS = time.time()
     #c.JupyterHub.log.debug("Re-generating course data")
     courses = { }
+    # First round: load raw data with users and so on.
     for course_file in glob.glob(os.path.join(METADIR, '*.yaml')):
+        #print("X"*10, "course file", course_file, file=sys.stderr)
         course_slug = os.path.splitext(os.path.basename(course_file))[0]
         if course_slug.endswith('-users'):
             course_slug = course_slug[:-6]
         course_data = yaml.load(open(course_file))
+        #print(course_slug, course_data, file=sys.stderr)
         if course_slug not in courses:
             courses[course_slug] = { }
+        if 'instructors' in course_data: course_data['instructors'] = set(course_data['instructors'])
+        if 'students'    in course_data: course_data['students']    = set(course_data['students'])
         courses[course_slug].update(course_data)
-        #for username in course_data.get('students', []):
-        #    c.Authenticator.whitelist.add(username)
-        #for username in course_data.get('instructors', []):
-        #    c.Authenticator.whitelist.add(username)
+        #print(course_slug, course_data, file=sys.stderr)
+
+    # Second round: make the data consistent, add GIDs, etc.
+    for course_slug, course_data in courses.items():
+        try:
+            if 'gid' not in course_data:
+                print(grp.getgrnam('jupyter-'+course_slug).gr_gid, file=sys.stderr)
+                course_data['gid'] = grp.getgrnam('jupyter-'+course_slug).gr_gid
+            #print(grp.getgrnam('jupyter-'+course_slug), file=sys.stderr)
+            course_data['instructors'] |= set(grp.getgrnam('jupyter-'+course_slug).gr_mem)
+        except KeyError:
+            print("ERROR: group {} can not look up group info".format(course_slug), file=sys.stderr)
+        #print(course_slug, course_data, file=sys.stderr)
+
     COURSES = courses
     return COURSES
 GET_COURSES()
