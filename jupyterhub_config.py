@@ -169,8 +169,9 @@ def get_profile_list(spawner):
         }
     ]
     PROFILE_LIST.append(copy.deepcopy(PROFILE_LIST[0]))
-    PROFILE_LIST[0]['display_name'] = 'General use'
-    del PROFILE_LIST[0]['kubespawner_override']['default_url']
+    PROFILE_LIST[-1]['display_name'] = 'General use'
+    del PROFILE_LIST[-1]['default']
+    del PROFILE_LIST[-1]['kubespawner_override']['default_url']
     PROFILE_LIST.extend([{
         'display_name': course_data.get('name', course_slug),
         'kubespawner_override': {
