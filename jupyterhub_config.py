@@ -377,8 +377,14 @@ def pre_spawn_hook(spawner):
         if not allow_spawn and course_data.get('private', False):
             raise RuntimeError("You ({}) are not allowed to use the {} environment.  Please contact the course instructors".format(username, course_slug))
 
-    #print(vars(spawner))
+    # User- and course-specific hooks
+    if os.path.exists('/srv/jupyterhub/hooks-user/{}.py'.format(username)):
+        exec(open('/srv/jupyterhub/hooks-user/{}.py'.format(username)).read())
+    if course_slug and os.path.exists('/srv/jupyterhub/hooks-course/{}.py'.format(course_slug)):
+        exec(open('/srv/jupyterhub/hooks-course/{}.py'.format(course_slug)).read())
+
     # Common final setup
+    #print(vars(spawner))
     spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
 
 
