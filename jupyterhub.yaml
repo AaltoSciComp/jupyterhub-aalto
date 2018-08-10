@@ -61,7 +61,7 @@ spec:
       - name: jupyterhub-coursedata
         nfs:
           server: jhnas.org.aalto.fi
-          path: /vol/jupyter/coursedata/
+          path: /vol/jupyter/course/coursedata/
       - name: adpw
         secret:
           secretName: adpw.txt

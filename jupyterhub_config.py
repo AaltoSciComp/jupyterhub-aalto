@@ -293,7 +293,7 @@ def pre_spawn_hook(spawner):
                 "name": "coursedata",
                 "nfs": {
                     "server": "jhnas.org.aalto.fi",
-                    "path": "/vol/jupyter/coursedata/{}".format(course_slug)
+                    "path": "/vol/jupyter/course/coursedata/{}".format(course_slug)
                 }
             })
             spawner.volume_mounts.append({"mountPath": "/coursedata",
