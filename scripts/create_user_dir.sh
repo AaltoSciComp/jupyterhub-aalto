@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e  # exit immediately on any command failing
 set -x  # debugging
 
 # Place this in ssh/authorised_keys with this key:
@@ -27,10 +28,12 @@ touch "/mnt/jupyter/admin/lastlogin/$username"
 
 # Get uid from PAM, but if that fails then use the supplied uid (for
 # local users).
+set +e
 uid=$(id -u $username)
 if [ -z "$uid" ] ; then
   uid="$2"
 fi
+set -e
 
 dir_name="/mnt/jupyter/u/$username"
 default_group=70000
