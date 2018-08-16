@@ -31,13 +31,13 @@ X limit ssh key to only run the init function
   enough CPU and memory?
 - Check actual CPU/mem usage and adjust limits
 - How do we monitor memory and processor usage of the pods and nodes?
-- Quotas of the NFS user spaces
+X Quotas of the NFS user spaces
 - Warn on quotas when logging in
-- optional shared coursedata directoryu
+X optional shared coursedata directoryu
 X Set announcement on page text
 - Check zero to jupyterhub security and see what applies to us:
   https://zero-to-jupyterhub.readthedocs.io/en/latest/security.html
-- Separate the teststudent/testinstructor from the Dockerfile so that
+X Separate the teststudent/testinstructor from the Dockerfile so that
   we can publish this git repository publically
 X Run "fix-permissions $CONDA_DIR /home/jovyan" in the image creation
 - Investigate NFS uid/gids and figure out why it does not work.
