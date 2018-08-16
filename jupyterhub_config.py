@@ -104,7 +104,7 @@ GET_COURSES()
 
 # Spawner config
 c.KubeSpawner.start_timeout = 60 * 5
-c.KubeSpawner.image_spec = 'aaltoscienceit/notebook-server:0.3.1'
+c.KubeSpawner.image_spec = 'aaltoscienceit/notebook-server:0.3.2'
 #c.KubeSpawner.hub_connect_ip = "jupyter-svc.default"
 c.JupyterHub.hub_connect_ip = os.environ['JUPYTERHUB_SVC_SERVICE_HOST']
 c.KubeSpawner.hub_connect_port = 8081
