@@ -1,4 +1,5 @@
 echo "Begin jupyterhub logs"
+set -x
 source /etc/localusers.sh        # k8s mounted secret
 cat /etc/adpw.txt | join_ad.sh   # k8s mounted secret
 service sssd start
