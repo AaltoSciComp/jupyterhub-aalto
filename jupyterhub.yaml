@@ -24,8 +24,8 @@ spec:
 #        - containerPort: 8000
         - containerPort: 8081
         env:
-        - name: NO_AD_JOIN
-          value: "true"
+#        - name: NO_AD_JOIN
+#          value: "true"
         - name: CONFIGPROXY_AUTH_TOKEN
           valueFrom:
             secretKeyRef:
