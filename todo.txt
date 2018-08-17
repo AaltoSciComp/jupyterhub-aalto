@@ -42,11 +42,11 @@ X Set announcement on page text
 X Separate the teststudent/testinstructor from the Dockerfile so that
   we can publish this git repository publically
 X Run "fix-permissions $CONDA_DIR /home/jovyan" in the image creation
-- Investigate NFS uid/gids and figure out why it does not work.
+X Investigate NFS uid/gids and figure out why it does not work.
 - Security of autograding
-  - check kernel swapping when executing
-  - remote mount the assignment files
-  - run in isolated environment
+  X check kernel swapping when executing
+  X remote mount the assignment files
+  X run in isolated environment
 - Security: do we log everything sufficiently?
 X Solve mysteriously disappearing server problem
 
