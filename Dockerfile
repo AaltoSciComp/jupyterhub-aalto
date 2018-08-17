@@ -16,15 +16,15 @@ RUN jupyter nbextension enable --sys-prefix --py nbgrader
 RUN jupyter serverextension enable --sys-prefix --py nbgrader
 
 # Enable SSH stuff
-COPY files/known_hosts /root/.ssh/known_hosts
-COPY files/id_rsa_hub /root/.ssh/id_rsa
+COPY secrets/known_hosts /root/.ssh/known_hosts
+COPY fecrets/id_rsa_hub /root/.ssh/id_rsa
 RUN chmod go-rwx /root/.ssh/*
 
 # Enable aalto domain join
 RUN apt-get update && apt-get install -y adcli sssd sssd-krb5 krb5-config sssd-ldap sssd-ad libpam-sss
-COPY files/krb5.conf /etc/krb5.conf
-COPY files/krb5.keytab /etc/krb5.keytab
-COPY files/sssd.conf /etc/sssd/sssd.conf
+COPY secrets/krb5.conf /etc/krb5.conf
+COPY secrets/krb5.keytab /etc/krb5.keytab
+COPY secrets/sssd.conf /etc/sssd/sssd.conf
 RUN chmod 600 /etc/sssd/sssd.conf
 
 COPY scripts/join_ad.sh /usr/local/bin/join_ad.sh

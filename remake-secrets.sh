@@ -11,9 +11,9 @@ kubectl delete secret chp-secret
 kubectl create secret generic chp-secret --from-file=secrets/chp-secret.txt
 
 kubectl delete secret idrsa
-kubectl create secret generic idrsa --from-file=secrets/id_rsa
+kubectl create secret generic idrsa --from-file=secrets/id_rsa_hub
 kubectl delete secret idrsapub
-kubectl create secret generic idrsapub --from-file=secrets/id_rsa.pub
+kubectl create secret generic idrsapub --from-file=secrets/id_rsa_hub.pub
 kubectl delete secret knownhosts
 kubectl create secret generic knownhosts --from-file=secrets/known_hosts
 
