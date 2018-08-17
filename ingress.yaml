@@ -16,5 +16,5 @@ spec:
       paths:
       - path: /
         backend:
-          serviceName: jupyterhub-svc 
+          serviceName: jupyterhub-chp-svc
           servicePort: 80

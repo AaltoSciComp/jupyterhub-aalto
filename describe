@@ -1,0 +1,1 @@
+kubectl describe pod $(kubectl get pods | grep jupyterhub | grep Running | cut -f1 -d' ' | tail -1)

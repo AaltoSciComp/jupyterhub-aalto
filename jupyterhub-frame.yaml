@@ -8,10 +8,10 @@ spec:
     app: jupyterhub
   clusterIP: "10.104.184.130"
   ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8000
-    name: jupyter-public
+#  - protocol: TCP
+#    port: 80
+#    targetPort: 8000
+#    name: jupyter-public
   - protocol: TCP
     port: 8081
     targetPort: 8081

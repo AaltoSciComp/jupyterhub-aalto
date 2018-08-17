@@ -6,13 +6,15 @@ X mount a shared directory per course  (done, /course)
 X copy nbgrader_config.py to user
 X create profilespawner for courses
 X Request Aalto SSL cert
-  - Install Aalto SSL cert from secrets/ directory
+  X Install Aalto SSL cert from secrets/ directory
 X how to we restart
-- Split the proxy from the hub
+X Split the proxy from the hub
   - Option 1: Use kubernetes proxy instead of jupyterhub hub proxy
     (probably worse since this doesn't currently do activity tracking
     so we can't cull)
-  - Option 2: run configurable-http-proxy in another pod
+  X Option 2: run configurable-http-proxy in another pod
+  X Use image /jupyterhub/configurable-http-proxy:3.1.1
+  X See z2jh example: https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/master/jupyterhub/templates/proxy/deployment.yaml
 X set uid
 X set default exchange to /srv/nbgrader/exchange
 X course management

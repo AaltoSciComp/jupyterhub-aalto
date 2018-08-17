@@ -12,7 +12,7 @@ import yaml
 c.Application.log_level = 'DEBUG'
 
 # Basic JupyterHub config
-c.JupyterHub.bind_url = 'http://:8000'
+#c.JupyterHub.bind_url = 'http://:8000'   # we have separate proxy now
 c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
 c.JupyterHub.cleanup_servers = False
 c.JupyterHub.hub_bind_url = 'http://0.0.0.0:8081'
@@ -24,6 +24,13 @@ s.close()
 c.Authenticator.admin_users = {'darstr1', }
 c.JupyterHub.cleanup_servers = False  # leave servers running if hub restarts
 c.JupyterHub.template_paths = ["/srv/jupyterhub/templates/"]
+# Proxy config
+#c.ConfigurableHTTPProxy.api_url = 'http://jupyterhub-chp-svc.default:8001'  # 10.104.184.140
+c.ConfigurableHTTPProxy.api_url = 'http://%s:8001'%os.environ['JUPYTERHUB_CHP_SVC_SERVICE_HOST']
+c.ConfigurableHTTPProxy.auth_token = open('/srv/jupyterhub/chp-secret.txt').read()
+print('auth_token=', repr(c.ConfigurableHTTPProxy.auth_token), file=sys.stderr)
+c.ConfigurableHTTPProxy.should_start = False
+
 
 # Authenticator config
 
@@ -36,6 +43,8 @@ c.JupyterHub.template_paths = ["/srv/jupyterhub/templates/"]
 
 # If whitelist undefined, any user can login
 c.Authenticator.whitelist = set()
+#c.Authenticator.delete_invalid_users = True  # delete users once no longer in Aalto AD
+
 
 # Add usernames to whitelist - /courses is in k8s-jupyter-admin:/srv/courses
 COURSES = { }

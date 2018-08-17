@@ -21,8 +21,16 @@ spec:
       - name: jupyterhub
         image: jupyterhub-cs
         ports:
-        - containerPort: 8000
+#        - containerPort: 8000
         - containerPort: 8081
+        env:
+        - name: NO_AD_JOIN
+          value: "true"
+        - name: CONFIGPROXY_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: chp-secret
+              key: chp-secret.txt
         volumeMounts:
         - name: jupyterhub-hubdata
           mountPath: /srv/jupyterhub/
@@ -31,6 +39,10 @@ spec:
           subPath: jupyterhub_config.py
         - name: jupyterhub-course-list
           mountPath: /courses/
+        - name: chp-secret
+          mountPath: /srv/jupyterhub/chp-secret.txt
+          subPath: chp-secret.txt
+          readOnly: true
         - name: jupyterhub-coursedata
           mountPath: /coursedata/
         - name: adpw
@@ -41,6 +53,15 @@ spec:
           mountPath: /etc/localusers.sh
           subPath: localusers.sh
           readOnly: true
+        - name: idrsa
+          mountPath: /root/.ssh/id_rsa
+          subPath: id_rsa
+        - name: idrsapub
+          mountPath: /root/.ssh/id_rsa.pub
+          subPath: id_rsa.pub
+        - name: knownhosts
+          mountPath: /root/.ssh/known_hosts
+          subPath: known_hosts
         imagePullPolicy: Never
       tolerations:
       - key: jupyterhub
@@ -54,6 +75,9 @@ spec:
       - name: jupyterhub-config
         configMap:
           name: jupyterhub-config
+      - name: chp-secret
+        secret:
+          secretName: chp-secret
       - name: jupyterhub-course-list
         nfs:
           server: jhnas.org.aalto.fi
@@ -68,6 +92,15 @@ spec:
       - name: localusers
         secret:
           secretName: localusers
+      - name: idrsa
+        secret:
+          secretName: idrsa
+      - name: idrsapub
+        secret:
+          secretName: idrsapub
+      - name: knownhosts
+        secret:
+          secretName: knownhosts
       nodeSelector:
         app: jupyterhub
       serviceAccountName: jupyter-notebook-spawner

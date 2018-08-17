@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: configurable-http-proxy
+  name: configurable-http-proxy
+spec:
+  selector:
+    matchLabels:
+      app: configurable-http-proxy
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: configurable-http-proxy
+    spec:
+      containers:
+      - name: chp
+        image: jupyterhub/configurable-http-proxy:3.1.1
+        ports:
+        - containerPort: 8000
+        - containerPort: 8001
+        volumeMounts:
+        - name: chp-secret
+          mountPath: /chp-secret
+        command:
+          - configurable-http-proxy
+          - --ip=0.0.0.0
+          - --port=8000
+          - --api-ip=0.0.0.0
+          - --api-port=8001
+          - --default-target=http://10.104.184.130:8081
+          - --error-target=http://10.104.184.130:8081/hub/error
+        env:
+          - name: CONFIGPROXY_AUTH_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: chp-secret
+                key: chp-secret.txt
+      tolerations:
+      - key: jupyterhub
+        operator: Exists
+        effect: NoSchedule
+      volumes:
+      - name: chp-secret
+        secret:
+          secretName: chp-secret
