@@ -11,17 +11,11 @@ import yaml
 
 c.Application.log_level = 'INFO'
 
+
 # Basic JupyterHub config
 #c.JupyterHub.bind_url = 'http://:8000'   # we have separate proxy now
-c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
 c.JupyterHub.cleanup_servers = False
 c.JupyterHub.hub_bind_url = 'http://0.0.0.0:8081'
-# Find our IP
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.connect(("8.8.8.8", 80))
-host_ip = s.getsockname()[0]
-s.close()
-c.Authenticator.admin_users = {'darstr1', }
 c.JupyterHub.cleanup_servers = False  # leave servers running if hub restarts
 c.JupyterHub.template_paths = ["/srv/jupyterhub/templates/"]
 # Proxy config
@@ -33,32 +27,42 @@ c.ConfigurableHTTPProxy.should_start = False
 
 
 # Authenticator config
-
-#c.JupyterHub.authenticator_class = 'jhub_remote_user_authenticator.remote_user_auth.RemoteUserAuthenticator'
-
-#def add_user(self, user):
-#    print("Adding user: user {} being added".format(user))
-#    os.system('ssh jupyter-k8s-admin.cs.aalto.fi "hostname ; echo adding user {} ; /root/jupyterhub/scripts/adduser.py"'.format(user))
-#c.Authenticator.add_user = add_user
-
-# If whitelist undefined, any user can login
-c.Authenticator.whitelist = set()
 #c.Authenticator.delete_invalid_users = True  # delete users once no longer in Aalto AD
+c.Authenticator.admin_users = {'darstr1', }
 
 
-# Add usernames to whitelist - /courses is in k8s-jupyter-admin:/srv/courses
+# Spawner config
+c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
+c.KubeSpawner.start_timeout = 60 * 5
+c.KubeSpawner.image_spec = 'aaltoscienceit/notebook-server:0.3.2'
+#c.KubeSpawner.hub_connect_ip = "jupyter-svc.default"
+c.JupyterHub.hub_connect_ip = os.environ['JUPYTERHUB_SVC_SERVICE_HOST']
+c.KubeSpawner.hub_connect_port = 8081
+c.KubeSpawner.http_timeout = 60 * 5
+c.KubeSpawner.disable_user_config = True
+c.KubeSpawner.common_labels = { "app": "notebook-server" }
+# Volume mounts
+DEFAULT_VOLUMES = [
+  {
+    "name": "user",
+    "nfs": {
+      "server": "jhnas.org.aalto.fi",
+      "path": "/vol/jupyter/u/{username}"
+    }
+  },
+]
+DEFAULT_VOLUME_MOUNTS = [
+  { "mountPath": "/notebooks", "name": "user" },
+]
+c.KubeSpawner.volumes = DEFAULT_VOLUMES
+c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
+
+
+
+# Find all of our courses and profiles
 COURSES = { }
 COURSES_TS = None
 METADIR = "/courses/meta"
-#for course_yaml in glob.glob(os.path.join(METADIR, '*.yaml')):
-#    course_data = yaml.load(open(course_yaml))
-#    course_slug = os.path.splitext(os.path.basename(course_yaml))[0]
-#    COURSES[course_slug] = course_data
-#    print(course_data)
-#    for username in course_data.get('students', []):
-#      c.Authenticator.whitelist.add(username)
-#    for username in course_data.get('instructors', []):
-#      c.Authenticator.whitelist.add(username)
 def GET_COURSES():
     """Update the global COURSES dictionary.
 
@@ -110,61 +114,6 @@ def GET_COURSES():
     return COURSES
 GET_COURSES()
 
-
-# Spawner config
-c.KubeSpawner.start_timeout = 60 * 5
-c.KubeSpawner.image_spec = 'aaltoscienceit/notebook-server:0.3.2'
-#c.KubeSpawner.hub_connect_ip = "jupyter-svc.default"
-c.JupyterHub.hub_connect_ip = os.environ['JUPYTERHUB_SVC_SERVICE_HOST']
-c.KubeSpawner.hub_connect_port = 8081
-c.KubeSpawner.http_timeout = 60 * 5
-c.KubeSpawner.disable_user_config = True
-c.KubeSpawner.default_url = "tree/notebooks"
-c.KubeSpawner.notebook_dir = "/"
-c.KubeSpawner.common_labels = { "app": "notebook-server" }
-
-# Volume mounts
-DEFAULT_VOLUMES = [
-  {
-    "name": "user",
-    "nfs": {
-      "server": "jhnas.org.aalto.fi",
-      "path": "/vol/jupyter/u/{username}"
-    }
-  },
-  #{
-  #  "name": "exchange",
-  #  "nfs": {
-  #    "server": "jhnas.org.aalto.fi",
-  #    "path": "/vol/jupyter/exchange"
-  #  }
-  #},
-  #{
-  #  "name": "course",
-  #  "nfs": {
-  #    "server": "jhnas.org.aalto.fi",
-  #    "path": "/vol/jupyter/course"
-  #  }
-  #}
-]
-DEFAULT_VOLUME_MOUNTS = [
-  { "mountPath": "/notebooks", "name": "user" },
-  #{ "mountPath": "/home/{username}", "name": "user" },
-  #{ "mountPath": "/exchange", "name": "exchange" }
-]
-c.KubeSpawner.volumes = DEFAULT_VOLUMES
-c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
-
-# doesn't work, because we start as root, this happens as root but we
-# have root_squash.
-#c.KubeSpawner.singleuser_working_dir = '/notebooks'
-
-# Note: instructors get different limits, see below.
-c.KubeSpawner.cpu_limit = 1
-c.KubeSpawner.mem_limit = '512M'
-c.KubeSpawner.cpu_guarantee = .2
-c.KubeSpawner.mem_guarantee = '256M'
-
 def get_profile_list(spawner):
     #c.JupyterHub.log.debug("Recreating profile list")
     PROFILE_LIST = [
@@ -198,13 +147,23 @@ c.KubeSpawner.profile_list = get_profile_list(None)
 #    raise RuntimeError("Startup error: no course profiles found")
 
 
+# User environment config
+c.KubeSpawner.default_url = "tree/notebooks"
+c.KubeSpawner.notebook_dir = "/"
+# doesn't work, because we start as root, this happens as root but we
+# have root_squash.
+#c.KubeSpawner.singleuser_working_dir = '/notebooks'
+# Note: instructors get different limits, see below.
+c.KubeSpawner.cpu_limit = 1
+c.KubeSpawner.mem_limit = '512M'
+c.KubeSpawner.cpu_guarantee = .2
+c.KubeSpawner.mem_guarantee = '256M'
+
 
 def create_user_dir(username, uid):
     os.system('ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid))
 
 
-
-# profile_list --> use this instead of ProfileSpawner ?
 def pre_spawn_hook(spawner):
     # Get basic info
     username = spawner.user.name
@@ -396,8 +355,8 @@ def pre_spawn_hook(spawner):
     #print(vars(spawner))
     spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
 
-
 c.KubeSpawner.pre_spawn_hook = pre_spawn_hook
+
 
 # Culler service
 c.JupyterHub.services = [
