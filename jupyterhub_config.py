@@ -34,7 +34,6 @@ c.Authenticator.admin_users = {'darstr1', }
 # Spawner config
 c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
 c.KubeSpawner.start_timeout = 60 * 5
-c.KubeSpawner.image_spec = 'aaltoscienceit/notebook-server:0.3.2'
 #c.KubeSpawner.hub_connect_ip = "jupyter-svc.default"
 c.JupyterHub.hub_connect_ip = os.environ['JUPYTERHUB_SVC_SERVICE_HOST']
 c.KubeSpawner.hub_connect_port = 8081
@@ -148,6 +147,7 @@ c.KubeSpawner.profile_list = get_profile_list(None)
 
 
 # User environment config
+c.KubeSpawner.image_spec = 'aaltoscienceit/notebook-server:0.3.3'
 c.KubeSpawner.default_url = "tree/notebooks"
 c.KubeSpawner.notebook_dir = "/"
 # doesn't work, because we start as root, this happens as root but we
