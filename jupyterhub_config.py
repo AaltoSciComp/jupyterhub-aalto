@@ -9,7 +9,7 @@ import sys
 import time
 import yaml
 
-c.Application.log_level = 'DEBUG'
+c.Application.log_level = 'INFO'
 
 # Basic JupyterHub config
 #c.JupyterHub.bind_url = 'http://:8000'   # we have separate proxy now
