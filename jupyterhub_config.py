@@ -171,7 +171,7 @@ def pre_spawn_hook(spawner):
     homedir = userinfo.pw_dir
     if homedir.startswith('/u/'): homedir = homedir[3:]
     uid = userinfo.pw_uid
-    spawner.log.debug("Running pre-spawn hook for {}".format(username))
+    spawner.log.debug("pre_spawn_hook: %s running %s", username, getattr(spawner, 'course_slug', ''))
 
     # Set basic spawner properties
     #storage_capacity = ???
@@ -222,6 +222,13 @@ def pre_spawn_hook(spawner):
     #cmds.insert(-1, r'echo "if [ \"\$SHLVL\" = 1 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.profile')
     cmds.insert(-1, r'echo "if [ \"\$SHLVL\" = 1 -a \( \"\$PWD\" = \"\$HOME\" -o \"\$PWD\" = / \)  ] ; then cd /notebooks ; fi" >> /home/jovyan/.bashrc')
 
+    #for line in ['[user]',
+    #             '    name = {}'.format(fullname),
+    #             '    email = {}'.format(email),
+    #             ]:
+    #    cmds.insert(-1, r"echo '{}' >> /home/jovyan/.gitconfig".format(line))
+    #    cmds.insert(-1, "fix-permissions /home/jovyan/.gitconfig")
+
     course_slug = spawner.course_slug
     # We are not part of a course, so do only generic stuff
     if not course_slug:
@@ -229,7 +236,7 @@ def pre_spawn_hook(spawner):
 
     # Course configuration - only if it is a course
     else:
-        spawner.log.info("Pre-spawn hook for course=%s", course_slug)
+        spawner.log.info("pre_spawn_hook: course %s", course_slug)
         course_data = GET_COURSES()[course_slug]
         #filename = "/courses/{}.yaml".format(course_slug)
         #course_data = yaml.load(open(filename))
@@ -288,6 +295,7 @@ def pre_spawn_hook(spawner):
         # Instructors
         allow_spawn = False
         if username in course_data.get('instructors', {}):
+            spawner.log.info("pre_spawn_hook: User %s is an instructor for %s", username, course_slug)
             allow_spawn = True
             # Instructors get the whole filesystem tree, because they
             # need to be able to access "/course", too.  Warning, you
@@ -312,7 +320,7 @@ def pre_spawn_hook(spawner):
             course_gid = os.stat('/courses/{}'.format(course_slug)).st_gid
             if 'gid' in course_data:
                 course_gid = int(course_data['gid'])
-            spawner.log.debug("Course gid for {} is {}".format(course_slug, course_gid))
+            spawner.log.debug("pre_spawn_hook: Course gid for {} is {}", course_slug, course_gid)
             cmds.insert(-1, r"umask 0007")  # also used through sudo
             if 'NB_UID' in environ:
                 # This branch happens only if we are root (see above)
@@ -340,16 +348,22 @@ def pre_spawn_hook(spawner):
 
         # Student config
         if username in course_data.get('students', {}):
+            spawner.log.info("pre_spawn_hook: User %s is a student for %s", username, course_slug)
             allow_spawn = True
 
         if not allow_spawn and course_data.get('private', False):
+            spawner.log.info("pre_spawn_hook: User %s is blocked spawning %s", username, course_slug)
             raise RuntimeError("You ({}) are not allowed to use the {} environment.  Please contact the course instructors".format(username, course_slug))
 
     # User- and course-specific hooks
-    if os.path.exists('/srv/jupyterhub/hooks-user/{}.py'.format(username)):
-        exec(open('/srv/jupyterhub/hooks-user/{}.py'.format(username)).read())
-    if course_slug and os.path.exists('/srv/jupyterhub/hooks-course/{}.py'.format(course_slug)):
-        exec(open('/srv/jupyterhub/hooks-course/{}.py'.format(course_slug)).read())
+    hook_file = '/srv/jupyterhub/hooks-user/{}.py'.format(username)
+    if os.path.exists(hook_file):
+        spawner.log.info("pre_spawn_hook: Running %s", hook_file)
+        exec(open(hook_file).read())
+    hook_file = '/srv/jupyterhub/hooks-course/{}.py'.format(course_slug)
+    if course_slug and os.path.exists(hook_file):
+        spawner.log.info("pre_spawn_hook: Running %s", hook_file)
+        exec(open(hook_file).read())
 
     # Common final setup
     #print(vars(spawner))
