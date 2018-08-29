@@ -286,6 +286,7 @@ def pre_spawn_hook(spawner):
                      'c.BaseConverter.groupshared = True',
                      'c.Exchange.assignment_dir = "/notebooks/"',
                      'c.AssignmentList.assignment_dir = "/notebooks/"',
+                     'c.ExecutePreprocessor.timeout = 120'
                      ]:
             cmds.insert(-1, r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
         for line in ['c.AssignmentList.assignment_dir = "/notebooks/"',
