@@ -17,7 +17,7 @@ RUN jupyter serverextension enable --sys-prefix --py nbgrader
 
 # Enable SSH stuff
 COPY secrets/known_hosts /root/.ssh/known_hosts
-COPY fecrets/id_rsa_hub /root/.ssh/id_rsa
+COPY secrets/id_rsa_hub /root/.ssh/id_rsa
 RUN chmod go-rwx /root/.ssh/*
 
 # Enable aalto domain join
