@@ -1,3 +1,38 @@
+
+Important
+- Open to all world
+- Security
+  - Security: do we log everything sufficiently?
+  - Check zero to jupyterhub security and see what applies to us:
+    https://zero-to-jupyterhub.readthedocs.io/en/latest/security.html
+    - Check SSL: https://www.ssllabs.com/
+- Adjust QoS of hub and proxy pods: are the at best and have
+  sufficient resources?
+- Check actual CPU/mem usage and adjust limits
+- How do we monitor memory and processor usage of the pods and nodes?
+- Decide support and issue tracking addresses and publish them on
+  jupyter pages.
+  - Suggestions: guru@cs.aalto.fi, or the Github repositiories for
+    single user/hub images.
+
+Minor
+- Make the hub docker image buildable again.
+  - I (RD) split the secrets/ dir into another git repository and
+    added that to version.aalto.fi.  Main repos are now on github.
+    But secrets/ dir repo won't push somehow... why?  We have to clone
+    the new secrets/ to the hub VM node to be able to build again...
+- Add git default username/email so that it is more usable (how to
+  get them?)
+- Warn on quotas when logging in
+- (started) Copy krb5.keytab.new instead of krb5.keytab.  This is
+  already joined to AD and thus we don't need the re-joining script.
+  We have to be able to rebuild the hub first, though.
+
+
+
+Old (pre-2018-08-30)
+====================
+
 X run notebook as right UID
 X mount notebook home based on user $HOME
   * done based on user UID
