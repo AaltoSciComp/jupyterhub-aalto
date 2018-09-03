@@ -25,6 +25,8 @@ now = datetime.datetime.now().timestamp()
 
 if '-v' in sys.argv:
     logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.WARN)
 logging.getLogger('requests').setLevel(logging.WARN)
 log = logging.getLogger(__name__)
 log.setLevel(logging.WARN)
@@ -124,7 +126,6 @@ if __name__ == '__main__':
         api_token = os.environ['JUPYTERHUB_API_TOKEN']
         auth_header = {'Authorization': 'token %s' % api_token}
 
-        print(os.environ)
         ##########
         from tornado.httpclient import AsyncHTTPClient, HTTPRequest
         API = os.environ['JUPYTERHUB_API_URL']+'/'
