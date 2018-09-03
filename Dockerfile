@@ -35,7 +35,7 @@ RUN chmod +x /run.sh
 
 COPY scripts/cull_idle_servers.py /cull_idle_servers.py
 COPY scripts/hub_status_service.py /hub_status_service.py
-RUN chmod +x /cull_idle_servers.py
+RUN chmod +x /cull_idle_servers.py /hub_status_service.py
 
 RUN mkdir /courses
 
