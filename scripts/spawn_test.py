@@ -17,7 +17,7 @@ import requests
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('requests').setLevel(logging.WARN)
 log = logging.getLogger(__name__)
-#log.setLevel(logging.DEBUG)
+log.setLevel(logging.DEBUG)
 
 auth_data = open(AUTH_DATA_FILE).readlines()
 token = auth_data[0].strip()
@@ -34,8 +34,8 @@ auth = TokenAuth()
 # Handle JH polling for slow starts/stops.
 def poll_until_pending_done():
     for _ in range(60):
-        log.info('... waiting to stop server')
         time.sleep(1)
+        log.info('... polling for finish...')
         r = requests.get(API+'users/%s'%username, auth=auth)
         if r.json()['pending'] is None:
             break
@@ -52,10 +52,12 @@ def poll_until_pending_done():
 r = requests.get(API+'users', auth=auth)
 
 # Check if server currently running and if so, stop it.
+log.debug("Checking if running...")
 r = requests.get(API+'users/%s'%username, auth=auth)
+log.debug(r.json())
 if r.json()['server'] is not None:
     # server running
-    log.info('server running, stopping...')
+    log.info('Server running, stopping...')
     r = requests.delete(API+'users/%s/server'%username, auth=auth)
     r.raise_for_status()
     if r.status_code != 204:
@@ -63,20 +65,26 @@ if r.json()['server'] is not None:
             
             
 # Start the server
+log.info('Starting server')
 r = requests.post(API+'users/%s/server'%username, json={'profile':['2']}, auth=auth)
+log.debug(r.text)
 r.raise_for_status()
 if r.status_code != 201:
     poll_until_pending_done()
 
 # Verify server is running
+log.debug("Verifying running...")
 r = requests.get(API+'users/%s'%username, auth=auth)
+log.debug(r.json())
 r.raise_for_status()
 server_url = r.json()['server']
 assert server_url, "server not running"
 log.info('server URL: %s', server_url)
 
 # Server running.  stop it now.
+log.info("Stopping...")
 r = requests.delete(API+'users/%s/server'%username, auth=auth)
+log.debug(r.text)
 r.raise_for_status()
 if r.status_code != 204:
     poll_until_pending_done()

@@ -33,7 +33,8 @@ RUN chmod +x /usr/local/bin/join_ad.sh
 COPY scripts/run.sh /run.sh
 RUN chmod +x /run.sh
 
-COPY cull_idle_servers.py /cull_idle_servers.py
+COPY scripts/cull_idle_servers.py /cull_idle_servers.py
+COPY scripts/hub_status_service.py /hub_status_service.py
 RUN chmod +x /cull_idle_servers.py
 
 RUN mkdir /courses

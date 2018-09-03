@@ -16,6 +16,10 @@ spec:
     port: 8081
     targetPort: 8081
     name: jupyter-api
+  - protocol: TCP
+    port: 36541
+    targetPort: 36541
+    name: jupyterhub-service-stats
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role

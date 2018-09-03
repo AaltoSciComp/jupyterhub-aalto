@@ -23,6 +23,7 @@ spec:
         ports:
 #        - containerPort: 8000
         - containerPort: 8081
+        - containerPort: 36541
         env:
 #        - name: NO_AD_JOIN
 #          value: "true"
