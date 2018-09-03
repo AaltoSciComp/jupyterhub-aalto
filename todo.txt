@@ -1,33 +1,49 @@
 
 Important
-- Open to all world
+- Open to all world (MM)
 - Security
   - Security: do we log everything sufficiently?
-  - Check zero to jupyterhub security and see what applies to us:
+    Add some sort of persistent logs of at least hub (MM)
+  - Check zero to jupyterhub security and see what applies to us (MM):
     https://zero-to-jupyterhub.readthedocs.io/en/latest/security.html
     - Check SSL: https://www.ssllabs.com/
 - Adjust QoS of hub and proxy pods: are the at best and have
-  sufficient resources?
-- Check actual CPU/mem usage and adjust limits
-- How do we monitor memory and processor usage of the pods and nodes?
+  sufficient resources? (MM)
+- Check actual CPU/mem usage and adjust limits. (??)
+- How do we monitor memory and processor usage of the pods and nodes? (MM)
+  - Total pods running
+  - total memory usage (notify if running low)
+  - total CPU usage
+  - failure of hub
+  - script ot test inability to spawn new server (RD)
+  - high failure rate of hubs.
+  - approaching full capicity.
+- Backup connection to blade server (JK)
 - Decide support and issue tracking addresses and publish them on
   jupyter pages.
   - Suggestions: guru@cs.aalto.fi, or the Github repositiories for
-    single user/hub images.
+    single user/hub images. (RD)
+- Automatic monitoring and notification when things go down. (MM)
+- Make the JH docs live and do final revisions (RD)
+  - Write the privacy policy (RD)
+- Create a development install (different namespace).  Currently, once
+  the main system goes into use, it is very hard to do development or
+  debugging anymore.  Can we use kubernetes namespaces to solve this? (MM)
 
 Minor
-- Make the hub docker image buildable again.
+- Make the hub docker image buildable again. (RD/MM)
   - I (RD) split the secrets/ dir into another git repository and
     added that to version.aalto.fi.  Main repos are now on github.
     But secrets/ dir repo won't push somehow... why?  We have to clone
     the new secrets/ to the hub VM node to be able to build again...
 - Add git default username/email so that it is more usable (how to
-  get them?)
-- Warn on quotas when logging in
+  get them?) (RD)
+- Warn on quotas when logging in (xx)
 - (started) Copy krb5.keytab.new instead of krb5.keytab.  This is
   already joined to AD and thus we don't need the re-joining script.
-  We have to be able to rebuild the hub first, though.
-
+  We have to be able to rebuild the hub first, though. (RD/MM)
+- Note to instructors: have sofware pre-installed (RD)
+- Test quotas (RD)
 
 
 Old (pre-2018-08-30)
