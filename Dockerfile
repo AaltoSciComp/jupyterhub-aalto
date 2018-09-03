@@ -23,9 +23,9 @@ RUN chmod go-rwx /root/.ssh/*
 # Enable aalto domain join
 RUN apt-get update && apt-get install -y adcli sssd sssd-krb5 krb5-config sssd-ldap sssd-ad libpam-sss
 COPY secrets/krb5.conf /etc/krb5.conf
-COPY secrets/krb5.keytab /etc/krb5.keytab
+COPY secrets/krb5.keytab.withkeys /etc/krb5.keytab
 COPY secrets/sssd.conf /etc/sssd/sssd.conf
-RUN chmod 600 /etc/sssd/sssd.conf
+RUN chmod 600 /etc/sssd/sssd.conf /etc/krb5.keytab
 
 COPY scripts/join_ad.sh /usr/local/bin/join_ad.sh
 RUN chmod +x /usr/local/bin/join_ad.sh
