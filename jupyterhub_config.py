@@ -155,9 +155,9 @@ c.KubeSpawner.notebook_dir = "/"
 #c.KubeSpawner.singleuser_working_dir = '/notebooks'
 # Note: instructors get different limits, see below.
 c.KubeSpawner.cpu_limit = 1
-c.KubeSpawner.mem_limit = '512M'
-c.KubeSpawner.cpu_guarantee = .2
-c.KubeSpawner.mem_guarantee = '256M'
+c.KubeSpawner.mem_limit = '1G'
+c.KubeSpawner.cpu_guarantee = .25
+c.KubeSpawner.mem_guarantee = '1G'
 
 
 def create_user_dir(username, uid):
