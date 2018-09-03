@@ -139,7 +139,7 @@ if __name__ == '__main__':
         auth = TokenAuth(api_token)
         get = get_requests
 
-        
+
         from tornado.ioloop import IOLoop
         from tornado.httpserver import HTTPServer
         from tornado.web import RequestHandler, Application, authenticated
@@ -155,20 +155,20 @@ if __name__ == '__main__':
                 #    return
                 STATUS = get_stats(get)
                 self.write(json.dumps(STATUS, indent=1, sort_keys=True))
-        
+
         app = Application([
                   (os.environ['JUPYTERHUB_SERVICE_PREFIX'] + '/?', WhoAmIHandler),
                   (r'.*', WhoAmIHandler),
               ])
-        
+
         http_server = HTTPServer(app)
         #url = urlparse(os.environ['JUPYTERHUB_SERVICE_URL'])
         url = urlparse('http://0.0.0.0:36541')
         http_server.listen(url.port, url.hostname)
         IOLoop.current().start()
-        
 
-        
+
+
     else:
         auth_data = open(AUTH_DATA_FILE).readlines()
         token = auth_data[0].strip()
@@ -176,5 +176,5 @@ if __name__ == '__main__':
 
 
         STATUS = get_stats(get_requests)
-        
+
         print(json.dumps(STATUS, indent=4, sort_keys=True), )

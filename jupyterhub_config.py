@@ -229,7 +229,7 @@ def pre_spawn_hook(spawner):
     #    cmds.insert(-1, r"echo '{}' >> /home/jovyan/.gitconfig".format(line))
     #    cmds.insert(-1, "fix-permissions /home/jovyan/.gitconfig")
 
-    course_slug = spawner.course_slug
+    course_slug = getattr(spawner, 'course_slug', '')
     # We are not part of a course, so do only generic stuff
     if not course_slug:
         cmds.insert(-1, "disable_formgrader.sh")
