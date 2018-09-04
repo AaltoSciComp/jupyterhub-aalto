@@ -77,7 +77,7 @@ def get_stats(get):
     STATUS['users_total'] = len(r)
     STATUS['servers_active'] = sum([ len(user['servers']) for user in r ])
     active_pod_names = defaultdict(int)
-    last_active = defaultdict(int)
+    last_active = {'005m':0, '015m':0, '030m':0, '060m':0, '120m':0,}
     for user in r:
         log.debug(user['servers'])
         last_activity = None
@@ -87,12 +87,13 @@ def get_stats(get):
                 active_pod_names['generic'] += 1
             else:
                 active_pod_names[components[-1]] += 1
-                last_ts = dateutil.parser.parse(server['last_activity']).timestamp()
-                secs_ago = now - last_ts
-            if secs_ago <  300: last_active['5m'] += 1
-            if secs_ago < 1800: last_active['30m'] += 1
-            if secs_ago < 3600: last_active['1h'] += 1
-            if secs_ago < 7200: last_active['2h'] += 1
+            last_ts = dateutil.parser.parse(server['last_activity']).timestamp()
+            secs_ago = now - last_ts
+            if secs_ago <  300: last_active['005m'] += 1
+            if secs_ago <  900: last_active['015m'] += 1
+            if secs_ago < 1800: last_active['030m'] += 1
+            if secs_ago < 3600: last_active['060h'] += 1
+            if secs_ago < 7200: last_active['120h'] += 1
     STATUS['pods_active'] = active_pod_names
     STATUS['servers_last_active'] = last_active
 
@@ -104,14 +105,15 @@ def get_stats(get):
     r = get('proxy')
     log.debug(r)
     STATUS['proxy_routes_count'] = len(r)
-    last_active = defaultdict(int)
+    last_active = {'005m':0, '015m':0, '030m':0, '060m':0, '120m':0,}
     for prefix, route in r.items():
         last_ts = dateutil.parser.parse(route['data']['last_activity']).timestamp()
         secs_ago = now - last_ts
-        if secs_ago <  300: last_active['5m'] += 1
-        if secs_ago < 1800: last_active['30m'] += 1
-        if secs_ago < 3600: last_active['1h'] += 1
-        if secs_ago < 7200: last_active['2h'] += 1
+        if secs_ago <  300: last_active['005m'] += 1
+        if secs_ago <  900: last_active['015m'] += 1
+        if secs_ago < 1800: last_active['030m'] += 1
+        if secs_ago < 3600: last_active['060m'] += 1
+        if secs_ago < 7200: last_active['120m'] += 1
     STATUS['proxy_last_active'] = last_active
 
     return STATUS
