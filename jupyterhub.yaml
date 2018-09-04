@@ -54,6 +54,9 @@ spec:
           mountPath: /etc/localusers.sh
           subPath: localusers.sh
           readOnly: true
+        - name: hub-status-service
+          mountPath: /srv/jupyterhub/hub_status_service.py
+          subPath: hub_status_service.py
 #        - name: idrsa
 #          mountPath: /root/.ssh/id_rsa
 #          subPath: id_rsa_hub
@@ -102,6 +105,9 @@ spec:
       - name: knownhosts
         secret:
           secretName: knownhosts
+      - name: hub-status-service
+        configMap:
+          name: hub-status-service
       nodeSelector:
         app: jupyterhub
       serviceAccountName: jupyter-notebook-spawner

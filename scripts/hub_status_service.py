@@ -68,7 +68,7 @@ def get_stats(get):
 
     # JH version
     r = get('')
-    STATUS['jupyterhub_version'] = r['version']
+    #STATUS['jupyterhub_version'] = r['version']
 
 
     # List all users
@@ -118,7 +118,13 @@ def get_stats(get):
 
 
 
+def make_prom_line(key, val, labels={}):
+    label_list = []
+    for l_key, l in labels.items():
+        label_list.append('{}="{}"'.format(l_key, l))
 
+    label_list_str = ",".join(label_list)
+    return "jhub_{}{{{}}} {}\n".format(key, label_list_str, val)
 
 if __name__ == '__main__':
     if 'JUPYTERHUB_API_TOKEN' in os.environ:
@@ -148,14 +154,27 @@ if __name__ == '__main__':
         class WhoAmIHandler(HubAuthenticated, RequestHandler):
             #@authenticated
             def get(self):
-                self.set_header('content-type', 'application/json')
                 # Test for admin if requested...
                 #user_model = self.get_current_user()
                 #if not user_model['admin']:
                 #    self.write(json.dumps({'error':'Not authenticated'}))
                 #    return
+                
                 STATUS = get_stats(get)
-                self.write(json.dumps(STATUS, indent=1, sort_keys=True))
+                if self.get_query_argument("type", default=None) == "prometheus":
+                    self.set_header('content-type', 'text/plain')
+                    output = ""
+                    for key, val in STATUS.items():
+                        if isinstance(val, dict):
+                            for dict_key, dict_val in val.items():
+                                output += make_prom_line(key, dict_val, labels={"sub_type": dict_key})
+                        else:
+                            output += make_prom_line(key, val)
+                    self.write(output)
+                            
+                else:
+                    self.set_header('content-type', 'application/json')
+                    self.write(json.dumps(STATUS, indent=1, sort_keys=True))
 
         app = Application([
                   (os.environ['JUPYTERHUB_SERVICE_PREFIX'] + '/?', WhoAmIHandler),
