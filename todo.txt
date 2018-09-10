@@ -4,7 +4,7 @@ Important
 - Security
   - Security: do we log everything sufficiently?
     Add some sort of persistent logs of at least hub (MM)
-  - Check zero to jupyterhub security and see what applies to us (MM):
+  X Check zero to jupyterhub security and see what applies to us (MM): (should be fine, still wondering about network policies tho)
     https://zero-to-jupyterhub.readthedocs.io/en/latest/security.html
     - Check SSL: https://www.ssllabs.com/
 - Adjust QoS of hub and proxy pods: are the at best and have
@@ -15,13 +15,14 @@ Important
   - total memory usage (notify if running low)
   - total CPU usage
   - failure of hub
-  - script ot test inability to spawn new server (RD)
+  X script ot test inability to spawn new server (RD)
+    python3 scripts/spawn_test.py 
   - high failure rate of hubs.
   - approaching full capicity.
 - Backup connection to blade server (JK)
-- Decide support and issue tracking addresses and publish them on
+X Decide support and issue tracking addresses and publish them on
   jupyter pages.
-  - Suggestions: guru@cs.aalto.fi, or the Github repositiories for
+  X Suggestions: guru@cs.aalto.fi, or the Github repositiories for
     single user/hub images. (RD)
 - Automatic monitoring and notification when things go down. (MM)
 - Make the JH docs live and do final revisions (RD)
@@ -31,8 +32,8 @@ Important
   debugging anymore.  Can we use kubernetes namespaces to solve this? (MM)
 
 Minor
-- Make the hub docker image buildable again. (RD/MM)
-  - I (RD) split the secrets/ dir into another git repository and
+X Make the hub docker image buildable again. (RD/MM)
+  X I (RD) split the secrets/ dir into another git repository and
     added that to version.aalto.fi.  Main repos are now on github.
     But secrets/ dir repo won't push somehow... why?  We have to clone
     the new secrets/ to the hub VM node to be able to build again...
