@@ -19,7 +19,7 @@ echo "$@"
 
 # validate username
 username="$1"
-if echo "$username" | egrep -v '^[a-z0-9]+$' ; then
+if echo "$username" | egrep -v '^[a-z0-9.]+$' ; then
     echo "ERROR: bad username"
     exit 2
 fi

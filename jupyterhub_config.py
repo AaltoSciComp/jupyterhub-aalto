@@ -180,6 +180,8 @@ def create_user_dir(username, uid):
 def pre_spawn_hook(spawner):
     # Get basic info
     username = spawner.user.name
+    if not USER_RE.match(username):
+        raise RuntimeError("Invalid username: %s, logout and use lowercase Aalto username."%username)
     userinfo = pwd.getpwnam(username)
     homedir = userinfo.pw_dir
     if homedir.startswith('/u/'): homedir = homedir[3:]
