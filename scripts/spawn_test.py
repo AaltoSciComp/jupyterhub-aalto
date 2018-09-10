@@ -60,8 +60,14 @@ r = requests.get(API+'users', auth=auth)
 # Check if server currently running and if so, stop it.
 log.debug("Checking if running...")
 r = requests.get(API+'users/%s'%username, auth=auth)
+# User not created yet.
+if r.status_code == 404:
+    log.critical("User dose not exist: %s"%username)
+    #r = requests.post(API+'users/%s'%username, auth=auth)
+    #r.raise_for_status()
+
 log.debug(r.json())
-if r.json()['server'] is not None:
+if 'server' in r.json() and r.json()['server'] is not None:
     # server running
     log.info('Server running, stopping...')
     r = requests.delete(API+'users/%s/server'%username, auth=auth)
@@ -94,5 +100,5 @@ log.debug(r.text)
 r.raise_for_status()
 if r.status_code != 204:
     poll_until_pending_done()
-
+log.debug('SUCCESS')
 

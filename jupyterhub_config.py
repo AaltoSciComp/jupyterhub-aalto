@@ -9,13 +9,16 @@ import sys
 import time
 import yaml
 
-c.Application.log_level = 'INFO'
+DEFAULT_IMAGE = 'aaltoscienceit/notebook-server:0.3.4'
+ROOT_THEN_SUDO = False
 
+
+c.Application.log_level = 'INFO'
 
 # Basic JupyterHub config
 #c.JupyterHub.bind_url = 'http://:8000'   # we have separate proxy now
-c.JupyterHub.cleanup_servers = False
 c.JupyterHub.hub_bind_url = 'http://0.0.0.0:8081'
+c.JupyterHub.hub_connect_ip = os.environ['JUPYTERHUB_SVC_SERVICE_HOST']
 c.JupyterHub.cleanup_servers = False  # leave servers running if hub restarts
 c.JupyterHub.template_paths = ["/srv/jupyterhub/templates/"]
 # Proxy config
@@ -26,20 +29,34 @@ print('auth_token=', repr(c.ConfigurableHTTPProxy.auth_token), file=sys.stderr)
 c.ConfigurableHTTPProxy.should_start = False
 
 
-# Authenticator config
+# Authentication
 #c.Authenticator.delete_invalid_users = True  # delete users once no longer in Aalto AD
 c.Authenticator.admin_users = {'darstr1', }
+USER_RE = re.compile('^[a-z0-9.]+$')
 
 
 # Spawner config
 c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
 c.KubeSpawner.start_timeout = 60 * 5
-#c.KubeSpawner.hub_connect_ip = "jupyter-svc.default"
-c.JupyterHub.hub_connect_ip = os.environ['JUPYTERHUB_SVC_SERVICE_HOST']
 c.KubeSpawner.hub_connect_port = 8081
 c.KubeSpawner.http_timeout = 60 * 5
 c.KubeSpawner.disable_user_config = True
 c.KubeSpawner.common_labels = { "app": "notebook-server" }
+
+# User environment config
+c.KubeSpawner.image_spec = DEFAULT_IMAGE
+c.KubeSpawner.default_url = "tree/notebooks"
+c.KubeSpawner.notebook_dir = "/"
+# doesn't work, because we start as root, this happens as root but we
+# have root_squash.
+#c.KubeSpawner.singleuser_working_dir = '/notebooks'
+# Note: instructors get different limits, see below.
+c.KubeSpawner.cpu_limit = 1
+c.KubeSpawner.mem_limit = '.9G'
+c.KubeSpawner.cpu_guarantee = .25
+c.KubeSpawner.mem_guarantee = '.9G'
+
+
 # Volume mounts
 DEFAULT_VOLUMES = [
   {
@@ -57,7 +74,6 @@ c.KubeSpawner.volumes = DEFAULT_VOLUMES
 c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
 
 
-
 # Find all of our courses and profiles
 COURSES = { }
 COURSES_TS = None
@@ -71,6 +87,7 @@ def GET_COURSES():
 
     """
     global COURSES, COURSES_TS
+
     # Cache, don't unconditionally reload every time.
     # Regenerate if Check if we must regenerate data
     if COURSES_TS and COURSES_TS > time.time() - 10:
@@ -79,12 +96,13 @@ def GET_COURSES():
                          for course_file in glob.glob(os.path.join(METADIR, '*.yaml')))
     if COURSES_TS and COURSES_TS > latest_yaml_ts:
         return COURSES
-    COURSES_TS = time.time()
+
+    # Regenerate the course dict from yamls on disk.
     #c.JupyterHub.log.debug("Re-generating course data")
+    COURSES_TS = time.time()
     courses = { }
     # First round: load raw data with users and so on.
     for course_file in glob.glob(os.path.join(METADIR, '*.yaml')):
-        #print("X"*10, "course file", course_file, file=sys.stderr)
         course_slug = os.path.splitext(os.path.basename(course_file))[0]
         if course_slug.endswith('-users'):
             course_slug = course_slug[:-6]
@@ -97,23 +115,27 @@ def GET_COURSES():
         courses[course_slug].update(course_data)
         #print(course_slug, course_data, file=sys.stderr)
 
-    # Second round: make the data consistent, add GIDs, etc.
+    # Second round: make the data consistent:
+    # - add course GIDs by looking up via `getent group`.
+    # - Look up extra instructors by using `getent group`
     for course_slug, course_data in courses.items():
         try:
             if 'gid' not in course_data:
-                print(grp.getgrnam('jupyter-'+course_slug).gr_gid, file=sys.stderr)
                 course_data['gid'] = grp.getgrnam('jupyter-'+course_slug).gr_gid
-            #print(grp.getgrnam('jupyter-'+course_slug), file=sys.stderr)
             course_data['instructors'] |= set(grp.getgrnam('jupyter-'+course_slug).gr_mem)
         except KeyError:
             print("ERROR: group {} can not look up group info".format(course_slug), file=sys.stderr)
-        #print(course_slug, course_data, file=sys.stderr)
 
+    # Set global variable from new local variable.
     COURSES = courses
     return COURSES
+# Run it once to set the course data at startup.
 GET_COURSES()
 
+
 def get_profile_list(spawner):
+    """gerenate the k8s profile_list.
+    """
     #c.JupyterHub.log.debug("Recreating profile list")
     PROFILE_LIST = [
         {'display_name': 'General use + JupyterLab',
@@ -121,7 +143,7 @@ def get_profile_list(spawner):
          'kubespawner_override': {
              # if callable is here, set spawner.k = v(spawner)
              'course_slug': '',
-             'default_url': "lab/tree/notebooks",
+             'default_url': "lab/tree/notebooks/",
          }
         }
     ]
@@ -134,30 +156,21 @@ def get_profile_list(spawner):
         'kubespawner_override': {
             'course_slug': course_slug,}
         } for (course_slug, course_data) in GET_COURSES().items()
-          if course_data.get('active', True) #and (not course_data.get('private', False)  # requires next kubespawner
-                                             #     or spawner.user.name in course_data['instructors']
-                                             #     or spawner.user.name in course_data['instructors'])
+          if (course_data.get('active', True)
+              #and ((not course_data.get('private', False)  # requires next kubespawner
+              #      or spawner.user.name in course_data['instructors']
+              #      or spawner.user.name in course_data['instructors'])
+              #     or spawner.user.name in {'student1', 'student2', 'student3'})
+             )
     ])
     return PROFILE_LIST
 # In next version of kubespawner, leave as callable to regen every
 # time, without restart.
-c.KubeSpawner.profile_list = get_profile_list(None)
+c.KubeSpawner.profile_list = get_profile_list  #(None)
 #if len(c.KubeSpawner.profile_list) < 2:
 #    raise RuntimeError("Startup error: no course profiles found")
 
 
-# User environment config
-c.KubeSpawner.image_spec = 'aaltoscienceit/notebook-server:0.3.3'
-c.KubeSpawner.default_url = "tree/notebooks"
-c.KubeSpawner.notebook_dir = "/"
-# doesn't work, because we start as root, this happens as root but we
-# have root_squash.
-#c.KubeSpawner.singleuser_working_dir = '/notebooks'
-# Note: instructors get different limits, see below.
-c.KubeSpawner.cpu_limit = 1
-c.KubeSpawner.mem_limit = '1G'
-c.KubeSpawner.cpu_guarantee = .25
-c.KubeSpawner.mem_guarantee = '1G'
 
 
 def create_user_dir(username, uid):
@@ -176,11 +189,11 @@ def pre_spawn_hook(spawner):
     # Set basic spawner properties
     #storage_capacity = ???
     spawner.environment = environ = { }  # override env
-    cmds = [ "source start-notebook.sh" ]  # args added later in KubeSpawner
+    cmds = [ ]
     # Remove the .jupyter config that is already there
-    #cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.bashrc")
-    #cmds.insert(-1, "echo 'umask 0007' >> /home/jovyan/.profile")
-    #cmds.insert(-1, "pip install --upgrade --no-deps https://github.com/rkdarst/nbgrader/archive/live.zip")
+    #cmds.append("echo 'umask 0007' >> /home/jovyan/.bashrc")
+    #cmds.append("echo 'umask 0007' >> /home/jovyan/.profile")
+    #cmds.append("pip install --upgrade --no-deps https://github.com/rkdarst/nbgrader/archive/live.zip")
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
     c.KubeSpawner.working_dir = '/'
@@ -192,7 +205,7 @@ def pre_spawn_hook(spawner):
     # Default setup of /etc/passwd: jovyan:x:1000:0
     # Default setup of /etc/group: users:x:100
 
-    if 0:
+    if not ROOT_THEN_SUDO:
         # Manually run as uid from outside the container
         spawner.singleuser_uid = uid
         # default of user in docker image (note: not in image kubespawer yet!)
@@ -209,30 +222,30 @@ def pre_spawn_hook(spawner):
         # The default jupyter image will use root access in order to su to the user as defined above.
         spawner.singleuser_uid = 0
         # Fix permissions.  Uses NB_GID only, and should not run on any NFS filesystems!
-        #cmds.insert(-1, "fix-permissions /home/jovyan")
-        #cmds.insert(-1, "fix-permissions $CONDA_DIR")
+        #cmds.append("fix-permissions /home/jovyan")
+        #cmds.append("fix-permissions $CONDA_DIR")
 
         # add default user to group 100 for file access. (Required
         # because sudo prevents supplemental_gids from taking effect
         # after the sudo).  The "jovyan" user is renamed to $NB_USER
         # on startup.
-        #cmds.insert(-1, "adduser jovyan users")
+        #cmds.append("adduser jovyan users")
 
     create_user_dir(username, uid) # TODO: Define path / server / type in yaml?
-    #cmds.insert(-1, r'echo "if [ \"\$SHLVL\" = 1 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.profile')
-    cmds.insert(-1, r'echo "if [ \"\$SHLVL\" = 1 -a \( \"\$PWD\" = \"\$HOME\" -o \"\$PWD\" = / \)  ] ; then cd /notebooks ; fi" >> /home/jovyan/.bashrc')
+    #cmds.append(r'echo "if [ \"\$SHLVL\" = 1 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.profile')
+    cmds.append(r'echo "if [ \"\$SHLVL\" = 1 -a \( \"\$PWD\" = \"\$HOME\" -o \"\$PWD\" = / \)  ] ; then cd /notebooks ; fi" >> /home/jovyan/.bashrc')
 
     #for line in ['[user]',
     #             '    name = {}'.format(fullname),
     #             '    email = {}'.format(email),
     #             ]:
-    #    cmds.insert(-1, r"echo '{}' >> /home/jovyan/.gitconfig".format(line))
-    #    cmds.insert(-1, "fix-permissions /home/jovyan/.gitconfig")
+    #    cmds.append(r"echo '{}' >> /home/jovyan/.gitconfig".format(line))
+    #    cmds.append("fix-permissions /home/jovyan/.gitconfig")
 
     course_slug = getattr(spawner, 'course_slug', '')
     # We are not part of a course, so do only generic stuff
     if not course_slug:
-        cmds.insert(-1, "disable_formgrader.sh")
+        cmds.append("disable_formgrader.sh")
 
     # Course configuration - only if it is a course
     else:
@@ -288,10 +301,10 @@ def pre_spawn_hook(spawner):
                      'c.AssignmentList.assignment_dir = "/notebooks/"',
                      'c.ExecutePreprocessor.timeout = 120'
                      ]:
-            cmds.insert(-1, r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
+            cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
         for line in ['c.AssignmentList.assignment_dir = "/notebooks/"',
                      ]:
-            cmds.insert(-1, r"echo '{}' >> /etc/jupyter/jupyter_notebook_config.py".format(line))
+            cmds.append(r"echo '{}' >> /etc/jupyter/jupyter_notebook_config.py".format(line))
 
         # Instructors
         allow_spawn = False
@@ -307,7 +320,7 @@ def pre_spawn_hook(spawner):
             spawner.mem_guarantee = '512M'
             for line in ['c.NbGrader.logfile = "/course/.nbgraber.log"',
                         ]:
-                cmds.insert(-1, r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
+                cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
             if 'image_instructor' in course_data:
                 spawner.image_spec = course_data['image_instructor']
             spawner.volumes.append({
@@ -322,30 +335,30 @@ def pre_spawn_hook(spawner):
             if 'gid' in course_data:
                 course_gid = int(course_data['gid'])
             spawner.log.debug("pre_spawn_hook: Course gid for {} is {}", course_slug, course_gid)
-            cmds.insert(-1, r"umask 0007")  # also used through sudo
+            cmds.append(r"umask 0007")  # also used through sudo
             if 'NB_UID' in environ:
                 # This branch happens only if we are root (see above)
                 environ['NB_GID'] = str(course_gid)
                 environ['NB_GROUP'] = 'jupyter-'+course_slug
                 # The start.sh script renumbers the default group 100 to $NB_GID.  We rename it first.
-                #cmds.insert(-1, "groupmod -n {} users".format('jupyter-'+course_slug))
+                #cmds.append("groupmod -n {} users".format('jupyter-'+course_slug))
                 # We *need* to be in group 100, because a lot of the
                 # default files (conda, etc) are group=rw=100.  We add
                 # a *duplicate* group 100, and only the first one is
                 # renamed in the image (in the jupyter start.sh)
-                #cmds.insert(-1, "groupadd --gid 100 --non-unique users")
-                #cmds.insert(-1, "adduser jovyan users")
-                cmds.insert(-1, r"sed -r -i 's/^(UMASK.*)022/\1007/' /etc/login.defs")
-                cmds.insert(-1, r"echo Defaults umask=0007, umask_override >> /etc/sudoers")
-                #cmds.insert(-1, r"{{ test ! -e /course/gradebook.db && sudo -u nobody touch /course/gradebook.db && chown {} /course/gradebook.db && chmod 660 /course/gradebook.db ; true ; }}".format(username))  # {{ and }} escape .format()
+                #cmds.append("groupadd --gid 100 --non-unique users")
+                #cmds.append("adduser jovyan users")
+                cmds.append(r"sed -r -i 's/^(UMASK.*)022/\1007/' /etc/login.defs")
+                cmds.append(r"echo Defaults umask=0007, umask_override >> /etc/sudoers")
+                #cmds.append(r"{{ test ! -e /course/gradebook.db && sudo -u nobody touch /course/gradebook.db && chown {} /course/gradebook.db && chmod 660 /course/gradebook.db ; true ; }}".format(username))  # {{ and }} escape .format()
                 environ['NB_PRE_START_HOOK'] =  r"set -x ; sudo -u {username} bash -c 'set -x ; test ! -e /course/gradebook.db && touch /course/gradebook.db && chmod 660 /course/gradebook.db || true ;'".format(username=username)  # {{ and }} escape .format()
             else:
                 spawner.gid = spawner.fs_gid = course_gid
                 spawner.supplemental_gids.insert(0, course_gid)
-                cmds.insert(-1, r"test ! -e /course/gradebook.db && touch /course/gradebook.db && chmod 660 /course/gradebook.db || true")
+                cmds.append(r"test ! -e /course/gradebook.db && touch /course/gradebook.db && chmod 660 /course/gradebook.db || true")
                 # umask 0007 inserted above
         else:
-            cmds.insert(-1, "disable_formgrader.sh")
+            cmds.append("disable_formgrader.sh")
 
         # Student config
         if username in course_data.get('students', {}):
@@ -368,6 +381,7 @@ def pre_spawn_hook(spawner):
 
     # Common final setup
     #print(vars(spawner))
+    cmds.append("source start-notebook.sh")   # args added later in KubeSpawner
     spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
 
 c.KubeSpawner.pre_spawn_hook = pre_spawn_hook

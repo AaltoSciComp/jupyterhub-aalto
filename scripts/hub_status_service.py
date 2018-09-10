@@ -137,7 +137,7 @@ async def test_spawn():
     print("Testing spawn", file=sys.stdout)
     log.debug("Testing spawn")
     try:
-        os.environ['SPAWN_TEST_USERNAME'] = 'student3'
+        os.environ['SPAWN_TEST_USERNAME'] = 'cistudent1'
         p = await asyncio.create_subprocess_exec('python', '/srv/jupyterhub/spawn_test.py',
                                   stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,)
         stdout, _not_stderr = await p.communicate()
