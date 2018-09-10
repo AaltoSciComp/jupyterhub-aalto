@@ -10,6 +10,7 @@ API = 'http://10.104.184.130:8081/hub/api/'
 AUTH_DATA_FILE = 'secrets/spawn_test_token.txt'
 
 import logging
+import os
 import time
 
 import requests
@@ -19,9 +20,14 @@ logging.getLogger('requests').setLevel(logging.WARN)
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
-auth_data = open(AUTH_DATA_FILE).readlines()
-token = auth_data[0].strip()
-username = auth_data[1].strip()
+if 'JUPYTERHUB_API_TOKEN' in os.environ:
+    # Running as a subservice
+    token = os.environ['JUPYTERHUB_API_TOKEN']
+    username = os.environ['SPAWN_TEST_USERNAME']
+else:
+    auth_data = open(AUTH_DATA_FILE).readlines()
+    token = auth_data[0].strip()
+    username = auth_data[1].strip()
 
 # Automatic authentication class
 class TokenAuth(requests.auth.AuthBase):

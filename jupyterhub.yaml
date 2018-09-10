@@ -57,6 +57,9 @@ spec:
         - name: hub-status-service
           mountPath: /srv/jupyterhub/hub_status_service.py
           subPath: hub_status_service.py
+        - name: spawn-test
+          mountPath: /srv/jupyterhub/spawn_test.py
+          subPath: spawn_test.py
 #        - name: idrsa
 #          mountPath: /root/.ssh/id_rsa
 #          subPath: id_rsa_hub
@@ -108,6 +111,9 @@ spec:
       - name: hub-status-service
         configMap:
           name: hub-status-service
+      - name: spawn-test
+        configMap:
+          name: spawn-test
       nodeSelector:
         app: jupyterhub
       serviceAccountName: jupyter-notebook-spawner

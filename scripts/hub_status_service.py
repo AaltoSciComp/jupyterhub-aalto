@@ -9,26 +9,28 @@ API = 'http://10.104.184.130:8081/hub/api/'
 # page.
 AUTH_DATA_FILE = 'secrets/spawn_test_token.txt'
 
+import asyncio
 from collections import defaultdict
 import datetime
 import dateutil.parser
 import json
 import logging
 import os
+import subprocess
 import sys
 import time
 from urllib.parse import urlparse
 
 import requests
 
-now = datetime.datetime.now().timestamp()
-
+LAST_SUCCESSFUL_SPAWN_TIME = None
+LAST_SUCCESSFUL_SPAWN_ATTEMPT_TIME = None
 if '-v' in sys.argv:
     logging.basicConfig(level=logging.DEBUG)
 else:
     logging.basicConfig(level=logging.WARN)
 logging.getLogger('requests').setLevel(logging.WARN)
-log = logging.getLogger(__name__)
+log = logging.getLogger('test_spawn')
 log.setLevel(logging.WARN)
 
 
@@ -64,6 +66,7 @@ def poll_until_pending_done(get):
 
 ########################################
 def get_stats(get):
+    now = datetime.datetime.now().timestamp()
     STATUS= { }
 
     # JH version
@@ -92,10 +95,20 @@ def get_stats(get):
             if secs_ago <  300: last_active['005m'] += 1
             if secs_ago <  900: last_active['015m'] += 1
             if secs_ago < 1800: last_active['030m'] += 1
-            if secs_ago < 3600: last_active['060h'] += 1
-            if secs_ago < 7200: last_active['120h'] += 1
+            if secs_ago < 3600: last_active['060m'] += 1
+            if secs_ago < 7200: last_active['120m'] += 1
     STATUS['pods_active'] = active_pod_names
     STATUS['servers_last_active'] = last_active
+    if LAST_SUCCESSFUL_SPAWN_TIME:
+        STATUS['spawn_test_last_successful'] = now - LAST_SUCCESSFUL_SPAWN_TIME
+        STATUS['spawn_test_last_successful_ts'] = LAST_SUCCESSFUL_SPAWN_TIME
+        STATUS['spawn_test_successful'] = (now - LAST_SUCCESSFUL_SPAWN_TIME) < 120
+    else:
+        STATUS['spawn_test_last_successful'] = None
+        STATUS['spawn_test_last_successful_ts'] = None
+        STATUS['spawn_test_successful'] = 0
+    STATUS['spawn_test_last_attempt_ts'] = LAST_SUCCESSFUL_SPAWN_ATTEMPT_TIME
+
 
 
     r = get('services')
@@ -118,6 +131,31 @@ def get_stats(get):
 
     return STATUS
 
+async def test_spawn():
+    global LAST_SUCCESSFUL_SPAWN_TIME, LAST_SUCCESSFUL_SPAWN_ATTEMPT_TIME
+    LAST_SUCCESSFUL_SPAWN_ATTEMPT_TIME = datetime.datetime.now().timestamp()
+    print("Testing spawn", file=sys.stdout)
+    log.debug("Testing spawn")
+    try:
+        os.environ['SPAWN_TEST_USERNAME'] = 'student3'
+        p = await asyncio.create_subprocess_exec('python', '/srv/jupyterhub/spawn_test.py',
+                                  stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,)
+        stdout, _not_stderr = await p.communicate()
+        ret = p.returncode
+        if ret != 0:
+            log.error("Spawn test failed!")
+            log.error(stdout)
+            return
+    except:
+        import traceback
+        log.error(traceback.format_exc())
+        return False
+    LAST_SUCCESSFUL_SPAWN_TIME = datetime.datetime.now().timestamp()
+    return True
+
+
+
+
 
 
 def make_prom_line(key, val, labels={}):
@@ -126,7 +164,10 @@ def make_prom_line(key, val, labels={}):
         label_list.append('{}="{}"'.format(l_key, l))
 
     label_list_str = ",".join(label_list)
-    return "jhub_{}{{{}}} {}\n".format(key, label_list_str, val)
+    if val is True: val=1
+    if val is False: val=0
+    if val is None: val=0
+    return "jhub_%s{%s} %s\n"%(key, label_list_str, val)
 
 if __name__ == '__main__':
     if 'JUPYTERHUB_API_TOKEN' in os.environ:
@@ -149,7 +190,7 @@ if __name__ == '__main__':
         get = get_requests
 
 
-        from tornado.ioloop import IOLoop
+        from tornado.ioloop import IOLoop, PeriodicCallback
         from tornado.httpserver import HTTPServer
         from tornado.web import RequestHandler, Application, authenticated
         from jupyterhub.services.auth import HubAuthenticated
@@ -161,7 +202,7 @@ if __name__ == '__main__':
                 #if not user_model['admin']:
                 #    self.write(json.dumps({'error':'Not authenticated'}))
                 #    return
-                
+
                 STATUS = get_stats(get)
                 if self.get_query_argument("type", default=None) == "prometheus":
                     self.set_header('content-type', 'text/plain')
@@ -173,7 +214,7 @@ if __name__ == '__main__':
                         else:
                             output += make_prom_line(key, val)
                     self.write(output)
-                            
+
                 else:
                     self.set_header('content-type', 'application/json')
                     self.write(json.dumps(STATUS, indent=1, sort_keys=True))
@@ -187,6 +228,13 @@ if __name__ == '__main__':
         #url = urlparse(os.environ['JUPYTERHUB_SERVICE_URL'])
         url = urlparse('http://0.0.0.0:36541')
         http_server.listen(url.port, url.hostname)
+
+        # Background thread that tests spawning.
+        pc = PeriodicCallback(test_spawn, 1e3 * 60)
+        pc.start()
+        # But do it right now, too...
+        IOLoop.current().add_callback(test_spawn)
+
         IOLoop.current().start()
 
 
