@@ -21,6 +21,7 @@ c.JupyterHub.hub_bind_url = 'http://0.0.0.0:8081'
 c.JupyterHub.hub_connect_ip = os.environ['JUPYTERHUB_SVC_SERVICE_HOST']
 c.JupyterHub.cleanup_servers = False  # leave servers running if hub restarts
 c.JupyterHub.template_paths = ["/srv/jupyterhub/templates/"]
+c.JupyterHub.last_activity_interval = 120  # default 300
 # Proxy config
 #c.ConfigurableHTTPProxy.api_url = 'http://jupyterhub-chp-svc.default:8001'  # 10.104.184.140
 c.ConfigurableHTTPProxy.api_url = 'http://%s:8001'%os.environ['JUPYTERHUB_CHP_SVC_SERVICE_HOST']
@@ -51,10 +52,10 @@ c.KubeSpawner.notebook_dir = "/"
 # have root_squash.
 #c.KubeSpawner.singleuser_working_dir = '/notebooks'
 # Note: instructors get different limits, see below.
-c.KubeSpawner.cpu_limit = 1
+c.KubeSpawner.cpu_limit = 3
 c.KubeSpawner.mem_limit = '.9G'
 c.KubeSpawner.cpu_guarantee = .25
-c.KubeSpawner.mem_guarantee = '.9G'
+c.KubeSpawner.mem_guarantee = '.5G'
 
 
 # Volume mounts
@@ -316,10 +317,10 @@ def pre_spawn_hook(spawner):
             # Instructors get the whole filesystem tree, because they
             # need to be able to access "/course", too.  Warning, you
             # will have different paths!  (fix later...)
-            spawner.cpu_limit = 1
+            #spawner.cpu_limit = 1
             spawner.mem_limit = '2048M'
             spawner.cpu_guarantee = .5
-            spawner.mem_guarantee = '512M'
+            spawner.mem_guarantee = '1G'
             for line in ['c.NbGrader.logfile = "/course/.nbgraber.log"',
                         ]:
                 cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
