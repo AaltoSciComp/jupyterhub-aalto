@@ -120,6 +120,8 @@ def GET_COURSES():
     # - add course GIDs by looking up via `getent group`.
     # - Look up extra instructors by using `getent group`
     for course_slug, course_data in courses.items():
+        if 'instructors' not in course_data: course_data['instructors'] = set()
+        if 'students'    not in course_data: course_data['students']    = set()
         try:
             if 'gid' not in course_data:
                 course_data['gid'] = grp.getgrnam('jupyter-'+course_slug).gr_gid
@@ -158,10 +160,10 @@ def get_profile_list(spawner):
             'course_slug': course_slug,}
         } for (course_slug, course_data) in GET_COURSES().items()
           if (course_data.get('active', True)
-              #and ((not course_data.get('private', False)  # requires next kubespawner
-              #      or spawner.user.name in course_data['instructors']
-              #      or spawner.user.name in course_data['instructors'])
-              #     or spawner.user.name in {'student1', 'student2', 'student3'})
+              and ((not course_data.get('private', False)
+                    or spawner.user.name in course_data.get('instructors', [])
+                    or spawner.user.name in course_data.get('students'), [])
+                   or spawner.user.name in {'student1', 'student2', 'student3'})
              )
     ])
     return PROFILE_LIST
