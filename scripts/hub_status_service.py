@@ -11,6 +11,7 @@ AUTH_DATA_FILE = 'secrets/spawn_test_token.txt'
 
 import asyncio
 from collections import defaultdict
+import copy
 import datetime
 import dateutil.parser
 import json
@@ -79,11 +80,28 @@ def get_stats(get):
     STATUS['users_active'] = sum([ 1 if user['server'] or user['pending'] else 0 for user in r ])
     STATUS['users_total'] = len(r)
     STATUS['servers_active'] = sum([ len(user['servers']) for user in r ])
+    STATUS['servers_pending'] = sum([ 1 if user['pending'] else 0 for user in r ])
     active_pod_names = defaultdict(int)
-    last_active = {'005m':0, '015m':0, '030m':0, '060m':0, '120m':0,}
+    last_active = {'005m':0, '010m':0, '015m':0, '020m':0, '030m':0, '060m':0, '120m':0,}
+    user_last_active = copy.deepcopy(last_active)
+    user_last_active.update({'360m':0, '1440m':0, '10080m':0})
+    server_age = copy.deepcopy(last_active)
+    server_age.update({'180m': 0, '240m': 0, '300m': 0})
+    def increment_bins(data, value):
+        """Go through dict 'data' and increment counters.
+
+        Key format: 'NNNm' (number of minutes)."""
+        for key in data:
+            if secs_ago < int(key[:-1])*60:
+                data[key] += 1
     for user in r:
         log.debug(user['servers'])
-        last_activity = None
+        # Track user activity
+        if user['last_activity']:
+            last_ts = dateutil.parser.parse(user['last_activity']).timestamp()
+            secs_ago = now - last_ts
+            increment_bins(user_last_active, secs_ago)
+        # Track server activity
         for name, server in user['servers'].items():
             components = server['state']['pod_name'].split('-')
             if len(components) < 3:
@@ -92,13 +110,17 @@ def get_stats(get):
                 active_pod_names[components[-1]] += 1
             last_ts = dateutil.parser.parse(server['last_activity']).timestamp()
             secs_ago = now - last_ts
-            if secs_ago <  300: last_active['005m'] += 1
-            if secs_ago <  900: last_active['015m'] += 1
-            if secs_ago < 1800: last_active['030m'] += 1
-            if secs_ago < 3600: last_active['060m'] += 1
-            if secs_ago < 7200: last_active['120m'] += 1
+            increment_bins(last_active, secs_ago)
+            start_ts = dateutil.parser.parse(server['started']).timestamp()
+            secs_ago = now - last_ts
+            increment_bins(server_age, secs_ago)
+
+        # Track server start time
+        # --> server['started']
     STATUS['pods_active'] = active_pod_names
     STATUS['servers_last_active'] = last_active
+    STATUS['servers_age'] = server_age
+    STATUS['users_last_active'] = user_last_active
     if LAST_SUCCESSFUL_SPAWN_TIME:
         STATUS['spawn_test_last_successful'] = now - LAST_SUCCESSFUL_SPAWN_TIME
         STATUS['spawn_test_last_successful_ts'] = LAST_SUCCESSFUL_SPAWN_TIME
@@ -118,15 +140,11 @@ def get_stats(get):
     r = get('proxy')
     log.debug(r)
     STATUS['proxy_routes_count'] = len(r)
-    last_active = {'005m':0, '015m':0, '030m':0, '060m':0, '120m':0,}
+    last_active = {'005m':0, '015m':0, '030m':0, '060m':0, '120m':0}
     for prefix, route in r.items():
         last_ts = dateutil.parser.parse(route['data']['last_activity']).timestamp()
         secs_ago = now - last_ts
-        if secs_ago <  300: last_active['005m'] += 1
-        if secs_ago <  900: last_active['015m'] += 1
-        if secs_ago < 1800: last_active['030m'] += 1
-        if secs_ago < 3600: last_active['060m'] += 1
-        if secs_ago < 7200: last_active['120m'] += 1
+        increment_bins(last_active, secs_ago)
     STATUS['proxy_last_active'] = last_active
 
     return STATUS
