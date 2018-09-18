@@ -341,7 +341,7 @@ def pre_spawn_hook(spawner):
                 course_gid = int(course_data['gid'])
             spawner.log.debug("pre_spawn_hook: Course gid for {} is {}", course_slug, course_gid)
             cmds.append(r"umask 0007")  # also used through sudo
-            if 'NB_UID' in environ:
+            if ROOT_THEN_SU:
                 # This branch happens only if we are root (see above)
                 environ['NB_GID'] = str(course_gid)
                 environ['NB_GROUP'] = 'jupyter-'+course_slug
