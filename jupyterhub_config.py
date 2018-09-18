@@ -201,7 +201,7 @@ def pre_spawn_hook(spawner):
     #cmds.append("pip install --upgrade --no-deps https://github.com/rkdarst/nbgrader/archive/live.zip")
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
-    c.KubeSpawner.working_dir = '/'
+    spawner.working_dir = '/'
 
     # Note: current (summer 2018) conda version of kubespawner does
     # not use "uid" or "gid" options as you see in the latest
@@ -251,6 +251,8 @@ def pre_spawn_hook(spawner):
     # We are not part of a course, so do only generic stuff
     if not course_slug:
         cmds.append("disable_formgrader.sh")
+        # The pod_name must always be set, otherwise it uses the last pod name.
+        spawner.pod_name = 'jupyter-{}{}'.format(username, '-'+spawner.name if spawner.name else '')
 
     # Course configuration - only if it is a course
     else:
