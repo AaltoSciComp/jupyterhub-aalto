@@ -9,7 +9,7 @@ import sys
 import time
 import yaml
 
-DEFAULT_IMAGE = 'aaltoscienceit/notebook-server:0.3.4'
+DEFAULT_IMAGE = 'aaltoscienceit/notebook-server:0.3.5'
 ROOT_THEN_SUDO = False
 
 
