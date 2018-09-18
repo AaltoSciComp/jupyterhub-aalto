@@ -10,7 +10,7 @@ import time
 import yaml
 
 DEFAULT_IMAGE = 'aaltoscienceit/notebook-server:0.3.5'
-ROOT_THEN_SUDO = False
+ROOT_THEN_SU = True
 
 
 c.Application.log_level = 'INFO'
@@ -210,7 +210,7 @@ def pre_spawn_hook(spawner):
     # Default setup of /etc/passwd: jovyan:x:1000:0
     # Default setup of /etc/group: users:x:100
 
-    if not ROOT_THEN_SUDO:
+    if not ROOT_THEN_SU:
         # Manually run as uid from outside the container
         spawner.singleuser_uid = uid
         # default of user in docker image (note: not in image kubespawer yet!)
