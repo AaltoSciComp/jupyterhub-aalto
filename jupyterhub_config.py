@@ -42,6 +42,14 @@ c.ConfigurableHTTPProxy.should_start = False
 
 
 # Authentication
+from jupyterhub.auth import PAMAuthenticator
+class NormalizingPAMAuthenticator(PAMAuthenticator):
+    def normalize_username(self, username):
+        # pass through uid to ensure that all names that
+        # correspond to one uid map to the same jupyterhub user
+        uid = pwd.getpwnam(username).pw_uid
+        return super().normalize_username(pwd.getpwuid(uid).pw_name)
+c.JupyterHub.authenticator_class = NormalizingPAMAuthenticator
 #c.Authenticator.delete_invalid_users = True  # delete users once no longer in Aalto AD
 c.Authenticator.admin_users = {'darstr1', }
 USER_RE = re.compile('^[a-z0-9.]+$')
