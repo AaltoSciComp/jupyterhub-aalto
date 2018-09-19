@@ -62,6 +62,7 @@ c.KubeSpawner.hub_connect_port = 8081
 c.KubeSpawner.http_timeout = 60 * 5
 c.KubeSpawner.disable_user_config = True
 c.KubeSpawner.common_labels = { "app": "notebook-server" }
+#c.KubeSpawner.poll_interval = 30  # default 30, check each pod for aliveness this often
 
 # User environment config
 c.KubeSpawner.image_spec = DEFAULT_IMAGE
@@ -201,6 +202,11 @@ def create_user_dir(username, uid):
 
 
 def pre_spawn_hook(spawner):
+    # Note: spawners Python objects are persistent, and if you don't
+    # clear certain attributes, they will persist across restarts!
+    spawner.node_selector = { }
+    spawner.tolerations = [ ]
+
     # Get basic info
     username = spawner.user.name
     if not USER_RE.match(username):
@@ -239,6 +245,8 @@ def pre_spawn_hook(spawner):
         spawner.gid = spawner.fs_gid = 70000
         # group 'users' required in order to write config files etc
         spawner.supplemental_gids = [70000, 100]
+        # This must be set so that nbgrader has right username.  TODO: does it work?
+        environ['NB_USER'] = username
     else:
         # To do this, you should have /home/$username exist...
         environ['NB_USER'] = username
