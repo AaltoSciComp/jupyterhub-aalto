@@ -166,6 +166,7 @@ def get_profile_list(spawner):
              # if callable is here, set spawner.k = v(spawner)
              'course_slug': '',
              'default_url': "lab/tree/notebooks/",
+             'x_jupyter_enable_lab': True
          }
         }
     ]
@@ -218,6 +219,8 @@ def pre_spawn_hook(spawner):
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.bashrc")
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.profile")
     #cmds.append("pip install --upgrade --no-deps https://github.com/rkdarst/nbgrader/archive/live.zip")
+    if getattr(spawner, 'x_jupyter_enable_lab', False):
+        environ['JUPYTER_ENABLE_LAB'] = 'true'
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
     spawner.working_dir = '/'
