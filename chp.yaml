@@ -38,6 +38,8 @@ spec:
               secretKeyRef:
                 name: chp-secret
                 key: chp-secret.txt
+          - name: TZ
+            value: Europe/Helsinki
       tolerations:
       - key: jupyterhub
         operator: Exists

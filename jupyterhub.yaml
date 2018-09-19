@@ -25,6 +25,8 @@ spec:
         - containerPort: 8081
         - containerPort: 36541
         env:
+        - name: TZ
+          value: Europe/Helsinki
 #        - name: NO_AD_JOIN
 #          value: "true"
         - name: CONFIGPROXY_AUTH_TOKEN

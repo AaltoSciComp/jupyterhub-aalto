@@ -220,6 +220,7 @@ def pre_spawn_hook(spawner):
     # Set basic spawner properties
     #storage_capacity = ???
     spawner.environment = environ = { }  # override env
+    environ['TZ'] = os.environ.get('TZ', 'Europe/Helsinki')
     cmds = [ ]
     # Remove the .jupyter config that is already there
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.bashrc")
