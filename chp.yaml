@@ -46,3 +46,5 @@ spec:
       - name: chp-secret
         secret:
           secretName: chp-secret
+      nodeSelector:
+        app: jupyterhub
