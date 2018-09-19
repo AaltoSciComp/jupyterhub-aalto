@@ -10,6 +10,17 @@ import time
 import yaml
 
 DEFAULT_IMAGE = 'aaltoscienceit/notebook-server:0.3.5'
+DEFAULT_MEM_GUARANTEE = '.5G'
+DEFAULT_CPU_GUARANTEE = .25
+DEFAULT_MEM_LIMIT = '.9G'
+DEFAULT_CPU_LIMIT = 3
+INSTRUCTOR_MEM_LIMIT = '2G'
+INSTRUCTOR_CPU_LIMIT = 3
+INSTRUCTOR_MEM_GUARANTEE = '1G'
+INSTRUCTOR_CPU_GUARANTEE = DEFAULT_CPU_GUARANTEE
+
+
+
 ROOT_THEN_SU = True
 
 
@@ -52,10 +63,10 @@ c.KubeSpawner.notebook_dir = "/"
 # have root_squash.
 #c.KubeSpawner.singleuser_working_dir = '/notebooks'
 # Note: instructors get different limits, see below.
-c.KubeSpawner.cpu_limit = 3
-c.KubeSpawner.mem_limit = '.9G'
-c.KubeSpawner.cpu_guarantee = .25
-c.KubeSpawner.mem_guarantee = '.5G'
+c.KubeSpawner.cpu_limit = DEFAULT_CPU_LIMIT
+c.KubeSpawner.mem_limit = DEFAULT_MEM_LIMIT
+c.KubeSpawner.cpu_guarantee = DEFAULT_CPU_GUARANTEE
+c.KubeSpawner.mem_guarantee = DEFAULT_MEM_GUARANTEE
 
 
 # Volume mounts
@@ -322,9 +333,9 @@ def pre_spawn_hook(spawner):
             # need to be able to access "/course", too.  Warning, you
             # will have different paths!  (fix later...)
             #spawner.cpu_limit = 1
-            spawner.mem_limit = '2048M'
-            spawner.cpu_guarantee = .5
-            spawner.mem_guarantee = '1G'
+            spawner.mem_limit = INSTRUCTOR_MEM_LIMIT
+            spawner.cpu_guarantee = INSTRUCTOR_CPU_GUARANTEE
+            spawner.mem_guarantee = INSTRUCTOR_MEM_GUARANTEE
             for line in ['c.NbGrader.logfile = "/course/.nbgraber.log"',
                         ]:
                 cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
