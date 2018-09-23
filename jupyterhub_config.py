@@ -2,6 +2,7 @@ import copy
 import glob
 import grp
 import os
+from pprint import pprint
 import pwd # for resolving username --> uid
 import re
 import socket
@@ -166,7 +167,7 @@ def get_profile_list(spawner):
          'kubespawner_override': {
              # if callable is here, set spawner.k = v(spawner)
              'course_slug': '',
-             'x_jupyter_enable_lab': True
+             'x_jupyter_enable_lab': True,
          }
         }
     ]
@@ -188,6 +189,10 @@ def get_profile_list(spawner):
                    or spawner.user.admin)
              )
     ])
+    #pprint(GET_COURSES().items(), stream=sys.stderr)
+    #pprint(spawner.user.name, stream=sys.stderr)
+    #pprint(PROFILE_LIST, stream=sys.stderr)
+
     return PROFILE_LIST
 # In next version of kubespawner, leave as callable to regen every
 # time, without restart.
@@ -425,7 +430,7 @@ def pre_spawn_hook(spawner):
         exec(open(hook_file).read())
 
     # Common final setup
-    #print(vars(spawner))
+    #pprint(vars(spawner), stream=sys.stderr)
     cmds.append("source start-notebook.sh")   # args added later in KubeSpawner
     spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
 
