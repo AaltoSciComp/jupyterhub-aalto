@@ -111,9 +111,10 @@ def get_stats(get):
             last_ts = dateutil.parser.parse(server['last_activity']).timestamp()
             secs_ago = now - last_ts
             increment_bins(last_active, secs_ago)
-            start_ts = dateutil.parser.parse(server['started']).timestamp()
-            secs_ago = now - last_ts
-            increment_bins(server_age, secs_ago)
+            if server['started']:
+                start_ts = dateutil.parser.parse(server['started']).timestamp()
+                secs_ago = now - last_ts
+                increment_bins(server_age, secs_ago)
 
         # Track server start time
         # --> server['started']
