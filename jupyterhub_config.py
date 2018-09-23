@@ -9,13 +9,13 @@ import sys
 import time
 import yaml
 
-DEFAULT_IMAGE = 'aaltoscienceit/notebook-server:0.3.5'
+DEFAULT_IMAGE = 'aaltoscienceit/notebook-server:0.3.6'
 DEFAULT_MEM_GUARANTEE = '.5G'
-DEFAULT_CPU_GUARANTEE = .25
+DEFAULT_CPU_GUARANTEE = .10
 DEFAULT_MEM_LIMIT = '.9G'
-DEFAULT_CPU_LIMIT = 3
+DEFAULT_CPU_LIMIT = 4
 INSTRUCTOR_MEM_LIMIT = '2G'
-INSTRUCTOR_CPU_LIMIT = 3
+INSTRUCTOR_CPU_LIMIT = DEFAULT_CPU_LIMIT
 INSTRUCTOR_MEM_GUARANTEE = '1G'
 INSTRUCTOR_CPU_GUARANTEE = DEFAULT_CPU_GUARANTEE
 
@@ -166,7 +166,6 @@ def get_profile_list(spawner):
          'kubespawner_override': {
              # if callable is here, set spawner.k = v(spawner)
              'course_slug': '',
-             'default_url': "lab/tree/notebooks/",
              'x_jupyter_enable_lab': True
          }
         }
@@ -174,11 +173,12 @@ def get_profile_list(spawner):
     PROFILE_LIST.append(copy.deepcopy(PROFILE_LIST[0]))
     PROFILE_LIST[-1]['display_name'] = 'General use'
     del PROFILE_LIST[-1]['default']
-    del PROFILE_LIST[-1]['kubespawner_override']['default_url']
+    del PROFILE_LIST[-1]['kubespawner_override']['x_jupyter_enable_lab']
+    #del PROFILE_LIST[-1]['kubespawner_override']['default_url']
     PROFILE_LIST.extend([{
         'display_name': course_data.get('name', course_slug),
         'kubespawner_override': {
-            'course_slug': course_slug,}
+            'course_slug': course_slug}
         } for (course_slug, course_data) in GET_COURSES().items()
           if (course_data.get('active', True)
               and (not course_data.get('private', False)
@@ -207,6 +207,7 @@ def pre_spawn_hook(spawner):
     # clear certain attributes, they will persist across restarts!
     spawner.node_selector = { }
     spawner.tolerations = [ ]
+    spawner.default_url = c.KubeSpawner.default_url
 
     # Get basic info
     username = spawner.user.name
@@ -229,6 +230,8 @@ def pre_spawn_hook(spawner):
     #cmds.append("pip install --upgrade --no-deps https://github.com/rkdarst/nbgrader/archive/live.zip")
     if getattr(spawner, 'x_jupyter_enable_lab', False):
         environ['JUPYTER_ENABLE_LAB'] = 'true'
+        spawner.default_url = "lab/tree/notebooks/"
+    #cmds.append('jupyter labextension enable @jupyterlab/google-drive')
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
     spawner.working_dir = '/'
@@ -295,6 +298,9 @@ def pre_spawn_hook(spawner):
         if 'image' in course_data:
             spawner.image_spec = course_data['image']
         spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
+        if getattr(course_data, 'jupyterlab', False):
+            environ['JUPYTER_ENABLE_LAB'] = 'true'
+            spawner.default_url = "lab/tree/notebooks/"
 
         # Make a copy of the *default* class volumes.  The "spawner" object
         # is constantly reused.
