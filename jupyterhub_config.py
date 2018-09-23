@@ -181,10 +181,11 @@ def get_profile_list(spawner):
             'course_slug': course_slug,}
         } for (course_slug, course_data) in GET_COURSES().items()
           if (course_data.get('active', True)
-              and ((not course_data.get('private', False)
-                    or spawner.user.name in course_data.get('instructors', [])
-                    or spawner.user.name in course_data.get('students'), [])
-                   or spawner.user.name in {'student1', 'student2', 'student3'})
+              and (not course_data.get('private', False)
+                   or spawner.user.name in course_data.get('instructors', [])
+                   or spawner.user.name in course_data.get('students', [])
+                   or spawner.user.name in {'student1', 'student2', 'student3'}
+                   or spawner.user.admin)
              )
     ])
     return PROFILE_LIST
