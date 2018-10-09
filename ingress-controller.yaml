@@ -76,6 +76,8 @@ metadata:
   namespace: ingress-nginx
   labels:
     app: ingress-nginx
+data:
+  proxy-body-size: 20m
 ---
 
 kind: ConfigMap
