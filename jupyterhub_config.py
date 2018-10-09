@@ -10,19 +10,42 @@ import sys
 import time
 import yaml
 
+
 DEFAULT_IMAGE = 'aaltoscienceit/notebook-server:0.3.6'
+DEFAULT_IMAGE_R = 'aaltoscienceit/notebook-server-r-ubuntu:0.4.1'
 DEFAULT_MEM_GUARANTEE = '.5G'
 DEFAULT_CPU_GUARANTEE = .10
-DEFAULT_MEM_LIMIT = '.9G'
+DEFAULT_MEM_LIMIT = '2G'
 DEFAULT_CPU_LIMIT = 4
 INSTRUCTOR_MEM_LIMIT = '2G'
 INSTRUCTOR_CPU_LIMIT = DEFAULT_CPU_LIMIT
 INSTRUCTOR_MEM_GUARANTEE = '1G'
 INSTRUCTOR_CPU_GUARANTEE = DEFAULT_CPU_GUARANTEE
-
-
-
 ROOT_THEN_SU = True
+
+# Default profile list
+PROFILE_LIST_DEFAULT = [
+    {'display_name': 'Python: General use (JupyterLab)',
+     'default': True,
+     'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True, }
+    },
+    {'display_name': 'Python: General use (classic notebook)',
+     'kubespawner_override': {'course_slug': ''}
+    },
+    {'display_name': 'R: General use (JupyterLab)',
+     'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
+                               'image_spec': DEFAULT_IMAGE_R, }
+    },
+    {'display_name': '(testing) Python: General use 0.4.1 (JupyterLab)',
+     'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
+                               'image_spec': 'aaltoscienceit/notebook-server:0.4.1', }
+    },
+]
+# Set up generic without jupyterlab
+# RStan
+
+
+
 
 
 c.Application.log_level = 'INFO'
@@ -161,22 +184,9 @@ def get_profile_list(spawner):
     """gerenate the k8s profile_list.
     """
     #c.JupyterHub.log.debug("Recreating profile list")
-    PROFILE_LIST = [
-        {'display_name': 'General use + JupyterLab',
-         'default': True,
-         'kubespawner_override': {
-             # if callable is here, set spawner.k = v(spawner)
-             'course_slug': '',
-             'x_jupyter_enable_lab': True,
-         }
-        }
-    ]
-    PROFILE_LIST.append(copy.deepcopy(PROFILE_LIST[0]))
-    PROFILE_LIST[-1]['display_name'] = 'General use'
-    del PROFILE_LIST[-1]['default']
-    del PROFILE_LIST[-1]['kubespawner_override']['x_jupyter_enable_lab']
-    #del PROFILE_LIST[-1]['kubespawner_override']['default_url']
-    PROFILE_LIST.extend([{
+    # All courses
+    profile_list = copy.deepcopy(PROFILE_LIST_DEFAULT)
+    profile_list.extend([{
         'display_name': course_data.get('name', course_slug),
         'kubespawner_override': {
             'course_slug': course_slug}
@@ -191,9 +201,9 @@ def get_profile_list(spawner):
     ])
     #pprint(GET_COURSES().items(), stream=sys.stderr)
     #pprint(spawner.user.name, stream=sys.stderr)
-    #pprint(PROFILE_LIST, stream=sys.stderr)
+    #pprint(profile_list, stream=sys.stderr)
 
-    return PROFILE_LIST
+    return profile_list
 # In next version of kubespawner, leave as callable to regen every
 # time, without restart.
 c.KubeSpawner.profile_list = get_profile_list  #(None)
