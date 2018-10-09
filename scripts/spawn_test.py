@@ -3,7 +3,8 @@
 This script starts
 """
 
-API = 'http://10.104.184.130:8081/hub/api/'
+#API = 'http://10.104.184.130:8081/hub/api/'
+API = 'https://jupyter.cs.aalto.fi/hub/api/'
 # This file needs two lines in it: 0th line is token, 1st line is
 # username to spawn servers of.  This can be made from the JH Token
 # page.
