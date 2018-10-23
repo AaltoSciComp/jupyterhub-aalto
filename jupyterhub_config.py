@@ -11,8 +11,9 @@ import time
 import yaml
 
 
-DEFAULT_IMAGE = 'aaltoscienceit/notebook-server:0.3.6'
-DEFAULT_IMAGE_R = 'aaltoscienceit/notebook-server-r-ubuntu:0.4.1'
+IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:0.4.3'
+IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:0.4.3'
+#IMAGE_TESTING = 'aaltoscienceit/notebook-server:0.4.2'
 DEFAULT_MEM_GUARANTEE = '.5G'
 DEFAULT_CPU_GUARANTEE = .10
 DEFAULT_MEM_LIMIT = '2G'
@@ -25,22 +26,25 @@ ROOT_THEN_SU = True
 
 # Default profile list
 PROFILE_LIST_DEFAULT = [
-    {'display_name': 'Python: General use (JupyterLab)',
+    {'display_name': 'Python: General use %s (JupyterLab)'%(IMAGE_DEFAULT.split(':')[-1]),
      'default': True,
      'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True, }
     },
-    {'display_name': 'Python: General use (classic notebook)',
+    {'display_name': 'Python: General use %s (classic notebook)'%(IMAGE_DEFAULT.split(':')[-1]),
      'kubespawner_override': {'course_slug': ''}
     },
-    {'display_name': 'R: General use (JupyterLab)',
+    {'display_name': 'R: General use %s (JupyterLab)'%(IMAGE_DEFAULT_R.split(':')[-1]),
      'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
-                               'image_spec': DEFAULT_IMAGE_R, }
-    },
-    {'display_name': '(testing) Python: General use 0.4.1 (JupyterLab)',
-     'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
-                               'image_spec': 'aaltoscienceit/notebook-server:0.4.1', }
+                               'image_spec': IMAGE_DEFAULT_R, }
     },
 ]
+if 'IMAGE_TESTING' in globals():
+    PROFILE_LIST_DEFAULT.append(
+    {'display_name': '(testing) Python: General use %s (JupyterLab)'%(IMAGE_TESTING.split(':')[-1]),
+     'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
+                               'image_spec': IMAGE_TESTING, }
+    })
+
 # Set up generic without jupyterlab
 # RStan
 
@@ -61,7 +65,7 @@ c.JupyterHub.last_activity_interval = 120  # default 300
 #c.ConfigurableHTTPProxy.api_url = 'http://jupyterhub-chp-svc.default:8001'  # 10.104.184.140
 c.ConfigurableHTTPProxy.api_url = 'http://%s:8001'%os.environ['JUPYTERHUB_CHP_SVC_SERVICE_HOST']
 c.ConfigurableHTTPProxy.auth_token = open('/srv/jupyterhub/chp-secret.txt').read()
-print('auth_token=', repr(c.ConfigurableHTTPProxy.auth_token), file=sys.stderr)
+#print('auth_token=', repr(c.ConfigurableHTTPProxy.auth_token), file=sys.stderr)
 c.ConfigurableHTTPProxy.should_start = False
 
 
@@ -89,7 +93,7 @@ c.KubeSpawner.common_labels = { "app": "notebook-server" }
 #c.KubeSpawner.poll_interval = 30  # default 30, check each pod for aliveness this often
 
 # User environment config
-c.KubeSpawner.image_spec = DEFAULT_IMAGE
+c.KubeSpawner.image_spec = IMAGE_DEFAULT
 c.KubeSpawner.default_url = "tree/notebooks"
 c.KubeSpawner.notebook_dir = "/"
 # doesn't work, because we start as root, this happens as root but we
