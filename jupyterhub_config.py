@@ -443,6 +443,11 @@ def pre_spawn_hook(spawner):
 
     # Common final setup
     #pprint(vars(spawner), stream=sys.stderr)
+    for var in ['OMP_NUM_THREADS',
+                'OPENBLAS_NUM_THREADS',
+                'NUMEXPR_NUM_THREADS',
+                'MKL_NUM_THREADS', ]:
+        environ[var] = str(int(spawner.cpu_limit))
     cmds.append("source start-notebook.sh")   # args added later in KubeSpawner
     spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
 
