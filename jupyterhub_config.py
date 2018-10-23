@@ -108,16 +108,14 @@ c.KubeSpawner.mem_guarantee = DEFAULT_MEM_GUARANTEE
 
 # Volume mounts
 DEFAULT_VOLUMES = [
-  {
-    "name": "user",
-    "nfs": {
-      "server": "jhnas.org.aalto.fi",
-      "path": "/vol/jupyter/u/{username}"
-    }
-  },
+  {"name": "user",
+   "nfs": {"server": "jhnas.org.aalto.fi", "path": "/vol/jupyter/u/{username}"}},
+  {"name": "shareddata",
+   "nfs": {"server": "jhnas.org.aalto.fi", "path": "/vol/jupyter/shareddata/"}},
 ]
 DEFAULT_VOLUME_MOUNTS = [
-  { "mountPath": "/notebooks", "name": "user" },
+  {"mountPath": "/notebooks", "name": "user"},
+  {"mountPath": "/mnt/jupyter/shareddata", "name": "shareddata", "readOnly":False},
 ]
 c.KubeSpawner.volumes = DEFAULT_VOLUMES
 c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
