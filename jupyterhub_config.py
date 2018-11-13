@@ -368,7 +368,10 @@ def pre_spawn_hook(spawner):
                      'c.BaseConverter.groupshared = True',
                      'c.Exchange.assignment_dir = "/notebooks/"',
                      'c.AssignmentList.assignment_dir = "/notebooks/"',
-                     'c.ExecutePreprocessor.timeout = 120'
+                     'c.ExecutePreprocessor.timeout = 120',
+                     #'c.Exchange.path_includes_course = True'
+                     #    if course_slug in {'testcourse'} else '',
+                     #    if course_slug not in {'mlbp2018', 'dsfm2018'} else '',
                      ]:
             cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
         for line in ['c.AssignmentList.assignment_dir = "/notebooks/"',
