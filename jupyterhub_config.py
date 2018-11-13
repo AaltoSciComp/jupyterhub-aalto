@@ -109,7 +109,7 @@ c.KubeSpawner.mem_guarantee = DEFAULT_MEM_GUARANTEE
 # Volume mounts
 DEFAULT_VOLUMES = [
   {"name": "user",
-   "nfs": {"server": "jhnas.org.aalto.fi", "path": "/vol/jupyter/u/{username}"}},
+   "nfs": {"server": "jhnas.org.aalto.fi", "path": "/vol/jupyter/u/{uid_last2digits}/{username}"}},  #{uid_last2digits}
   {"name": "shareddata",
    "nfs": {"server": "jhnas.org.aalto.fi", "path": "/vol/jupyter/shareddata/"}},
 ]
@@ -216,6 +216,7 @@ c.KubeSpawner.profile_list = get_profile_list  #(None)
 
 
 def create_user_dir(username, uid):
+    # create_user_dir.sh knows how to compete directory from (uid, username)
     os.system('ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid))
 
 
@@ -234,7 +235,18 @@ def pre_spawn_hook(spawner):
     homedir = userinfo.pw_dir
     if homedir.startswith('/u/'): homedir = homedir[3:]
     uid = userinfo.pw_uid
+    uid_last2digits = "%02d"%(uid%100)
     spawner.log.debug("pre_spawn_hook: %s running %s", username, getattr(spawner, 'course_slug', ''))
+
+
+    # Make a copy of the *default* class volumes.  The "spawner" object
+    # is constantly reused.
+    spawner.volumes = copy.deepcopy(DEFAULT_VOLUMES)
+    spawner.volume_mounts = copy.deepcopy(DEFAULT_VOLUME_MOUNTS)
+    assert spawner.volumes[0]['name'] == 'user'
+    #print(spawner.volumes, file=sys.stderr)
+    spawner.volumes[0]['nfs']['path'] = spawner.volumes[0]['nfs']['path'].format(username=username, uid_last2digits=uid_last2digits)
+    #print(spawner.volumes, file=sys.stderr)
 
     # Set basic spawner properties
     #storage_capacity = ???
@@ -319,11 +331,6 @@ def pre_spawn_hook(spawner):
             environ['JUPYTER_ENABLE_LAB'] = 'true'
             spawner.default_url = "lab/tree/notebooks/"
 
-        # Make a copy of the *default* class volumes.  The "spawner" object
-        # is constantly reused.
-        spawner.volumes = list(DEFAULT_VOLUMES)
-        spawner.volume_mounts = list(DEFAULT_VOLUME_MOUNTS)
-
         # Add course exchange
         spawner.volumes.append({
             "name": "exchange",
@@ -389,7 +396,7 @@ def pre_spawn_hook(spawner):
                 "name": "course",
                 "nfs": {
                     "server": "jhnas.org.aalto.fi",
-                    "path": "/vol/jupyter/course/{}".format(course_slug)
+                    "path": "/vol/jupyter/course/{}/files".format(course_slug)
                 }
             })
             spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
@@ -443,6 +450,7 @@ def pre_spawn_hook(spawner):
 
     # Common final setup
     #pprint(vars(spawner), stream=sys.stderr)
+    #pprint(spawner.volumes, stream=sys.stderr)
     for var in ['OMP_NUM_THREADS',
                 'OPENBLAS_NUM_THREADS',
                 'NUMEXPR_NUM_THREADS',

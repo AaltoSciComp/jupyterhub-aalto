@@ -35,7 +35,8 @@ if [ -z "$uid" ] ; then
 fi
 set -e
 
-dir_name="/mnt/jupyter/u/$username"
+uid_last2digits=$(printf %02d $(($uid % 100)) )
+dir_name="/mnt/jupyter/u/$uid_last2digits/$username"
 default_group=70000
 
 #if [ ! -d "$dir_name" ]; then
