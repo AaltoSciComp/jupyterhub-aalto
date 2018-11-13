@@ -46,8 +46,8 @@ spec:
           mountPath: /srv/jupyterhub/chp-secret.txt
           subPath: chp-secret.txt
           readOnly: true
-        - name: jupyterhub-coursedata
-          mountPath: /coursedata/
+        #- name: jupyterhub-coursedata
+        #  mountPath: /coursedata/
         - name: adpw
           mountPath: /etc/adpw.txt
           subPath: adpw.txt
@@ -91,10 +91,10 @@ spec:
         nfs:
           server: jhnas.org.aalto.fi
           path: /vol/jupyter/course/
-      - name: jupyterhub-coursedata
-        nfs:
-          server: jhnas.org.aalto.fi
-          path: /vol/jupyter/course/coursedata/
+      #- name: jupyterhub-coursedata
+      #  nfs:
+      #    server: jhnas.org.aalto.fi
+      #    path: /vol/jupyter/course/coursedata/
       - name: adpw
         secret:
           secretName: adpw.txt
