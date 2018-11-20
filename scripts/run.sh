@@ -6,7 +6,6 @@ echo " \
 130.233.251.5   dc02.org.aalto.fi \
 130.233.251.6   dc03.org.aalto.fi \
 130.233.251.7   dc04.org.aalto.fi \
-130.233.251.8   dc05.org.aalto.fi \
 " >> /etc/hosts
 if [[ -z "${NO_AD_JOIN}" ]]; then 
   cat /etc/adpw.txt | join_ad.sh   # k8s mounted secret
