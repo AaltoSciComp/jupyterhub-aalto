@@ -60,7 +60,7 @@ c.JupyterHub.hub_bind_url = 'http://0.0.0.0:8081'
 c.JupyterHub.hub_connect_ip = os.environ['JUPYTERHUB_SVC_SERVICE_HOST']
 c.JupyterHub.cleanup_servers = False  # leave servers running if hub restarts
 c.JupyterHub.template_paths = ["/srv/jupyterhub/templates/"]
-c.JupyterHub.last_activity_interval = 120  # default 300
+c.JupyterHub.last_activity_interval = 180  # default 300
 # Proxy config
 #c.ConfigurableHTTPProxy.api_url = 'http://jupyterhub-chp-svc.default:8001'  # 10.104.184.140
 c.ConfigurableHTTPProxy.api_url = 'http://%s:8001'%os.environ['JUPYTERHUB_CHP_SVC_SERVICE_HOST']
@@ -90,7 +90,7 @@ c.KubeSpawner.hub_connect_port = 8081
 c.KubeSpawner.http_timeout = 60 * 5
 c.KubeSpawner.disable_user_config = True
 c.KubeSpawner.common_labels = { "app": "notebook-server" }
-#c.KubeSpawner.poll_interval = 30  # default 30, check each pod for aliveness this often
+c.KubeSpawner.poll_interval = 150  # default 30, check each pod for aliveness this often
 
 # User environment config
 c.KubeSpawner.image_spec = IMAGE_DEFAULT
@@ -470,13 +470,13 @@ c.JupyterHub.services = [
   {
     'name': 'cull-idle',
     'admin': True,
-    'command': 'python3 /cull_idle_servers.py --timeout=3600 --max-age=14400 --cull_every=300'.split(),
+    'command': 'python3 /cull_idle_servers.py --timeout=3600 --max-age=14400 --cull_every=780 --concurrency=1'.split(),
   },
-  # Remove users from the DB every so often (1 month)... this has no practical effect.
+  # Remove users from the DB every so often (1 week)... this has no practical effect.
   {
     'name': 'cull-inactive-users',
     'admin': True,
-    'command': 'python3 /cull_idle_servers.py --cull-users --timeout=2678400 --cull-every=86400'.split(),
+    'command': 'python3 /cull_idle_servers.py --cull-users --timeout=2592000 --cull-every=7620 --concurrency=1'.split(),
   },
   # Service to show stats.
   {

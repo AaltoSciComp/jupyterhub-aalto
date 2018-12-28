@@ -24,6 +24,9 @@ from urllib.parse import urlparse
 
 import requests
 
+INTERVAL_SPAWN_ATTEMPT = 135
+INTERVAL_SPAWN_LIMIT = 180
+
 LAST_SUCCESSFUL_SPAWN_TIME = None
 LAST_SUCCESSFUL_SPAWN_ATTEMPT_TIME = None
 if '-v' in sys.argv:
@@ -125,7 +128,7 @@ def get_stats(get):
     if LAST_SUCCESSFUL_SPAWN_TIME:
         STATUS['spawn_test_last_successful'] = now - LAST_SUCCESSFUL_SPAWN_TIME
         STATUS['spawn_test_last_successful_ts'] = LAST_SUCCESSFUL_SPAWN_TIME
-        STATUS['spawn_test_successful'] = (now - LAST_SUCCESSFUL_SPAWN_TIME) < 120
+        STATUS['spawn_test_successful'] = (now - LAST_SUCCESSFUL_SPAWN_TIME) < INTERVAL_SPAWN_LIMIT
     else:
         STATUS['spawn_test_last_successful'] = None
         STATUS['spawn_test_last_successful_ts'] = None
@@ -249,7 +252,7 @@ if __name__ == '__main__':
         http_server.listen(url.port, url.hostname)
 
         # Background thread that tests spawning.
-        pc = PeriodicCallback(test_spawn, 1e3 * 60)
+        pc = PeriodicCallback(test_spawn, 1e3 * INTERVAL_SPAWN_ATTEMPT)
         pc.start()
         # But do it right now, too...
         IOLoop.current().add_callback(test_spawn)
