@@ -56,7 +56,7 @@ def poll_until_pending_done():
 ########################################
 
 # List all users
-r = requests.get(API+'users', auth=auth)
+#r = requests.get(API+'users', auth=auth)
 
 # Check if server currently running and if so, stop it.
 log.debug("Checking if running...")
@@ -68,12 +68,12 @@ if r.status_code == 404:
     #r.raise_for_status()
 
 log.debug(r.json())
-if 'server' in r.json() and r.json()['server'] is not None:
+if 'server' in r.json() and r.json()['server'] is not None and 'FIX' not in os.environ:
     # server running
     log.info('Server running, stopping...')
     r = requests.delete(API+'users/%s/server'%username, auth=auth)
-    r.raise_for_status()
-    if r.status_code != 204:
+    if r.status_code != 400 and r.status_code != 204:
+        r.raise_for_status()
         r = poll_until_pending_done()
             
             
