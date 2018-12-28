@@ -51,7 +51,7 @@ spec:
         operator: Exists
         effect: NoSchedule
       nodeSelector:
-        app: jupyterhub
+        kubernetes.io/hostname: jupyter.cs.aalto.fi
 ---
 
 apiVersion: v1
@@ -302,7 +302,7 @@ spec:
         operator: Exists
         effect: NoSchedule
       nodeSelector:
-        app: jupyterhub
+        kubernetes.io/hostname: jupyter.cs.aalto.fi
 ---
 apiVersion: v1
 kind: Service
