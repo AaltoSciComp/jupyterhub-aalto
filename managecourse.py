@@ -5,11 +5,13 @@ import sys
 import yaml
 
 METADIR = "/mnt/jupyter/course/meta/"        # course .yaml:s
-BASEDIR = "/mnt/jupyter/course/"             # course dir
-DATADIR = "/mnt/jupyter/course/coursedata/"  # course data dir (optional)
+BASEDIR = "/mnt/jupyter/course/"             # course base dir (cantais course/files)
+COURSEDIR = "/mnt/jupyter/course/{slug}/files"   # course dir
+DATADIR = "/mnt/jupyter/course/{slug}/coursedata/"  # course data dir (optional)
 EXCHANGEDIR = "/mnt/jupyter/exchange/"
 
-MODE_BASE     = 0o2770     # exactly equal
+MODE_BASE     = 0o2775     # exactly equal  - /{slug}
+MODE_COURSE   = 0o2770     # exactly equal  - /{slug}/files
 MODE_DATA     = 0o2774     # minimum
 MODE_EXCHANGE = 0o2775     # top level only
 
@@ -60,7 +62,7 @@ class Course():
         coursedir_stat = os.stat(str(self.coursedir))
         #assert coursedir_stat.st_uid == self.uid
         #assert coursedir_stat.st_gid == self.gid
-        assert coursedir_stat.st_mode & MODE_BASE == MODE_BASE
+        assert coursedir_stat.st_mode & MODE_BASE == MODE_BASE, "%s %o!=%o"%(self.coursedir, coursedir_stat.st_mode, MODE_BASE)
 
         # Data dir
         if self.has_datadir:
@@ -79,7 +81,7 @@ class Course():
         if outbound.exists():
             assert os.stat(str(outbound)).st_mode & 0o2775  #drwxrwsr-x
 
-    def setup(self):
+    def setup(self, force=False):
         """Idempotently set up the course, also fix some problems.
 
         This creates a course, data (if requested), and exchange
@@ -148,6 +150,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         courses[sys.argv[1]].setup()
 
-    for course_slug, course in courses.items():
+    for course_slug, course in sorted(courses.items()):
         print("checking", course_slug)
         course.check()
