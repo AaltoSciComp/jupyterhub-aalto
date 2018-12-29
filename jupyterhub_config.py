@@ -188,19 +188,28 @@ def get_profile_list(spawner):
     #c.JupyterHub.log.debug("Recreating profile list")
     # All courses
     profile_list = copy.deepcopy(PROFILE_LIST_DEFAULT)
-    profile_list.extend([{
-        'display_name': course_data.get('name', course_slug),
-        'kubespawner_override': {
-            'course_slug': course_slug}
-        } for (course_slug, course_data) in GET_COURSES().items()
-          if (course_data.get('active', True)
-              and (not course_data.get('private', False)
-                   or spawner.user.name in course_data.get('instructors', [])
-                   or spawner.user.name in course_data.get('students', [])
-                   or spawner.user.name in {'student1', 'student2', 'student3'}
-                   or spawner.user.admin)
-             )
-    ])
+    for course_slug, course_data in GET_COURSES().items():
+        is_student = spawner.user.name in course_data.get('students', [])
+        is_instructor = spawner.user.name in course_data.get('instructors', [])
+        is_teststudent = spawner.user.name in {'student1', 'student2', 'student3'}
+        is_admin = spawner.user.admin
+        is_active = course_data.get('active', True)
+        is_private = course_data.get('private', False)
+        if not is_active:
+            continue
+        if (is_private
+            and not (is_instructor or is_student or is_teststudent or is_admin)):
+            continue
+        profile_list.append({
+            'display_name': course_data.get('name', course_slug),
+            'kubespawner_override': {
+                'course_slug': course_slug}
+            })
+        if is_instructor:
+            profile = copy.deepcopy(profile_list[-1])
+            profile['display_name'] = profile['display_name'] + ' <font color="blue">(instructor)</font>'
+            profile['kubespawner_override']['as_instructor'] = True
+            profile_list.append(profile)
     #pprint(GET_COURSES().items(), stream=sys.stderr)
     #pprint(spawner.user.name, stream=sys.stderr)
     #pprint(profile_list, stream=sys.stderr)
@@ -380,7 +389,7 @@ def pre_spawn_hook(spawner):
 
         # Instructors
         allow_spawn = False
-        if username in course_data.get('instructors', {}):
+        if username in course_data.get('instructors', {}) and getattr(spawner, 'as_instructor', False):
             spawner.log.info("pre_spawn_hook: User %s is an instructor for %s", username, course_slug)
             allow_spawn = True
             # Instructors get the whole filesystem tree, because they
