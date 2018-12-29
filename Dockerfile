@@ -1,4 +1,4 @@
-FROM jupyterhub/jupyterhub:0.9.1
+FROM jupyterhub/jupyterhub:0.9.4
 
 # Install dependencies
 
@@ -7,7 +7,7 @@ RUN pip install jupyter
 RUN pip install pyyaml
 
 # kube-spawner
-RUN pip install https://github.com/jupyterhub/kubespawner/archive/27056a7.tar.gz
+RUN pip install https://github.com/jupyterhub/kubespawner/archive/f002f9b.tar.gz
 
 # nbgrader & enable it
 RUN pip install git+https://github.com/rkdarst/nbgrader@live
