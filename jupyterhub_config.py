@@ -35,14 +35,14 @@ PROFILE_LIST_DEFAULT = [
     },
     {'display_name': 'R: General use %s (JupyterLab)'%(IMAGE_DEFAULT_R.split(':')[-1]),
      'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
-                               'image_spec': IMAGE_DEFAULT_R, }
+                               'image': IMAGE_DEFAULT_R, }
     },
 ]
 if 'IMAGE_TESTING' in globals():
     PROFILE_LIST_DEFAULT.append(
     {'display_name': '(testing) Python: General use %s (JupyterLab)'%(IMAGE_TESTING.split(':')[-1]),
      'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
-                               'image_spec': IMAGE_TESTING, }
+                               'image': IMAGE_TESTING, }
     })
 
 # Set up generic without jupyterlab
@@ -93,7 +93,7 @@ c.KubeSpawner.common_labels = { "app": "notebook-server" }
 c.KubeSpawner.poll_interval = 150  # default 30, check each pod for aliveness this often
 
 # User environment config
-c.KubeSpawner.image_spec = IMAGE_DEFAULT
+c.KubeSpawner.image = IMAGE_DEFAULT
 c.KubeSpawner.default_url = "tree/notebooks"
 c.KubeSpawner.notebook_dir = "/"
 # doesn't work, because we start as root, this happens as root but we
@@ -334,7 +334,7 @@ def pre_spawn_hook(spawner):
         #filename = "/courses/{}.yaml".format(course_slug)
         #course_data = yaml.load(open(filename))
         if 'image' in course_data:
-            spawner.image_spec = course_data['image']
+            spawner.image = course_data['image']
         spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
         if getattr(course_data, 'jupyterlab', False):
             environ['JUPYTER_ENABLE_LAB'] = 'true'
@@ -403,7 +403,7 @@ def pre_spawn_hook(spawner):
                         ]:
                 cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
             if 'image_instructor' in course_data:
-                spawner.image_spec = course_data['image_instructor']
+                spawner.image = course_data['image_instructor']
             spawner.volumes.append({
                 "name": "course",
                 "nfs": {
