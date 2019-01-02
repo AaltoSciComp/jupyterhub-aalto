@@ -432,7 +432,7 @@ def pre_spawn_hook(spawner):
                 cmds.append(r"sed -r -i 's/^(UMASK.*)022/\1007/' /etc/login.defs")
                 cmds.append(r"echo Defaults umask=0007, umask_override >> /etc/sudoers")
                 #cmds.append(r"{{ test ! -e /course/gradebook.db && sudo -u nobody touch /course/gradebook.db && chown {} /course/gradebook.db && chmod 660 /course/gradebook.db ; true ; }}".format(username))  # {{ and }} escape .format()
-                environ['NB_PRE_START_HOOK'] =  r"set -x ; sudo -u {username} bash -c 'set -x ; test ! -e /course/gradebook.db && touch /course/gradebook.db && chmod 660 /course/gradebook.db || true ;'".format(username=username)  # {{ and }} escape .format()
+                #environ['NB_PRE_START_HOOK'] =  r"set -x ; sudo -u {username} bash -c 'set -x ; test ! -e /course/gradebook.db && touch /course/gradebook.db && chmod 660 /course/gradebook.db || true ;'".format(username=username)  # {{ and }} escape .format()
             else:
                 spawner.gid = spawner.fs_gid = course_gid
                 spawner.supplemental_gids.insert(0, course_gid)
