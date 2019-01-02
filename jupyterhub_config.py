@@ -371,6 +371,7 @@ def pre_spawn_hook(spawner):
         # Jupyter/nbgrader config
         for line in ['c = get_config()',
                      'c.CourseDirectory.root = "/course"',
+                     'c.CourseDirectory.groupshared = True',
                      'c.Exchange.course_id = "{}"'.format(course_slug),
                      'c.Exchange.multiuser = True',
                      'c.Exchange.groupshared = True',
