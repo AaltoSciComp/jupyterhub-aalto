@@ -416,6 +416,7 @@ def pre_spawn_hook(spawner):
                 course_gid = int(course_data['gid'])
             spawner.log.debug("pre_spawn_hook: Course gid for {} is {}", course_slug, course_gid)
             cmds.append(r"umask 0007")  # also used through sudo
+            environ['NB_UMASK'] = '0007'
             if ROOT_THEN_SU:
                 # This branch happens only if we are root (see above)
                 environ['NB_GID'] = str(course_gid)
