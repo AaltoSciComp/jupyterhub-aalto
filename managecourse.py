@@ -4,20 +4,20 @@ from pathlib import Path
 import sys
 import yaml
 
-METADIR = "/mnt/jupyter/course/meta/"        # course .yaml:s
-BASEDIR = "/mnt/jupyter/course/"             # course base dir (cantais course/files)
-COURSEDIR = "/mnt/jupyter/course/{slug}/files"   # course dir
-DATADIR = "/mnt/jupyter/course/{slug}/coursedata/"  # course data dir (optional)
+METADIR = "/mnt/jupyter/course/meta/"            # course .yaml:s
+COURSEBASEDIR = "/mnt/jupyter/course/{slug}"     # course base dir (contains course/data dirs)
+COURSEDIR = "/mnt/jupyter/course/{slug}/files/"  # course dir
+DATADIR = "/mnt/jupyter/course/{slug}/data/"     # course data dir (optional)
 EXCHANGEDIR = "/mnt/jupyter/exchange/"
 
-MODE_BASE     = 0o2775     # exactly equal  - /{slug}
+MODE_BASE     = 0o0755     # exactly equal  - /{slug}
 MODE_COURSE   = 0o2770     # exactly equal  - /{slug}/files
-MODE_DATA     = 0o2774     # minimum
+MODE_DATA     = 0o2775     # minimum
 MODE_EXCHANGE = 0o2775     # top level only
 
 def setperm(path, perm, dirs_only=False):
     """Recursively set permissions, don't touch if OK to preserve ctime"""
-    if dirs_only:    dirs_only = '! -type d'
+    if dirs_only:    dirs_only = '-type d'
     else:            dirs_only = ''
     ret = os.system('find %s %s ! -perm %s -exec chmod %s {} \\+'%(
         path, dirs_only, perm, perm))
@@ -25,6 +25,20 @@ def setgrp(path, gid):
     """Recursively set group, don't touch if OK to preserve ctime"""
     ret = os.system('find %s ! -group %s -exec chgrp %s {} \\+'%(
         path, gid, gid))    
+
+def assert_stat(path, mode, match='exact', missing_ok=False, mask=0o7777):
+    assert path.exists() or missing_ok, "Path %s is missing"%path
+    stat_result = os.stat(str(path)).st_mode
+    if match == 'any':
+        assert stat_result & mask, "%s %o! .(any). %o (mask %o)"%(path, stat_result, mode, mask)
+    else:
+        # Exact match mode
+        #print("%o"%stat_result)
+        #print("%o"%mode)
+        #print("%o"%(stat_result & mask))
+        #print("%o"%((stat_result & mask) == mode))
+        assert stat_result & mask == mode, "%s %o!=%o (mask %o)"%(path, stat_result, mode, mask)
+
 
 class Course():
     def __init__(self, slug, data):
@@ -39,15 +53,17 @@ class Course():
     @property
     def has_datadir(self): return self.data.get('datadir', False)
     @property
-    def coursedir(self): return Path(BASEDIR) / self.slug
+    def coursebasedir(self): return Path(COURSEBASEDIR.format(slug=self.slug))
+    @property
+    def coursedir(self): return Path(COURSEDIR.format(slug=self.slug))
     @property
     def exchangedir(self): return Path(EXCHANGEDIR) / self.slug
     @property
     def datadir(self):
         if not self.has_datadir: return None
-        return Path(BASEDIR) / self.slug
+        return Path(DATADIR.format(slug=self.slug))
 
-    
+
     def check(self):
         """Raise assertion errors if major problems detected.
 
@@ -56,32 +72,38 @@ class Course():
         problems, such as a course directory world readable.  It
         should be fast and make the most important checks.
         """
-        # Base dir (course dir)
+        # Base dir
+        assert self.coursebasedir.exists()
+        assert_stat(self.coursebasedir, MODE_BASE)
+
+        # Course dir (course dir)
         assert self.coursedir.exists()
-        assert self.exchangedir.exists()
-        coursedir_stat = os.stat(str(self.coursedir))
         #assert coursedir_stat.st_uid == self.uid
         #assert coursedir_stat.st_gid == self.gid
-        assert coursedir_stat.st_mode & MODE_BASE == MODE_BASE, "%s %o!=%o"%(self.coursedir, coursedir_stat.st_mode, MODE_BASE)
+        assert_stat(self.coursedir, MODE_COURSE)
 
         # Data dir
         if self.has_datadir:
             assert self.datadir.exists()
-            datadir_stat = os.stat(str(self.datadir))
-            assert datadir_stat.st_mode & MODE_DATA == MODE_DATA
+            assert_stat(self.datadir, MODE_DATA)
+        else:
+            if Path(DATADIR.format(slug=self.slug)).exists():
+                print("Warning: {} has a datadir but should'n...".format(slug))
 
         # Exchange dir
         assert self.exchangedir.exists()
-        exchangedir_stat = os.stat(str(self.exchangedir))
-        assert exchangedir_stat.st_mode & MODE_EXCHANGE == MODE_EXCHANGE
+        assert_stat(self.exchangedir, MODE_EXCHANGE)
         inbound = self.exchangedir/self.slug/'inbound'
         if inbound.exists():
-            assert os.stat(str(inbound)).st_mode & 0o2773  #drwxrws-wx
+            pass
+            #assert_stat(inbound, 0o773, mask=0o773)
+            #assert inbound_stat & 0o773, "%s %o!=%o"%(self.exchangedir+'-inbound', datadir_stat.st_mode, MODE_DATA)  #drwxrws-wx
         outbound = self.exchangedir/self.slug/'outbound'
         if outbound.exists():
-            assert os.stat(str(outbound)).st_mode & 0o2775  #drwxrwsr-x
+            pass
+            #assert os.stat(str(outbound)).st_mode & 0o2775, "%s %o!=%o"%(self.datadir+'-outbound', datadir_stat.st_mode, MODE_DATA)  #drwxrwsr-x
 
-    def setup(self, force=False):
+    def setup(self):
         """Idempotently set up the course, also fix some problems.
 
         This creates a course, data (if requested), and exchange
@@ -90,10 +112,14 @@ class Course():
 
         """
         print("Creating course %s"%self.slug)
+
+        # Parent holder directory
+        self.coursebasedir.mkdir(exist_ok=True)
+        os.chmod(str(self.coursebasedir), MODE_BASE)
         
         # Course dir
         self.coursedir.mkdir(exist_ok=True)
-        os.chmod(str(self.coursedir), MODE_BASE)
+        os.chmod(str(self.coursedir), MODE_COURSE)
         os.chown(str(self.coursedir), self.uid, self.gid)
         # Set perm for everything, if not correct (use find to not update ctime)
         setperm(self.coursedir, "u+rwX,g+rwX,o-rwx")
@@ -144,12 +170,23 @@ if __name__ == "__main__":
     existing courses for problems and raise AssertionErrors if any are
     found, c) If a course slug is given on the command line.  """
     parser = argparse.ArgumentParser(description='Manage courses')
-    
+    parser.add_argument('course', nargs='*', help='course(s) to set up')
+    parser.add_argument('--check', '-c', action='store_true', help='only check courses')
+    args = parser.parse_args()
     courses = load_courses()
 
-    if len(sys.argv) > 1:
-        courses[sys.argv[1]].setup()
-
-    for course_slug, course in sorted(courses.items()):
-        print("checking", course_slug)
-        course.check()
+    if args.course:
+        # Deal with only specific courses
+        for course in args.course:
+            if args.check:
+                courses[course].check()
+            else:
+                # Default: set up course
+                print("Setting up %s"%course)
+                courses[course].setup()
+                courses[course].check()
+    else:
+        # Default if nothing specified: check everything
+        for course_slug, course in sorted(courses.items()):
+            print("checking all courses for problems", course_slug)
+            course.check()
