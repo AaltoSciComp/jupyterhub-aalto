@@ -450,6 +450,9 @@ def pre_spawn_hook(spawner):
             spawner.log.info("pre_spawn_hook: User %s is a student for %s", username, course_slug)
             allow_spawn = True
 
+        elif spawner.user.admin:
+            allow_spawn = True
+
         if not allow_spawn and course_data.get('private', False):
             spawner.log.info("pre_spawn_hook: User %s is blocked spawning %s", username, course_slug)
             raise RuntimeError("You ({}) are not allowed to use the {} environment.  Please contact the course instructors".format(username, course_slug))
