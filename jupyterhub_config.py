@@ -26,21 +26,21 @@ ROOT_THEN_SU = True
 
 # Default profile list
 PROFILE_LIST_DEFAULT = [
-    {'display_name': 'Python: General use %s (JupyterLab)'%(IMAGE_DEFAULT.split(':')[-1]),
+    {'display_name': 'Python: General use (JupyterLab) %s'%(IMAGE_DEFAULT.split(':')[-1]),
      'default': True,
      'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True, }
     },
-    {'display_name': 'Python: General use %s (classic notebook)'%(IMAGE_DEFAULT.split(':')[-1]),
+    {'display_name': 'Python: General use (classic notebook) %s'%(IMAGE_DEFAULT.split(':')[-1]),
      'kubespawner_override': {'course_slug': ''}
     },
-    {'display_name': 'R: General use %s (JupyterLab)'%(IMAGE_DEFAULT_R.split(':')[-1]),
+    {'display_name': 'R: General use (JupyterLab) %s'%(IMAGE_DEFAULT_R.split(':')[-1]),
      'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': IMAGE_DEFAULT_R, }
     },
 ]
 if 'IMAGE_TESTING' in globals():
     PROFILE_LIST_DEFAULT.append(
-    {'display_name': '(testing) Python: General use %s (JupyterLab)'%(IMAGE_TESTING.split(':')[-1]),
+    {'display_name': '(testing) Python: General use (JupyterLab) %s'%(IMAGE_TESTING.split(':')[-1]),
      'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': IMAGE_TESTING, }
     })
@@ -195,19 +195,25 @@ def get_profile_list(spawner):
         is_admin = spawner.user.admin
         is_active = course_data.get('active', True)
         is_private = course_data.get('private', False)
+        course_notes = ""
         if not is_active:
             continue
-        if (is_private
-            and not (is_instructor or is_student or is_teststudent or is_admin)):
-            continue
+        if is_private:
+            if not (is_instructor or is_student or is_teststudent or is_admin):
+                continue
+            if not is_student:
+                course_notes = course_notes = ' <font color="brown">(not public)</font>'
+        display_name = course_data.get('name', course_slug)
         profile_list.append({
-            'display_name': course_data.get('name', course_slug),
+            'display_name': display_name + course_notes,
             'kubespawner_override': {
                 'course_slug': course_slug}
             })
         if is_instructor:
             profile = copy.deepcopy(profile_list[-1])
-            profile['display_name'] = profile['display_name'] + ' <font color="blue">(instructor)</font>'
+            profile['display_name'] = display_name + ' <font color="blue">(instructor)</font>'
+            if 'image' in course_data:
+                profile['display_name'] = profile['display_name'] + ' ' + str(course_data['image'])
             profile['kubespawner_override']['as_instructor'] = True
             profile_list.append(profile)
     #pprint(GET_COURSES().items(), stream=sys.stderr)
