@@ -331,8 +331,6 @@ def pre_spawn_hook(spawner):
     else:
         spawner.log.info("pre_spawn_hook: course %s", course_slug)
         course_data = GET_COURSES()[course_slug]
-        #filename = "/courses/{}.yaml".format(course_slug)
-        #course_data = yaml.load(open(filename))
         if 'image' in course_data:
             spawner.image = course_data['image']
         spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
@@ -355,12 +353,12 @@ def pre_spawn_hook(spawner):
                                       "name": "exchange",
                                       "readOnly": exchange_readonly})
         # Add course shared data, if it exists
-        if os.path.exists("/coursedata/{}".format(course_slug)):
+        if course_data.get('datadir', False):
             spawner.volumes.append({
                 "name": "coursedata",
                 "nfs": {
                     "server": "jhnas.org.aalto.fi",
-                    "path": "/vol/jupyter/course/coursedata/{}".format(course_slug)
+                    "path": "/vol/jupyter/course/{}/data/".format(course_slug)
                 }
             })
             spawner.volume_mounts.append({"mountPath": "/coursedata",
@@ -411,7 +409,7 @@ def pre_spawn_hook(spawner):
                 }
             })
             spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
-            course_gid = os.stat('/courses/{}'.format(course_slug)).st_gid
+            course_gid = int(course_data['gid'])
             if 'gid' in course_data:
                 course_gid = int(course_data['gid'])
             spawner.log.debug("pre_spawn_hook: Course gid for {} is {}", course_slug, course_gid)
