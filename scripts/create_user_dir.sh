@@ -24,8 +24,6 @@ if echo "$username" | egrep -v '^[a-z0-9.]+$' ; then
     exit 2
 fi
 
-touch "/mnt/jupyter/admin/lastlogin/$username"
-
 # Get uid from PAM, but if that fails then use the supplied uid (for
 # local users).
 set +e
@@ -34,6 +32,10 @@ if [ -z "$uid" ] ; then
   uid="$2"
 fi
 set -e
+
+touch "/mnt/jupyter/admin/lastlogin/$username"
+echo "uid: $uid" > "/mnt/jupyter/admin/lastlogin/$username"
+echo "ts: $(date +%s)" >> "/mnt/jupyter/admin/lastlogin/$username"
 
 uid_last2digits=$(printf %02d $(($uid % 100)) )
 dir_name="/mnt/jupyter/u/$uid_last2digits/$username"
