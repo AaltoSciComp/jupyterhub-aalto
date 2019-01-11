@@ -11,7 +11,7 @@ import time
 import yaml
 
 
-IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:0.5.3'
+IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:0.5.4'
 IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:0.5.3'
 #IMAGE_TESTING = 'aaltoscienceit/notebook-server:0.4.2'
 DEFAULT_MEM_GUARANTEE = '.5G'
