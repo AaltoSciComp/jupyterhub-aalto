@@ -277,6 +277,9 @@ def pre_spawn_hook(spawner):
         spawner.default_url = "lab/tree/notebooks/"
     #cmds.append('jupyter labextension enable @jupyterlab/google-drive')
 
+    # Extra Aalto config
+    #environ['AALTO_EXTRA_HOME_LINKS'] = '.ssh/'
+
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
     spawner.working_dir = '/'
 
