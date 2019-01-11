@@ -73,11 +73,11 @@ class Course():
         should be fast and make the most important checks.
         """
         # Base dir
-        assert self.coursebasedir.exists()
+        assert self.coursebasedir.exists(), self.slug
         assert_stat(self.coursebasedir, MODE_BASE)
 
         # Course dir (course dir)
-        assert self.coursedir.exists()
+        assert self.coursedir.exists(), self.slug
         #assert coursedir_stat.st_uid == self.uid
         #assert coursedir_stat.st_gid == self.gid
         assert_stat(self.coursedir, MODE_COURSE)
