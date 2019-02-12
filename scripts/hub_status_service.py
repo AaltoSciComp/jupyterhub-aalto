@@ -24,7 +24,7 @@ from urllib.parse import urlparse
 
 import requests
 
-INTERVAL_SPAWN_ATTEMPT = 135
+INTERVAL_SPAWN_ATTEMPT = 95
 INTERVAL_SPAWN_LIMIT = 180
 
 LAST_SUCCESSFUL_SPAWN_TIME = None
