@@ -11,9 +11,9 @@ import time
 import yaml
 
 
-IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:0.5.4'
+IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:0.5.6'
 IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:0.5.3'
-#IMAGE_TESTING = 'aaltoscienceit/notebook-server:0.4.2'
+#IMAGE_TESTING = 'aaltoscienceit/notebook-server:0.5.5'
 DEFAULT_MEM_GUARANTEE = '.5G'
 DEFAULT_CPU_GUARANTEE = .10
 DEFAULT_MEM_LIMIT = '2G'
@@ -395,6 +395,8 @@ def pre_spawn_hook(spawner):
 
         # Instructors
         allow_spawn = False
+        if username in course_data.get('instructors', {}):
+            allow_spawn = True
         if username in course_data.get('instructors', {}) and getattr(spawner, 'as_instructor', False):
             spawner.log.info("pre_spawn_hook: User %s is an instructor for %s", username, course_slug)
             allow_spawn = True
@@ -453,7 +455,7 @@ def pre_spawn_hook(spawner):
             spawner.log.info("pre_spawn_hook: User %s is a student for %s", username, course_slug)
             allow_spawn = True
 
-        elif spawner.user.admin:
+        if spawner.user.admin:
             allow_spawn = True
 
         if not allow_spawn and course_data.get('private', False):
