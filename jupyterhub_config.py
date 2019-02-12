@@ -18,6 +18,8 @@ DEFAULT_MEM_GUARANTEE = '.5G'
 DEFAULT_CPU_GUARANTEE = .10
 DEFAULT_MEM_LIMIT = '2G'
 DEFAULT_CPU_LIMIT = 4
+DEFAULT_TIMEOUT = 3600 * 1
+DEFAULT_TIMELIMIT = 3600 * 8
 INSTRUCTOR_MEM_LIMIT = '2G'
 INSTRUCTOR_CPU_LIMIT = DEFAULT_CPU_LIMIT
 INSTRUCTOR_MEM_GUARANTEE = '1G'
@@ -495,7 +497,7 @@ c.JupyterHub.services = [
   {
     'name': 'cull-idle',
     'admin': True,
-    'command': 'python3 /cull_idle_servers.py --timeout=3600 --max-age=14400 --cull_every=780 --concurrency=1'.split(),
+    'command': ('python3 /cull_idle_servers.py --timeout=%d --max-age=%d --cull_every=780 --concurrency=1'%(DEFAULT_TIMEOUT, DEFAULT_TIMELIMIT)).split(),
   },
   # Remove users from the DB every so often (1 week)... this has no practical effect.
   {
