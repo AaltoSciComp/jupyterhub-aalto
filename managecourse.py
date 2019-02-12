@@ -86,6 +86,7 @@ class Course():
         if self.has_datadir:
             assert self.datadir.exists()
             assert_stat(self.datadir, MODE_DATA)
+            os.system('find {} -perm /u=s,o=w -ls'.format(self.datadir))
         else:
             if Path(DATADIR.format(slug=self.slug)).exists():
                 print("Warning: {} has a datadir but should'n...".format(slug))
@@ -130,7 +131,7 @@ class Course():
             self.datadir.mkdir(exist_ok=True)
             os.chmod(str(self.datadir), MODE_DATA)
             os.chown(str(self.datadir), self.uid, self.gid)
-            setperm(self.datadir, "u+rwX,g+rwX,o+rX")
+            setperm(self.datadir, "u+rwX,g+rwX,o+rX,o-w")
             setperm(self.datadir, "g+s", dirs_only=True)
 
         # Exchange
