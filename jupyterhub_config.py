@@ -187,7 +187,7 @@ def get_profile_list(spawner):
     """
     #c.JupyterHub.log.debug("Recreating profile list")
     # All courses
-    profile_list = copy.deepcopy(PROFILE_LIST_DEFAULT)
+    profile_list = [ ]
     for course_slug, course_data in GET_COURSES().items():
         is_student = spawner.user.name in course_data.get('students', [])
         is_instructor = spawner.user.name in course_data.get('instructors', [])
@@ -219,6 +219,9 @@ def get_profile_list(spawner):
     #pprint(GET_COURSES().items(), stream=sys.stderr)
     #pprint(spawner.user.name, stream=sys.stderr)
     #pprint(profile_list, stream=sys.stderr)
+
+    profile_list.sort(key=lambda x: x['display_name'])
+    profile_list = copy.deepcopy(PROFILE_LIST_DEFAULT) + profile_list
 
     return profile_list
 # In next version of kubespawner, leave as callable to regen every
