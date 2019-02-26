@@ -506,7 +506,7 @@ c.JupyterHub.services = [
   {
     'name': 'cull-idle',
     'admin': True,
-    'command': ('python3 /cull_idle_servers.py --timeout=%d --max-age=%d --cull_every=780 --concurrency=1'%(DEFAULT_TIMEOUT, DEFAULT_TIMELIMIT)).split(),
+    'command': ('python3 /cull_idle_servers.py --timeout=%d --max-age=%d --cull_every=300 --concurrency=1'%(DEFAULT_TIMEOUT, DEFAULT_TIMELIMIT)).split(),
   },
   # Remove users from the DB every so often (1 week)... this has no practical effect.
   {
