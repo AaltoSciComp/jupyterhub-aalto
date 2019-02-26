@@ -257,7 +257,7 @@ def pre_spawn_hook(spawner):
     if homedir.startswith('/u/'): homedir = homedir[3:]
     uid = userinfo.pw_uid
     uid_last2digits = "%02d"%(uid%100)
-    spawner.log.debug("pre_spawn_hook: %s running %s", username, getattr(spawner, 'course_slug', ''))
+    spawner.log.info("pre_spawn_hook: %s starting %s", username, getattr(spawner, 'course_slug', 'None'))
 
 
     # Make a copy of the *default* class volumes.  The "spawner" object
@@ -345,7 +345,7 @@ def pre_spawn_hook(spawner):
 
     # Course configuration - only if it is a course
     else:
-        spawner.log.info("pre_spawn_hook: course %s", course_slug)
+        spawner.log.debug("pre_spawn_hook: course %s", course_slug)
         course_data = GET_COURSES()[course_slug]
         if 'image' in course_data:
             spawner.image = course_data['image']
@@ -490,7 +490,15 @@ def pre_spawn_hook(spawner):
     cmds.append("source start-notebook.sh")   # args added later in KubeSpawner
     spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
 
+
+def post_stop_hook(spawner):
+    username = spawner.user.name
+    course_slug = getattr(spawner, 'course_slug', '')
+    spawner.log.info("post_stop_hook: %s stopped %s", username, course_slug or 'None')
+
+
 c.KubeSpawner.pre_spawn_hook = pre_spawn_hook
+c.KubeSpawner.post_stop_hook = post_stop_hook
 
 
 # Culler service
