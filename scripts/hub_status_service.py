@@ -106,7 +106,7 @@ def get_stats(get):
             increment_bins(user_last_active, secs_ago)
         # Track server activity
         for name, server in user['servers'].items():
-            components = server['state']['pod_name'].split('-')
+            components = server['state']['pod_name'].split('-', 2)
             if len(components) < 3:
                 active_pod_names['generic'] += 1
             else:
