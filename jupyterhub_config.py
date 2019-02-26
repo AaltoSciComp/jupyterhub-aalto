@@ -299,7 +299,7 @@ def pre_spawn_hook(spawner):
 
     if not ROOT_THEN_SU:
         # Manually run as uid from outside the container
-        spawner.singleuser_uid = uid
+        spawner.uid = uid
         # default of user in docker image (note: not in image kubespawer yet!)
         spawner.gid = spawner.fs_gid = 70000
         # group 'users' required in order to write config files etc
@@ -314,7 +314,7 @@ def pre_spawn_hook(spawner):
         environ['NB_GROUP'] = 'domain-users'
         #environ['GRANT_SUDO'] = 'yes'
         # The default jupyter image will use root access in order to su to the user as defined above.
-        spawner.singleuser_uid = 0
+        spawner.uid = 0
         # Fix permissions.  Uses NB_GID only, and should not run on any NFS filesystems!
         #cmds.append("fix-permissions /home/jovyan")
         #cmds.append("fix-permissions $CONDA_DIR")
