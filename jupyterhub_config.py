@@ -13,7 +13,7 @@ import traceback
 import yaml
 
 
-IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:0.5.8'
+IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:0.5.9'
 IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:0.5.3'
 #IMAGE_TESTING = 'aaltoscienceit/notebook-server:0.5.7'
 DEFAULT_MEM_GUARANTEE = '.5G'
