@@ -28,23 +28,32 @@ INSTRUCTOR_MEM_GUARANTEE = '1G'
 INSTRUCTOR_CPU_GUARANTEE = DEFAULT_CPU_GUARANTEE
 ROOT_THEN_SU = True
 
+
+EMPTY_PROFILE = {'node_selector': {},
+                 'tolerations': [],
+                 'default_url': 'tree/notebooks'}
+
 # Default profile list
 PROFILE_LIST_DEFAULT = [
-    {'display_name': 'Python: General use (JupyterLab) %s'%(IMAGE_DEFAULT.split(':')[-1]),
+    {**EMPTY_PROFILE,
+     'display_name': 'Python: General use (JupyterLab) %s'%(IMAGE_DEFAULT.split(':')[-1]),
      'default': True,
-     'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True, }
+     'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True, },
     },
-    {'display_name': 'Python: General use (classic notebook) %s'%(IMAGE_DEFAULT.split(':')[-1]),
-     'kubespawner_override': {'course_slug': ''}
+    {**EMPTY_PROFILE,
+     'display_name': 'Python: General use (classic notebook) %s'%(IMAGE_DEFAULT.split(':')[-1]),
+     'kubespawner_override': {'course_slug': ''},
     },
-    {'display_name': 'R: General use (JupyterLab) %s'%(IMAGE_DEFAULT_R.split(':')[-1]),
+    {**EMPTY_PROFILE,
+     'display_name': 'R: General use (JupyterLab) %s'%(IMAGE_DEFAULT_R.split(':')[-1]),
      'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
-                               'image': IMAGE_DEFAULT_R, }
+                               'image': IMAGE_DEFAULT_R, },
     },
 ]
 if 'IMAGE_TESTING' in globals():
     PROFILE_LIST_DEFAULT.append(
-    {'display_name': '(testing) Python: General use (JupyterLab) %s'%(IMAGE_TESTING.split(':')[-1]),
+    {**EMPTY_PROFILE,
+     'display_name': '(testing) Python: General use (JupyterLab) %s'%(IMAGE_TESTING.split(':')[-1]),
      'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': IMAGE_TESTING, }
     })
@@ -214,6 +223,7 @@ def get_profile_list(spawner):
                 course_notes = course_notes = ' <font color="brown">(not public)</font>'
         display_name = course_data.get('name', course_slug)
         profile_list.append({
+            **EMPTY_PROFILE,
             'display_name': display_name + course_notes,
             'kubespawner_override': {
                 'course_slug': course_slug},
@@ -260,9 +270,9 @@ def create_user_dir(username, uid, log=None):
 def pre_spawn_hook(spawner):
     # Note: spawners Python objects are persistent, and if you don't
     # clear certain attributes, they will persist across restarts!
-    spawner.node_selector = { }
-    spawner.tolerations = [ ]
-    spawner.default_url = c.KubeSpawner.default_url
+    #spawner.node_selector = { }
+    #spawner.tolerations = [ ]
+    #spawner.default_url = c.KubeSpawner.default_url
 
     # Get basic info
     username = spawner.user.name
