@@ -153,17 +153,22 @@ def GET_COURSES():
     courses = { }
     # First round: load raw data with users and so on.
     for course_file in glob.glob(os.path.join(METADIR, '*.yaml')):
-        course_slug = os.path.splitext(os.path.basename(course_file))[0]
-        if course_slug.endswith('-users'):
-            course_slug = course_slug[:-6]
-        course_data = yaml.load(open(course_file))
-        #print(course_slug, course_data, file=sys.stderr)
-        if course_slug not in courses:
-            courses[course_slug] = { }
-        if 'instructors' in course_data: course_data['instructors'] = set(course_data['instructors'])
-        if 'students'    in course_data: course_data['students']    = set(course_data['students'])
-        courses[course_slug].update(course_data)
-        #print(course_slug, course_data, file=sys.stderr)
+        try:
+            course_slug = os.path.splitext(os.path.basename(course_file))[0]
+            if course_slug.endswith('-users'):
+                course_slug = course_slug[:-6]
+            course_data = yaml.load(open(course_file))
+            #print(course_slug, course_data, file=sys.stderr)
+            if course_slug not in courses:
+                courses[course_slug] = { }
+            if 'instructors' in course_data: course_data['instructors'] = set(course_data['instructors'])
+            if 'students'    in course_data: course_data['students']    = set(course_data['students'])
+            courses[course_slug].update(course_data)
+            #print(course_slug, course_data, file=sys.stderr)
+        except:
+            exc_info = sys.exc_info()
+            print("ERROR: error loading yaml file {}".format(course_file))
+            print("".join(traceback.format_exception(*exc_info)))
 
     # Second round: make the data consistent:
     # - add course GIDs by looking up via `getent group`.
