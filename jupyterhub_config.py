@@ -9,6 +9,7 @@ import socket
 import subprocess
 import sys
 import time
+import traceback
 import yaml
 
 
@@ -167,8 +168,8 @@ def GET_COURSES():
             #print(course_slug, course_data, file=sys.stderr)
         except:
             exc_info = sys.exc_info()
-            print("ERROR: error loading yaml file {}".format(course_file))
-            print("".join(traceback.format_exception(*exc_info)))
+            print("ERROR: error loading yaml file {}".format(course_file), file=sys.stderr)
+            print("".join(traceback.format_exception(*exc_info)), file=sys.stderr)
 
     # Second round: make the data consistent:
     # - add course GIDs by looking up via `getent group`.
@@ -250,10 +251,10 @@ def create_user_dir(username, uid, log=None):
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     if ret.returncode != 0:
         log.error('create_user_dir failed for %s %s', username, uid)
-        log.error(ret.stdout)
+        log.error(ret.stdout.decode())
     else:
         log.debug('create_user_dir: %s %s', username, uid)
-        log.debug(ret.stdout)
+        log.debug(ret.stdout.decode())
 
 
 def pre_spawn_hook(spawner):
