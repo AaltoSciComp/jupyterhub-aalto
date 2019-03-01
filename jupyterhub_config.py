@@ -6,6 +6,7 @@ from pprint import pprint
 import pwd # for resolving username --> uid
 import re
 import socket
+import subprocess
 import sys
 import time
 import yaml
@@ -236,9 +237,18 @@ c.KubeSpawner.profile_list = get_profile_list  #(None)
 
 
 
-def create_user_dir(username, uid):
+def create_user_dir(username, uid, log=None):
     # create_user_dir.sh knows how to compete directory from (uid, username)
-    os.system('ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid))
+    #os.system('ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid))
+    ret = subprocess.run(
+        'ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"',
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    if ret.returncode != 0:
+        log.error('create_user_dir failed for %s %s', username, uid)
+        log.error(ret.stdout)
+    else:
+        log.debug('create_user_dir: %s %s', username, uid)
+        log.debug(ret.stdout)
 
 
 def pre_spawn_hook(spawner):
@@ -325,7 +335,7 @@ def pre_spawn_hook(spawner):
         # on startup.
         #cmds.append("adduser jovyan users")
 
-    create_user_dir(username, uid) # TODO: Define path / server / type in yaml?
+    create_user_dir(username, uid, log=spawner.log)
     #cmds.append(r'echo "if [ \"\$SHLVL\" = 1 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.profile')
     cmds.append(r'echo "if [ \"\$SHLVL\" = 1 -a \( \"\$PWD\" = \"\$HOME\" -o \"\$PWD\" = / \)  ] ; then cd /notebooks ; fi" >> /home/jovyan/.bashrc')
 
