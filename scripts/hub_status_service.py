@@ -170,7 +170,7 @@ async def test_spawn():
             return
     except:
         import traceback
-        log.error(traceback.format_exc())
+        log.error(traceback.format_exc().decode())
         return False
     LAST_SUCCESSFUL_SPAWN_TIME = datetime.datetime.now().timestamp()
     return True

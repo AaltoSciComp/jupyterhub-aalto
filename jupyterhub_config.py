@@ -185,7 +185,7 @@ def GET_COURSES():
         except:
             exc_info = sys.exc_info()
             print("ERROR: error loading yaml file {}".format(course_file), file=sys.stderr)
-            print("".join(traceback.format_exception(*exc_info)), file=sys.stderr)
+            print("".join(traceback.format_exception(*exc_info)).decode(), file=sys.stderr)
 
     # Second round: make the data consistent:
     # - add course GIDs by looking up via `getent group`.
