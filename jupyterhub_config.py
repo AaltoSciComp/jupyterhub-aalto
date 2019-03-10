@@ -15,7 +15,8 @@ import yaml
 
 IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:0.5.9'
 IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:0.5.3'
-#IMAGE_TESTING = 'aaltoscienceit/notebook-server:0.5.7'
+IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:0.5.9'
+IMAGE_TESTING = 'aaltoscienceit/notebook-server:0.5.10'
 DEFAULT_MEM_GUARANTEE = '.5G'
 DEFAULT_CPU_GUARANTEE = .10
 DEFAULT_MEM_LIMIT = '2G'
@@ -48,6 +49,12 @@ PROFILE_LIST_DEFAULT = [
      'display_name': 'R: General use (JupyterLab) %s'%(IMAGE_DEFAULT_R.split(':')[-1]),
      'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': IMAGE_DEFAULT_R, },
+    },
+    {**EMPTY_PROFILE,
+     'display_name': 'Julia: General use (JupyterLab) %s'%(IMAGE_DEFAULT_JULIA.split(':')[-1]),
+     'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
+                               'image': IMAGE_DEFAULT_JULIA, },
+     'node_selector':{'kubernetes.io/hostname': 'jupyter-k8s-node2.cs.aalto.fi'},
     },
 ]
 if 'IMAGE_TESTING' in globals():
