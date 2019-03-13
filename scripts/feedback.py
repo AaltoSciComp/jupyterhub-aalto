@@ -60,7 +60,7 @@ def main():
         if assignment:
             assignment_limit = ['--include', assignment+'***', '--exclude', '*']
 
-        cmd = ['rsync', '-r', '--update', 
+        cmd = ['rsync', '-r', '--update', '-i',
                '-og', '--chown=%s:%s'%(uid, USER_GID),
                '--perms', '--chmod=u+rwX,g=,g-s,o=',
                *assignment_limit,
@@ -68,6 +68,6 @@ def main():
                str(Path(USERDIR.format(digits='%02d'%(uid%100), username=username))/course_slug/'feedback')+'/',
                 ]
         print(cmd)
-        #subprocess.call(cmd)
+        subprocess.call(cmd)
 
 main()
