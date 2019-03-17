@@ -15,17 +15,27 @@ USER_GID = 70000
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Send feedback to students')
-    parser.add_argument('--assignment', '-a', help='limit to assignment ID')
+    parser.add_argument('--dry-run', '-n', action='store_true',
+                        help='limit to assignment ID')
+    parser.add_argument('--user', '-u', action='append',
+                        help=('limit to these usernames (comma separated list, '
+                              'or can be given multiple times)'))
     parser.add_argument('course', help='course(s) to give feedback for')
-    parser.add_argument('username', nargs='*', help='usernames')
+    parser.add_argument('assignment', nargs='*', help='Limit to these assignment IDs')
     args = parser.parse_args()
 
-    if args.assignment:
-        assignment = args.assignment
+    if args.user:
+        users = set()
+        for users_ in args.user:
+            users.update(set(args.user.split(',')))
     else:
-        assignment = ''
-
+        users = None
     
+    if args.assignment:
+        assignments = args.assignment
+    else:
+        assignments = None
+
     # Find all the user directories
     userdirs = { }
     userdir_re = re.compile(USERDIR.format(digits='([0-9]{2})', username='([^/]+)'))
@@ -43,7 +53,7 @@ def main():
     for user_source_path in user_paths:
         m = re.match('.*/([^/]+)$', user_source_path)
         username = m.group(1)
-        if args.username and username not in args.username:
+        if users and username not in users:
             continue
         print(user_source_path)
         data = yaml.load(open(USERINFO.format(username=username))) or { }
@@ -54,13 +64,15 @@ def main():
 
         # If we have limited to one assignment, and it doesn't exist
         # in the user source, don't do anything.
-        if assignment and not (user_source/args.assignment).exists():
-            continue
         assignment_limit = [ ]
-        if assignment:
-            assignment_limit = ['--include', assignment+'***', '--exclude', '*']
+        if assignments:
+            for assignment in assignments:
+                if not (user_source/assignment).exists():
+                    continue
+                assignment_limit.extend(['--include', assignment+'***',])
+            assignment_limit.extend(['--exclude', '*'])
 
-        cmd = ['rsync', '-r', '--update', '-i',
+        cmd = ['rsync', '-r', '--update', '-i'+('n' if args.dry_run else ''),
                '-og', '--chown=%s:%s'%(uid, USER_GID),
                '--perms', '--chmod=u+rwX,g=,g-s,o=',
                *assignment_limit,
