@@ -249,7 +249,9 @@ def get_profile_list(spawner):
             **EMPTY_PROFILE,
             'display_name': display_name + course_notes,
             'kubespawner_override': {
-                'course_slug': course_slug},
+                'course_slug': course_slug,
+                **course_data.get('kubespawner_override', {}),
+                },
             'x_jupyter_enable_lab': False,
             })
         if is_instructor:
