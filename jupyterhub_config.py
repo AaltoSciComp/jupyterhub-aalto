@@ -207,12 +207,14 @@ def GET_COURSES():
     for course_slug, course_data in courses.items():
         if 'instructors' not in course_data: course_data['instructors'] = set()
         if 'students'    not in course_data: course_data['students']    = set()
-        try:
-            if 'gid' not in course_data:
-                course_data['gid'] = grp.getgrnam('jupyter-'+course_slug).gr_gid
-            course_data['instructors'] |= set(grp.getgrnam('jupyter-'+course_slug).gr_mem)
-        except KeyError:
-            print("ERROR: group {} can not look up group info".format(course_slug), file=sys.stderr)
+        if course_data.get('gid') is None:
+            # No filesystem mounts here
+            course_data['gid'] = None
+        else:
+            try:
+                course_data['instructors'] |= set(grp.getgrnam('jupyter-'+course_slug).gr_mem)
+            except KeyError:
+                print("ERROR: group {} can not look up group info".format(course_slug), file=sys.stderr)
 
     # Set global variable from new local variable.
     COURSES = courses
@@ -385,7 +387,8 @@ def pre_spawn_hook(spawner):
 
     course_slug = getattr(spawner, 'course_slug', '')
     # We are not part of a course, so do only generic stuff
-    if not course_slug:
+    # if gid is None, we have a course definition but no course data (only setting image)
+    if not course_slug or GET_COURSES()[course_slug]['gid'] is None:
         cmds.append("disable_formgrader.sh")
         # The pod_name must always be set, otherwise it uses the last pod name.
         spawner.pod_name = 'jupyter-{}{}'.format(username, '-'+spawner.name if spawner.name else '')

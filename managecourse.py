@@ -72,6 +72,13 @@ class Course():
         problems, such as a course directory world readable.  It
         should be fast and make the most important checks.
         """
+        # if gid is None, that means there is no course data directory
+        # and we should never do anything.
+        if self.gid is None:
+            assert not self.coursebasedir.exists(), self.slug
+            assert not self.exchangedir.exists(), self.slug
+            return
+
         # Base dir
         assert self.coursebasedir.exists(), self.slug
         assert_stat(self.coursebasedir, MODE_BASE)
@@ -113,6 +120,11 @@ class Course():
 
         """
         print("Creating course %s"%self.slug)
+        # if gid is None, that means there is no course data directory
+        # and we should never do anything.
+        if self.gid is None:
+            print("Course gid is None, which means we do not create anything.")
+            return
 
         # Parent holder directory
         self.coursebasedir.mkdir(exist_ok=True)
