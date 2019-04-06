@@ -254,13 +254,19 @@ def get_profile_list(spawner):
                 },
             'x_jupyter_enable_lab': False,
             })
+        if 'image' in course_data:
+            profile = profile_list[-1]   # REFERENCE
+            profile['display_name'] = profile['display_name'] + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, course_data['image'])+'</font>'
+            profile['kubespawner_override']['image'] = course_data['image']
         if is_instructor:
-            profile = copy.deepcopy(profile_list[-1])
+            profile = copy.deepcopy(profile_list[-1])  # COPY AND RE-APPEND
             profile['display_name'] = display_name + ' <font color="blue">(instructor)</font>'
-            if 'image' in course_data:
-                profile['display_name'] = profile['display_name'] + ' ' + str(course_data['image'])
+            if 'image_instructor' in course_data:
+                profile['display_name'] = profile['display_name'] + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, course_data['image_instructor'])+'</font>'
+                profile['kubespawner_override']['image'] = course_data['image_instructor']
             profile['kubespawner_override']['as_instructor'] = True
             profile_list.append(profile)
+
     #pprint(GET_COURSES().items(), stream=sys.stderr)
     #pprint(spawner.user.name, stream=sys.stderr)
     #pprint(profile_list, stream=sys.stderr)
@@ -399,8 +405,6 @@ def pre_spawn_hook(spawner):
     else:
         spawner.log.debug("pre_spawn_hook: course %s", course_slug)
         course_data = GET_COURSES()[course_slug]
-        if 'image' in course_data:
-            spawner.image = course_data['image']
         spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
         if getattr(course_data, 'jupyterlab', False):
             environ['JUPYTER_ENABLE_LAB'] = 'true'
@@ -470,8 +474,6 @@ def pre_spawn_hook(spawner):
             for line in ['c.NbGrader.logfile = "/course/.nbgraber.log"',
                         ]:
                 cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
-            if 'image_instructor' in course_data:
-                spawner.image = course_data['image_instructor']
             spawner.volumes.append({
                 "name": "course",
                 "nfs": {
