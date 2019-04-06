@@ -34,24 +34,37 @@ EMPTY_PROFILE = {'node_selector': {},
                  'tolerations': [],
                  'default_url': 'tree/notebooks'}
 
+def unique_suffix(base, other):
+    """Return the unique suffix of other, relative to base."""
+    prefix = os.path.commonprefix([base, other])
+    suffix = other[len(prefix):]
+    if ':' not in suffix:
+        suffix = other.rsplit(':', 1)[-1]
+    return suffix
+
+
 # Default profile list
 PROFILE_LIST_DEFAULT = [
     {**EMPTY_PROFILE,
-     'display_name': 'Python: General use (JupyterLab) %s'%(IMAGE_DEFAULT.split(':')[-1]),
+     'display_name': 'Python: General use (JupyterLab) '
+                      '<font color="#999999">%s</font>'%(IMAGE_DEFAULT.split(':')[-1]),
      'default': True,
      'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True, },
     },
     {**EMPTY_PROFILE,
-     'display_name': 'Python: General use (classic notebook) %s'%(IMAGE_DEFAULT.split(':')[-1]),
+     'display_name': 'Python: General use (classic notebook) '
+                     '<font color="#999999">%s</font>'%(IMAGE_DEFAULT.split(':')[-1]),
      'kubespawner_override': {'course_slug': ''},
     },
     {**EMPTY_PROFILE,
-     'display_name': 'R: General use (JupyterLab) %s'%(IMAGE_DEFAULT_R.split(':')[-1]),
+     'display_name': 'R: General use (JupyterLab) '
+                     '<font color="#999999">%s</font>'%(IMAGE_DEFAULT_R.split(':')[-1]),
      'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': IMAGE_DEFAULT_R, },
     },
     {**EMPTY_PROFILE,
-     'display_name': 'Julia: General use (JupyterLab) %s'%(IMAGE_DEFAULT_JULIA.split(':')[-1]),
+     'display_name': 'Julia: General use (JupyterLab) '
+                     '<font color="#999999">%s</font>'%(IMAGE_DEFAULT_JULIA.split(':')[-1]),
      'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': IMAGE_DEFAULT_JULIA, },
      'node_selector':{'kubernetes.io/hostname': 'jupyter-k8s-node2.cs.aalto.fi'},
@@ -60,7 +73,8 @@ PROFILE_LIST_DEFAULT = [
 if 'IMAGE_TESTING' in globals():
     PROFILE_LIST_DEFAULT.append(
     {**EMPTY_PROFILE,
-     'display_name': '(testing) Python: General use (JupyterLab) %s'%(IMAGE_TESTING.split(':')[-1]),
+     'display_name': '(testing) Python: General use (JupyterLab) '
+                     '<font color="#999999">%s</font>'%(IMAGE_TESTING.split(':')[-1]),
      'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': IMAGE_TESTING, }
     })
