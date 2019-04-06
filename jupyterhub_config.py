@@ -441,6 +441,7 @@ def pre_spawn_hook(spawner):
                      'c.AssignmentList.assignment_dir = "/notebooks/"',
                      'c.ExecutePreprocessor.timeout = 120',
                      'c.Exchange.path_includes_course = True',
+                     *course_data.get('nbgrader_config', '').split('\n'),
                      ]:
             cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
         for line in ['c.AssignmentList.assignment_dir = "/notebooks/"',
