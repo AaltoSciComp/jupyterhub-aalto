@@ -44,6 +44,7 @@ def main():
     username_map = { } # map usernames to found emails
 
     # Read usernames to list
+    lines = []
     for line in open(args.input) if args.input else sys.stdin:
         line = line.strip()
         line = line.split(',')
@@ -51,6 +52,7 @@ def main():
         if not line:
             continue
         usernames.append(username)
+        lines.append(line)
 
     # Make search like (|(samaccountname=name1)(samaccountname=name2))
     searches = [ (lambda x: '(samaccountname={})'.format(x))(x) for x in usernames ]
@@ -69,11 +71,7 @@ def main():
         username_map[username] = mail
 
     # Print found mails to the output file
-    for line in open(args.input) if args.input else sys.stdin:
-        line = line.strip()
-        line = line.split(',')
-        if not line:
-            continue
+    for line in lines:
         username = line[int(args.column)]
         if username_map.get(username, None) is not None:
             line.insert(int(args.column)+1, username_map.get(username))
