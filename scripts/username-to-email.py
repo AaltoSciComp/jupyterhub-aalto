@@ -34,7 +34,7 @@ def lookup(username):
         return cache[username]
     cmd = ['net', 'ads', 'search', 'samAccountName=%s'%username, 'mail']
     out = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-    m = re.search('mail: ([.a-zA-Z0-9@]+)', out.decode())
+    m = re.search('mail: ([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)', out.decode())
     if not m:
         print('can not find mail for: %s'%username, file=sys.stderr)
         return ''
