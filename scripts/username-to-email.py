@@ -28,20 +28,6 @@ import subprocess
 import re
 import sys
 
-cache = { }
-def lookup(username):
-    if username in cache:
-        return cache[username]
-    cmd = ['net', 'ads', 'search', 'samAccountName=%s'%username, 'mail']
-    out = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-    m = re.search('mail: ([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)', out.decode())
-    if not m:
-        print('can not find mail for: %s'%username, file=sys.stderr)
-        return ''
-    email = m.group(1)
-    cache[username] = email
-    return email
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input', nargs='?', help="File to read, default stdin")
@@ -54,14 +40,46 @@ def main():
     else:
         output = sys.stdout
 
+    usernames = [] # holds usernames read from file
+    username_map = { } # map usernames to found emails
+
+    # Read usernames to list
     for line in open(args.input) if args.input else sys.stdin:
         line = line.strip()
         line = line.split(',')
         username = line[int(args.column)]
         if not line:
             continue
-        email = lookup(username)
-        line.insert(int(args.column)+1, email)
-        print(','.join(line), file=output)
+        usernames.append(username)
+
+    # Make search like (|(samaccountname=name1)(samaccountname=name2))
+    searches = [ (lambda x: '(samaccountname={})'.format(x))(x) for x in usernames ]
+    searchexpression = "(|{})".format(''.join(searches))
+    cmd = ['net', 'ads', 'search', searchexpression, 'samaccountname', 'mail']
+    out = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+    
+    # Capture username / email pairs    
+    for line in out.decode().strip().split('\n\n')[1:]:
+        username_capture = re.search('sAMAccountName: ([.a-zA-Z0-9]+)', line)
+        mail_capture = re.search('mail: ([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)', out.decode())
+        if (not username_capture or not mail_capture):
+            continue
+        username = username_capture.group(1)
+        mail = mail_capture.group(1)
+        username_map[username] = mail
+
+    # Print found mails to the output file
+    for line in open(args.input) if args.input else sys.stdin:
+        line = line.strip()
+        line = line.split(',')
+        if not line:
+            continue
+        username = line[int(args.column)]
+        if username_map.get(username, None) is not None:
+            line.insert(int(args.column)+1, username_map.get(username))
+            print(','.join(line), file=output)
+        else:
+            print("Couldn't find mail for: {}".format(username), file=sys.stderr)
 
 main()
+
