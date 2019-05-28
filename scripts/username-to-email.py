@@ -61,7 +61,7 @@ def main():
     # Capture username / email pairs    
     for line in out.decode().strip().split('\n\n')[1:]:
         username_capture = re.search('sAMAccountName: ([.a-zA-Z0-9]+)', line)
-        mail_capture = re.search('mail: ([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)', out.decode())
+        mail_capture = re.search('mail: ([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)', line)
         if (not username_capture or not mail_capture):
             continue
         username = username_capture.group(1)
