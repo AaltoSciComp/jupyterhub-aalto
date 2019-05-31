@@ -17,6 +17,8 @@ def main():
     parser = argparse.ArgumentParser(description='Send feedback to students')
     parser.add_argument('--dry-run', '-n', action='store_true',
                         help='limit to assignment ID')
+    #parser.add_argument('--list', '-l', action='store_true',
+    #                    help="List assignments, don't do anything else")
     parser.add_argument('--user', '-u', action='append',
                         help=('limit to these usernames (comma separated list, '
                               'or can be given multiple times)'))
