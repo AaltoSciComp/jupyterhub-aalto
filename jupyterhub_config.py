@@ -249,7 +249,7 @@ def get_profile_list(spawner):
             if not (is_instructor or is_student or is_teststudent or is_admin):
                 continue
             if not is_student:
-                course_notes = course_notes = ' <font color="brown">(not public)</font>'
+                course_notes = ' <font color="brown">(not public)</font>'
         display_name = course_data.get('name', course_slug)
         profile_list.append({
             'display_name': display_name + course_notes,
@@ -430,7 +430,7 @@ def pre_spawn_hook(spawner):
         spawner.volume_mounts.append({"mountPath": "/srv/nbgrader/exchange",
                                       "name": "exchange",
                                       "readOnly": exchange_readonly})
-        # Add course shared data, if it exists
+        # Add coursedata dir, if it exists
         if course_data.get('datadir', False):
             spawner.volumes.append({
                 "name": "coursedata",
@@ -489,8 +489,6 @@ def pre_spawn_hook(spawner):
             })
             spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
             course_gid = int(course_data['gid'])
-            if 'gid' in course_data:
-                course_gid = int(course_data['gid'])
             spawner.log.debug("pre_spawn_hook: Course gid for {} is {}", course_slug, course_gid)
             cmds.append(r"umask 0007")  # also used through sudo
             environ['NB_UMASK'] = '0007'
