@@ -45,37 +45,32 @@ def unique_suffix(base, other):
 
 # Default profile list
 PROFILE_LIST_DEFAULT = [
-    {**EMPTY_PROFILE,
-     'display_name': 'Python: General use (JupyterLab) '
+    {'display_name': 'Python: General use (JupyterLab) '
                       '<font color="#999999">%s</font>'%(IMAGE_DEFAULT.split(':')[-1]),
      'default': True,
-     'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True, },
+     'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True, },
     },
-    {**EMPTY_PROFILE,
-     'display_name': 'Python: General use (classic notebook) '
+    {'display_name': 'Python: General use (classic notebook) '
                      '<font color="#999999">%s</font>'%(IMAGE_DEFAULT.split(':')[-1]),
-     'kubespawner_override': {'course_slug': ''},
+     'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': ''},
     },
-    {**EMPTY_PROFILE,
-     'display_name': 'R: General use (JupyterLab) '
+    {'display_name': 'R: General use (JupyterLab) '
                      '<font color="#999999">%s</font>'%(IMAGE_DEFAULT_R.split(':')[-1]),
-     'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
+     'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': IMAGE_DEFAULT_R, },
     },
-    {**EMPTY_PROFILE,
-     'display_name': 'Julia: General use (JupyterLab) '
+    {'display_name': 'Julia: General use (JupyterLab) '
                      '<font color="#999999">%s</font>'%(IMAGE_DEFAULT_JULIA.split(':')[-1]),
-     'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
-                               'image': IMAGE_DEFAULT_JULIA, },
-     'node_selector':{'kubernetes.io/hostname': 'jupyter-k8s-node2.cs.aalto.fi'},
+     'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
+                               'image': IMAGE_DEFAULT_JULIA,
+                               'node_selector':{'kubernetes.io/hostname': 'jupyter-k8s-node2.cs.aalto.fi'},},
     },
 ]
 if 'IMAGE_TESTING' in globals():
     PROFILE_LIST_DEFAULT.append(
-    {**EMPTY_PROFILE,
-     'display_name': '(testing) Python: General use (JupyterLab) '
+    {'display_name': '(testing) Python: General use (JupyterLab) '
                      '<font color="#999999">%s</font>'%(IMAGE_TESTING.split(':')[-1]),
-     'kubespawner_override': {'course_slug': '', 'x_jupyter_enable_lab': True,
+     'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': IMAGE_TESTING, }
     })
 
@@ -246,9 +241,9 @@ def get_profile_list(spawner):
                 course_notes = course_notes = ' <font color="brown">(not public)</font>'
         display_name = course_data.get('name', course_slug)
         profile_list.append({
-            **EMPTY_PROFILE,
             'display_name': display_name + course_notes,
             'kubespawner_override': {
+                **EMPTY_PROFILE,
                 'course_slug': course_slug,
                 **course_data.get('kubespawner_override', {}),
                 },
