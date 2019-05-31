@@ -17,6 +17,9 @@ IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:0.5.9'
 IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:0.5.3'
 IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:0.5.9'
 IMAGE_TESTING = 'aaltoscienceit/notebook-server:0.5.10'
+IMAGES_OLD = [
+    'aaltoscienceit/notebook-server:0.5.9',
+]
 DEFAULT_MEM_GUARANTEE = '.5G'
 DEFAULT_CPU_GUARANTEE = .10
 DEFAULT_MEM_LIMIT = '2G'
@@ -73,6 +76,14 @@ if 'IMAGE_TESTING' in globals():
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': IMAGE_TESTING, }
     })
+for image in IMAGES_OLD:
+    PROFILE_LIST_DEFAULT.append(
+    {'display_name': '<font color="#AAAAAA">Old version (JupyterLab)</font> '
+                     '<font color="#999999">%s</font>'%(unique_suffix(IMAGE_DEFAULT, image)),
+     'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
+                               'image': image, }
+    })
+
 
 # Set up generic without jupyterlab
 # RStan
