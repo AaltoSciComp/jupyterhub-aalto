@@ -1,0 +1,1 @@
+kubectl logs "$@" $(kubectl get pods | grep configurable-http-proxy | grep Running | cut -f1 -d' ' | tail -1)
