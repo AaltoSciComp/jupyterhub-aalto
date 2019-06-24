@@ -57,7 +57,10 @@ needed.
   key files for creating test users, joining ActiveDirectory for PAM
   authentication, and so on.
 
-* `scripts/` are various unsorted scripts.
+* `bin/` are scripts to do hub management (restart hub, view logs, etc).
+* `scripts/` are generally scripts that are placed on the hub and not used directly.
+* `course-mgmt/` are course management scripts used by admins.
+* `user-scripts/` are scripts which users/instructors need to use (should be moved elsewhere).
 
 Currently, actually using this is not really known.  You'd `kubectl
 create -f` a bunch of stuff and then `./remake-*.sh` to start the hub
