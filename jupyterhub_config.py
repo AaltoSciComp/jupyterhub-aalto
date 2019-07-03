@@ -15,8 +15,8 @@ import yaml
 
 IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:0.5.9'
 IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:0.5.3'
-IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:0.5.9'
-IMAGE_TESTING = 'aaltoscienceit/notebook-server:0.5.10'
+IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:0.5.11'
+IMAGE_TESTING = 'aaltoscienceit/notebook-server:0.5.13'
 IMAGES_OLD = [
     'aaltoscienceit/notebook-server:0.5.9',
 ]
@@ -310,6 +310,8 @@ def pre_spawn_hook(spawner):
     #spawner.node_selector = { }
     #spawner.tolerations = [ ]
     #spawner.default_url = c.KubeSpawner.default_url
+    spawner.log.critical('SELECTOR'*20)
+    spawner.log.critical(spawner.node_selector)
 
     # Get basic info
     username = spawner.user.name
@@ -349,6 +351,10 @@ def pre_spawn_hook(spawner):
 
     # Extra Aalto config
     #environ['AALTO_EXTRA_HOME_LINKS'] = '.ssh/'
+    # Hack to change validation timeout to 120
+    # Some images still have python3.6, some 3.7; let's deal with it
+    cmds.append(r"PYTHON_DIR=$(ls -d /opt/conda/lib/python3.*)")
+    cmds.append(r"sed -i -E 's#(timeout = Integer\()(30)(,)#\1240\3#' ${PYTHON_DIR}/site-packages/nbconvert/preprocessors/execute.py")
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
     spawner.working_dir = '/'
@@ -361,6 +367,7 @@ def pre_spawn_hook(spawner):
     # Default setup of /etc/group: users:x:100
 
     if not ROOT_THEN_SU:
+        assert False  # This must be tested before using, not in regular use
         # Manually run as uid from outside the container
         spawner.uid = uid
         # default of user in docker image (note: not in image kubespawer yet!)
@@ -454,12 +461,16 @@ def pre_spawn_hook(spawner):
                      'c.BaseConverter.groupshared = True',
                      'c.Exchange.assignment_dir = "/notebooks/"',
                      'c.AssignmentList.assignment_dir = "/notebooks/"',
-                     'c.ExecutePreprocessor.timeout = 120',
+                     'c.ExecutePreprocessor.timeout = 240',
+                     'c.Execute.timeout = 240',
                      'c.Exchange.path_includes_course = True',
+                     'c.Validator.validate_all = True',
                      *course_data.get('nbgrader_config', '').split('\n'),
                      ]:
             cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
         for line in ['c.AssignmentList.assignment_dir = "/notebooks/"',
+                     'c.ExecutePreprocessor.timeout = 240',
+                     'c.Execute.timeout = 240',
                      ]:
             cmds.append(r"echo '{}' >> /etc/jupyter/jupyter_notebook_config.py".format(line))
 
