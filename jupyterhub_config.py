@@ -86,7 +86,6 @@ for image in IMAGES_OLD:
 PROFILE_LIST_DEFAULT_BOTTOM = [
     {'display_name': 'GPU testing '
                       '<font color="#999999">%s</font>'%(IMAGE_DEFAULT.split(':')[-1]),
-     'default': True,
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
                               'image':IMAGE_DEFAULT, 'xx_name': 'gpu_testing',
                               'node_selector':{'kubernetes.io/hostname': 'k8s-gpu-test.cs.aalto.fi'},
