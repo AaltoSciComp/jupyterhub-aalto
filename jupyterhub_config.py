@@ -460,6 +460,7 @@ def pre_spawn_hook(spawner):
                      'c.Execute.timeout = 240',
                      'c.Exchange.path_includes_course = True',
                      'c.Validator.validate_all = True',
+                     'c.CollectApp.check_owner = False',
                      *course_data.get('nbgrader_config', '').split('\n'),
                      ]:
             cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
