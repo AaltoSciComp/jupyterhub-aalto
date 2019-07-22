@@ -310,8 +310,6 @@ def pre_spawn_hook(spawner):
     #spawner.node_selector = { }
     #spawner.tolerations = [ ]
     #spawner.default_url = c.KubeSpawner.default_url
-    spawner.log.critical('SELECTOR'*20)
-    spawner.log.critical(spawner.node_selector)
 
     # Get basic info
     username = spawner.user.name
@@ -455,10 +453,7 @@ def pre_spawn_hook(spawner):
         for line in ['c = get_config()',
                      'c.CourseDirectory.root = "/course"',
                      'c.CourseDirectory.groupshared = True',
-                     'c.Exchange.course_id = "{}"'.format(course_slug),
-                     'c.Exchange.multiuser = True',
-                     'c.Exchange.groupshared = True',
-                     'c.BaseConverter.groupshared = True',
+                     'c.CourseDirectory.course_id = "{}"'.format(course_slug),
                      'c.Exchange.assignment_dir = "/notebooks/"',
                      'c.AssignmentList.assignment_dir = "/notebooks/"',
                      'c.ExecutePreprocessor.timeout = 240',
