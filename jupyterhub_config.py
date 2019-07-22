@@ -83,6 +83,16 @@ for image in IMAGES_OLD:
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': image, }
     })
+PROFILE_LIST_DEFAULT_BOTTOM = [
+    {'display_name': 'GPU testing '
+                      '<font color="#999999">%s</font>'%(IMAGE_DEFAULT.split(':')[-1]),
+     'default': True,
+     'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
+                              'image':IMAGE_DEFAULT, 'xx_name': 'gpu_testing',
+                              'node_selector':{'kubernetes.io/hostname': 'k8s-gpu-test.cs.aalto.fi'},
+                              'tolerations':[{'key':'gpu', 'operator':"Exists", 'effect':"NoSchedule"}],}
+    },
+]
 
 
 # Set up generic without jupyterlab
@@ -278,7 +288,7 @@ def get_profile_list(spawner):
     #pprint(profile_list, stream=sys.stderr)
 
     profile_list.sort(key=lambda x: x['display_name'])
-    profile_list = copy.deepcopy(PROFILE_LIST_DEFAULT) + profile_list
+    profile_list = copy.deepcopy(PROFILE_LIST_DEFAULT) + profile_list + copy.deepcopy(PROFILE_LIST_DEFAULT_BOTTOM)
 
     return profile_list
 # In next version of kubespawner, leave as callable to regen every
