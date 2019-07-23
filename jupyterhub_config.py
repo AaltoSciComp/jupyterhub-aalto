@@ -203,7 +203,7 @@ def GET_COURSES():
             course_slug = os.path.splitext(os.path.basename(course_file))[0]
             if course_slug.endswith('-users'):
                 course_slug = course_slug[:-6]
-            course_data = yaml.load(open(course_file))
+            course_data = yaml.safe_load(open(course_file))
             #print(course_slug, course_data, file=sys.stderr)
             if course_slug not in courses:
                 courses[course_slug] = { }
