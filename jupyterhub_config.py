@@ -210,7 +210,7 @@ def GET_COURSES():
             course_slug = os.path.splitext(os.path.basename(course_file))[0]
             if course_slug.endswith('-users'):
                 course_slug = course_slug[:-6]
-            course_data = yaml.load(open(course_file))
+            course_data = yaml.safe_load(open(course_file))
             #print(course_slug, course_data, file=sys.stderr)
             if course_slug not in courses:
                 courses[course_slug] = { }
@@ -470,7 +470,10 @@ def pre_spawn_hook(spawner):
                      'c.CourseDirectory.root = "/course"',
                      'c.CourseDirectory.groupshared = True',
                      'c.CourseDirectory.course_id = "{}"'.format(course_slug),
+                     'c.CourseDirectory.ignore = [".ipynb_checkpoints", "*.pyc*", "__pycache__", "feedback", ".*"]',
+                     'c.CourseDirectory.max_size = 2*1024*(1024/1000.)',
                      'c.Exchange.assignment_dir = "/notebooks/"',
+                     'c.Exchange.timezone = "Europe/Helsinki"',
                      'c.AssignmentList.assignment_dir = "/notebooks/"',
                      'c.ExecutePreprocessor.timeout = 240',
                      'c.Execute.timeout = 240',
