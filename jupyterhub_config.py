@@ -34,15 +34,12 @@ INSTRUCTOR_CPU_GUARANTEE = DEFAULT_CPU_GUARANTEE
 ROOT_THEN_SU = True
 
 
-EMPTY_PROFILE = {'node_selector': {},
-                 'tolerations': [
-                   {
-                     'key': 'app',
-                     'value': 'jupyter',
-                     'operator': 'Equal',
-                     'effect': 'NoSchedule'
-                   }
-                 ],
+DEFAULT_NODE_SELECTOR = { }
+DEFAULT_TOLERATIONS = [
+    {'key': 'app', 'value': 'jupyter', 'operator': 'Equal', 'effect': 'NoSchedule'},
+    ]
+EMPTY_PROFILE = {'node_selector': DEFAULT_NODE_SELECTOR,
+                 'tolerations': DEFAULT_TOLERATIONS,
                  'default_url': 'tree/notebooks'}
 
 def unique_suffix(base, other):
@@ -97,7 +94,7 @@ PROFILE_LIST_DEFAULT_BOTTOM = [
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
                               'image':IMAGE_DEFAULT, 'xx_name': 'gpu_testing',
                               'node_selector':{'kubernetes.io/hostname': 'k8s-gpu-test.cs.aalto.fi'},
-                              'tolerations':[{'key':'gpu', 'operator':"Exists", 'effect':"NoSchedule"}],}
+                              'tolerations':[{'key':'gpu', 'operator':"Exists", 'effect':"NoSchedule"}, *DEFAULT_TOLERATIONS],}
     },
 ]
 
