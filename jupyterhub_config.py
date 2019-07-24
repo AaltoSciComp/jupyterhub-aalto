@@ -115,6 +115,7 @@ c.JupyterHub.hub_connect_ip = os.environ['JUPYTERHUB_SVC_SERVICE_HOST']
 c.JupyterHub.cleanup_servers = False  # leave servers running if hub restarts
 c.JupyterHub.template_paths = ["/srv/jupyterhub/templates/"]
 c.JupyterHub.last_activity_interval = 180  # default 300
+c.JupyterHub.authenticate_prometheus = False
 # Proxy config
 #c.ConfigurableHTTPProxy.api_url = 'http://jupyterhub-chp-svc.default:8001'  # 10.104.184.140
 c.ConfigurableHTTPProxy.api_url = 'http://%s:8001'%os.environ['JUPYTERHUB_CHP_SVC_SERVICE_HOST']
