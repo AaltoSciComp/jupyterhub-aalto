@@ -12,11 +12,12 @@ import time
 import traceback
 import yaml
 
+# c.JupyterHub.log_level = 'DEBUG'
 
-IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:0.5.9'
-IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:0.5.3'
-IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:0.5.11'
-IMAGE_TESTING = 'aaltoscienceit/notebook-server:0.5.13'
+IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:1.0.0'
+IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:1.0.0'
+IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:1.0.0'
+IMAGE_TESTING = 'aaltoscienceit/notebook-server:1.0.0'
 IMAGES_OLD = [
     'aaltoscienceit/notebook-server:0.5.9',
 ]
@@ -320,12 +321,14 @@ def create_user_dir(username, uid, log=None):
         log.debug(ret.stdout.decode())
 
 
-def pre_spawn_hook(spawner):
+async def pre_spawn_hook(spawner):
     # Note: spawners Python objects are persistent, and if you don't
     # clear certain attributes, they will persist across restarts!
     #spawner.node_selector = { }
     #spawner.tolerations = [ ]
     #spawner.default_url = c.KubeSpawner.default_url
+    await spawner.load_user_options()
+    spawner._profile_list = [ ]
 
     # Get basic info
     username = spawner.user.name
@@ -357,7 +360,7 @@ def pre_spawn_hook(spawner):
     # Remove the .jupyter config that is already there
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.bashrc")
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.profile")
-    #cmds.append("pip install --upgrade --no-deps https://github.com/rkdarst/nbgrader/archive/live.zip")
+    #cmds.append("pip install --upgrade --no-deps https://github.com/AaltoScienceIT/nbgrader/archive/live.zip")
     if getattr(spawner, 'x_jupyter_enable_lab', False):
         environ['JUPYTER_ENABLE_LAB'] = 'true'
         spawner.default_url = "lab/tree/notebooks/"
@@ -554,6 +557,9 @@ def pre_spawn_hook(spawner):
             spawner.log.info("pre_spawn_hook: User %s is blocked spawning %s", username, course_slug)
             raise RuntimeError("You ({}) are not allowed to use the {} environment.  Please contact the course instructors".format(username, course_slug))
 
+    # import pprint
+    # spawner.log.info("Before hooks: spawner.node_selector: %s", spawner.node_selector)
+
     # User- and course-specific hooks
     hook_file = '/srv/jupyterhub/hooks-user/{}.py'.format(username)
     if os.path.exists(hook_file):
@@ -563,6 +569,10 @@ def pre_spawn_hook(spawner):
     if course_slug and os.path.exists(hook_file):
         spawner.log.info("pre_spawn_hook: Running %s", hook_file)
         exec(open(hook_file).read())
+
+    # import pprint
+    # spawner.log.info("After hooks: spawner.node_selector: %s", spawner.node_selector)
+    # spawner.log.info("After hooks: spawner.__dict__: %s", pprint.pformat(spawner.__dict__))
 
     # Common final setup
     #pprint(vars(spawner), stream=sys.stderr)
