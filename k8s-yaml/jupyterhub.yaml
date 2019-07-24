@@ -5,6 +5,7 @@ metadata:
   labels:
     app: jupyterhub
   name: jupyterhub
+  namespace: jupyter
 spec:
   replicas: 1
   selector:
@@ -73,8 +74,9 @@ spec:
 #          subPath: known_hosts
         imagePullPolicy: Never
       tolerations:
-      - key: jupyterhub
-        operator: Exists
+      - key: app
+        value: jupyterhub
+        operator: Equal
         effect: NoSchedule
       volumes:
       - name: jupyterhub-hubdata

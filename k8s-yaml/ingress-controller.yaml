@@ -66,12 +66,8 @@ spec:
             timeoutSeconds: 1
           securityContext:
             runAsNonRoot: false
-      tolerations:
-      - key: jupyterhub
-        operator: Exists
-        effect: NoSchedule
       nodeSelector:
-        kubernetes.io/hostname: jupyter.cs.aalto.fi
+        kubernetes.io/hostname: k8s-ingress.cs.aalto.fi
 ---
 
 apiVersion: extensions/v1beta1
@@ -114,10 +110,4 @@ spec:
           requests:
             cpu: 10m
             memory: 20Mi
-      tolerations:
-      - key: jupyterhub
-        operator: Exists
-        effect: NoSchedule
-      nodeSelector:
-        kubernetes.io/hostname: jupyter.cs.aalto.fi
 ---

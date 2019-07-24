@@ -34,7 +34,14 @@ ROOT_THEN_SU = True
 
 
 EMPTY_PROFILE = {'node_selector': {},
-                 'tolerations': [],
+                 'tolerations': [
+                   {
+                     'key': 'app',
+                     'value': 'jupyter',
+                     'operator': 'exists',
+                     'effect': 'NoSchedule'
+                   }
+                 ],
                  'default_url': 'tree/notebooks'}
 
 def unique_suffix(base, other):

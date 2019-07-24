@@ -3,6 +3,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: jupyterhub-svc
+  namespace: jupyter
 spec:
   selector:
     app: jupyterhub
@@ -24,7 +25,7 @@ spec:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  namespace: default
+  namespace: jupyter
   name: jupyter-notebook-spawner
 rules:
 - apiGroups: [""]
@@ -38,7 +39,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: jupyter-notebook-spawner
-  namespace: default
+  namespace: jupyter
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -50,6 +51,6 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: User
-  name: system:serviceaccount:default:jupyter-notebook-spawner
+  name: system:serviceaccount:jupyter:jupyter-notebook-spawner
   apiGroup: rbac.authorization.k8s.io
-  namespace: default
+  namespace: jupyter
