@@ -7,7 +7,7 @@ echo " \
 130.233.251.6   dc03.org.aalto.fi \
 130.233.251.7   dc04.org.aalto.fi \
 " >> /etc/hosts
-if [[ -z "${NO_AD_JOIN}" ]]; then 
+if [[ -z "${NO_AD_JOIN}" ]]; then
   cat /etc/adpw.txt | join_ad.sh   # k8s mounted secret
 fi
 service sssd start
@@ -15,7 +15,7 @@ tries=0
 if [[ -z "${NO_AD_JOIN}" ]]; then
   while true;
   do
-    id darstr1
+    id darstr1 > /dev/null
     if [ $? -eq 0 ]; then
       break;
     fi

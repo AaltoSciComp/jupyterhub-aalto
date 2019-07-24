@@ -1,16 +1,20 @@
-FROM jupyterhub/jupyterhub:0.9.4
+FROM jupyterhub/jupyterhub:1.0
 
 # Install dependencies
+
+RUN apt-get install vim
 
 # Jupyterhub & co
 RUN pip install jupyter
 RUN pip install pyyaml
 
-# kube-spawner
-RUN pip install https://github.com/jupyterhub/kubespawner/archive/f002f9b.tar.gz
+# using a commit from Jul 22, 2019 instead of a release because there hasn't
+# been a new release in a long time
+RUN pip install https://github.com/jupyterhub/kubespawner/archive/8a6d66e.tar.gz
 
 # nbgrader & enable it
-RUN pip install git+https://github.com/rkdarst/nbgrader@live
+# TODO: figure out if safe to remove. already in the base image
+RUN pip install git+https://github.com/AaltoScienceIT/nbgrader@live
 RUN jupyter nbextension install --sys-prefix --py nbgrader --overwrite
 RUN jupyter nbextension enable --sys-prefix --py nbgrader
 RUN jupyter serverextension enable --sys-prefix --py nbgrader
