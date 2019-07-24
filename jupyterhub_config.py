@@ -38,7 +38,7 @@ EMPTY_PROFILE = {'node_selector': {},
                    {
                      'key': 'app',
                      'value': 'jupyter',
-                     'operator': 'exists',
+                     'operator': 'Equal',
                      'effect': 'NoSchedule'
                    }
                  ],
