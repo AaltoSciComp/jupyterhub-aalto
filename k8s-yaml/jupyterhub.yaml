@@ -119,5 +119,5 @@ spec:
         configMap:
           name: spawn-test
       nodeSelector:
-        app: jupyterhub
+        cs-aalto/app: jupyterhub
       serviceAccountName: jupyter-notebook-spawner

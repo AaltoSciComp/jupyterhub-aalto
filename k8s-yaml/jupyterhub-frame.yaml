@@ -6,7 +6,7 @@ metadata:
   namespace: jupyter
 spec:
   selector:
-    app: jupyterhub
+    cs-aalto/app: jupyterhub
   clusterIP: "10.104.184.130"
   ports:
 #  - protocol: TCP
