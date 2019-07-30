@@ -2,7 +2,7 @@ FROM jupyterhub/jupyterhub:1.0
 
 # Install dependencies
 
-RUN apt-get install vim
+RUN apt-get update && apt-get install -y vim
 
 # Jupyterhub & co
 RUN pip install jupyter
