@@ -36,7 +36,7 @@ ROOT_THEN_SU = True
 
 DEFAULT_NODE_SELECTOR = { }
 DEFAULT_TOLERATIONS = [
-    {'key': 'app', 'value': 'jupyter', 'operator': 'Equal', 'effect': 'NoSchedule'},
+    {'key': 'cs-aalto/app', 'value': 'jupyter', 'operator': 'Equal', 'effect': 'NoSchedule'},
     ]
 EMPTY_PROFILE = {'node_selector': DEFAULT_NODE_SELECTOR,
                  'tolerations': DEFAULT_TOLERATIONS,
@@ -94,7 +94,7 @@ PROFILE_LIST_DEFAULT_BOTTOM = [
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
                               'image':IMAGE_DEFAULT, 'xx_name': 'gpu_testing',
                               'node_selector':{'kubernetes.io/hostname': 'k8s-gpu-test.cs.aalto.fi'},
-                              'tolerations':[{'key':'gpu', 'operator':"Exists", 'effect':"NoSchedule"}, *DEFAULT_TOLERATIONS],}
+                              'tolerations':[{'key':'cs-aalto/gpu', 'operator':"Exists", 'effect':"NoSchedule"}, *DEFAULT_TOLERATIONS],}
     },
 ]
 
@@ -144,7 +144,7 @@ c.KubeSpawner.start_timeout = 60 * 5
 c.KubeSpawner.hub_connect_port = 8081
 c.KubeSpawner.http_timeout = 60 * 5
 c.KubeSpawner.disable_user_config = True
-c.KubeSpawner.common_labels = { "app": "notebook-server" }
+c.KubeSpawner.common_labels = { "cs-aalto/app": "notebook-server" }
 c.KubeSpawner.poll_interval = 150  # default 30, check each pod for aliveness this often
 
 # User environment config
