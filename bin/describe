@@ -1,1 +1,1 @@
-kubectl describe pod -n jupyter $(kubectl get pods -n jupyter | grep jupyterhub | grep Running | cut -f1 -d' ' | tail -1)
+kubectl -n jupyter describe pod "$@" $(kubectl get pods -n jupyter | grep jupyterhub | grep Running | cut -f1 -d' ' | tail -1)

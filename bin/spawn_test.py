@@ -79,7 +79,7 @@ if 'server' in r.json() and r.json()['server'] is not None and 'FIX' not in os.e
             
 # Start the server
 log.info('Starting server')
-r = requests.post(API+'users/%s/server'%username, json={'profile':['2']}, auth=auth)
+r = requests.post(API+'users/%s/server'%username, json={}, auth=auth)
 log.debug(r.text)
 r.raise_for_status()
 if r.status_code != 201:

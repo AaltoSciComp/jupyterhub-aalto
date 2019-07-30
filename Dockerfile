@@ -1,8 +1,10 @@
 FROM jupyterhub/jupyterhub:1.0
 
 # Install dependencies
-
-RUN apt-get update && apt-get install -y vim
+RUN apt-get update && \
+    apt-get install vim -y --no-install-recommends && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Jupyterhub & co
 RUN pip install jupyter

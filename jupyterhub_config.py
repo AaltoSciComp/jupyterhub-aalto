@@ -12,11 +12,12 @@ import time
 import traceback
 import yaml
 
+# c.JupyterHub.log_level = 'DEBUG'
 
-IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:0.5.9'
-IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:0.5.3'
-IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:0.5.11'
-IMAGE_TESTING = 'aaltoscienceit/notebook-server:0.5.13'
+IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:1.0.0'
+IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:1.0.0'
+IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:1.0.0'
+IMAGE_TESTING = 'aaltoscienceit/notebook-server:1.0.0'
 IMAGES_OLD = [
     'aaltoscienceit/notebook-server:0.5.9',
 ]
@@ -33,15 +34,12 @@ INSTRUCTOR_CPU_GUARANTEE = DEFAULT_CPU_GUARANTEE
 ROOT_THEN_SU = True
 
 
-EMPTY_PROFILE = {'node_selector': {},
-                 'tolerations': [
-                   {
-                     'key': 'app',
-                     'value': 'jupyter',
-                     'operator': 'exists',
-                     'effect': 'NoSchedule'
-                   }
-                 ],
+DEFAULT_NODE_SELECTOR = { }
+DEFAULT_TOLERATIONS = [
+    {'key': 'cs-aalto/app', 'value': 'jupyter', 'operator': 'Equal', 'effect': 'NoSchedule'},
+    ]
+EMPTY_PROFILE = {'node_selector': DEFAULT_NODE_SELECTOR,
+                 'tolerations': DEFAULT_TOLERATIONS,
                  'default_url': 'tree/notebooks'}
 
 def unique_suffix(base, other):
@@ -96,7 +94,7 @@ PROFILE_LIST_DEFAULT_BOTTOM = [
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
                               'image':IMAGE_DEFAULT, 'xx_name': 'gpu_testing',
                               'node_selector':{'kubernetes.io/hostname': 'k8s-gpu-test.cs.aalto.fi'},
-                              'tolerations':[{'key':'gpu', 'operator':"Exists", 'effect':"NoSchedule"}],}
+                              'tolerations':[{'key':'cs-aalto/gpu', 'operator':"Exists", 'effect':"NoSchedule"}, *DEFAULT_TOLERATIONS],}
     },
 ]
 
@@ -117,6 +115,7 @@ c.JupyterHub.hub_connect_ip = os.environ['JUPYTERHUB_SVC_SERVICE_HOST']
 c.JupyterHub.cleanup_servers = False  # leave servers running if hub restarts
 c.JupyterHub.template_paths = ["/srv/jupyterhub/templates/"]
 c.JupyterHub.last_activity_interval = 180  # default 300
+c.JupyterHub.authenticate_prometheus = False
 # Proxy config
 #c.ConfigurableHTTPProxy.api_url = 'http://jupyterhub-chp-svc.default:8001'  # 10.104.184.140
 c.ConfigurableHTTPProxy.api_url = 'http://%s:8001'%os.environ['JUPYTERHUB_CHP_SVC_SERVICE_HOST']
@@ -145,7 +144,7 @@ c.KubeSpawner.start_timeout = 60 * 5
 c.KubeSpawner.hub_connect_port = 8081
 c.KubeSpawner.http_timeout = 60 * 5
 c.KubeSpawner.disable_user_config = True
-c.KubeSpawner.common_labels = { "app": "notebook-server" }
+c.KubeSpawner.common_labels = { "cs-aalto/app": "notebook-server" }
 c.KubeSpawner.poll_interval = 150  # default 30, check each pod for aliveness this often
 
 # User environment config
@@ -320,12 +319,14 @@ def create_user_dir(username, uid, log=None):
         log.debug(ret.stdout.decode())
 
 
-def pre_spawn_hook(spawner):
+async def pre_spawn_hook(spawner):
     # Note: spawners Python objects are persistent, and if you don't
     # clear certain attributes, they will persist across restarts!
     #spawner.node_selector = { }
     #spawner.tolerations = [ ]
     #spawner.default_url = c.KubeSpawner.default_url
+    await spawner.load_user_options()
+    spawner._profile_list = [ ]
 
     # Get basic info
     username = spawner.user.name
@@ -357,7 +358,7 @@ def pre_spawn_hook(spawner):
     # Remove the .jupyter config that is already there
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.bashrc")
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.profile")
-    #cmds.append("pip install --upgrade --no-deps https://github.com/rkdarst/nbgrader/archive/live.zip")
+    #cmds.append("pip install --upgrade --no-deps https://github.com/AaltoScienceIT/nbgrader/archive/live.zip")
     if getattr(spawner, 'x_jupyter_enable_lab', False):
         environ['JUPYTER_ENABLE_LAB'] = 'true'
         spawner.default_url = "lab/tree/notebooks/"
@@ -554,6 +555,9 @@ def pre_spawn_hook(spawner):
             spawner.log.info("pre_spawn_hook: User %s is blocked spawning %s", username, course_slug)
             raise RuntimeError("You ({}) are not allowed to use the {} environment.  Please contact the course instructors".format(username, course_slug))
 
+    # import pprint
+    # spawner.log.info("Before hooks: spawner.node_selector: %s", spawner.node_selector)
+
     # User- and course-specific hooks
     hook_file = '/srv/jupyterhub/hooks-user/{}.py'.format(username)
     if os.path.exists(hook_file):
@@ -563,6 +567,10 @@ def pre_spawn_hook(spawner):
     if course_slug and os.path.exists(hook_file):
         spawner.log.info("pre_spawn_hook: Running %s", hook_file)
         exec(open(hook_file).read())
+
+    # import pprint
+    # spawner.log.info("After hooks: spawner.node_selector: %s", spawner.node_selector)
+    # spawner.log.info("After hooks: spawner.__dict__: %s", pprint.pformat(spawner.__dict__))
 
     # Common final setup
     #pprint(vars(spawner), stream=sys.stderr)

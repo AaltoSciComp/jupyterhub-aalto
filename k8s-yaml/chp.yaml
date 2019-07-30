@@ -42,8 +42,9 @@ spec:
           - name: TZ
             value: Europe/Helsinki
       tolerations:
-      - key: jupyterhub
-        operator: Exists
+      - key: app
+        value: jupyterhub
+        operator: Equal
         effect: NoSchedule
       volumes:
       - name: chp-secret
