@@ -42,10 +42,10 @@ spec:
           - name: TZ
             value: Europe/Helsinki
       tolerations:
-      - key: app
-        value: jupyterhub
-        operator: Equal
-        effect: NoSchedule
+      - {key: cs-aalto/app, value: jupyterhub,             operator: Equal, effect: NoSchedule}
+      - {key: node.kubernetes.io/disk-pressure,   operator: Exists}
+      - {key: node.kubernetes.io/out-of-disk,     operator: Exists}
+      - {key: node.kubernetes.io/memory-pressure, operator: Exists}
       volumes:
       - name: chp-secret
         secret:
