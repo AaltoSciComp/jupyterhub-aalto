@@ -74,7 +74,7 @@ spec:
 #          subPath: known_hosts
         imagePullPolicy: Never
       tolerations:
-      - {key: app, value: jupyterhub,             operator: Equal, effect: NoSchedule}
+      - {key: cs-aalto/app, value: jupyterhub,             operator: Equal, effect: NoSchedule}
       - {key: frontend,                           operator: Exists, effect: NoSchedule}
       - {key: node.kubernetes.io/disk-pressure,   operator: Exists}
       - {key: node.kubernetes.io/out-of-disk,     operator: Exists}
