@@ -1,7 +1,6 @@
 FROM jupyterhub/jupyterhub:1.0
 
 # Install dependencies
-
 RUN apt-get update && \
     apt-get install vim -y --no-install-recommends && \
     apt-get clean && \

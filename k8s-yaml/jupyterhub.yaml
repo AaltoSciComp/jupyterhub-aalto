@@ -3,18 +3,18 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: jupyterhub
+    cs-aalto/app: jupyterhub
   name: jupyterhub
   namespace: jupyter
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: jupyterhub
+      cs-aalto/app: jupyterhub
   template:
     metadata:
       labels:
-        app: jupyterhub
+        cs-aalto/app: jupyterhub
       name: jupyterhub
     spec:
       hostname: jupyterhub-cs-aalto-fi
@@ -119,5 +119,5 @@ spec:
         configMap:
           name: spawn-test
       nodeSelector:
-        app: jupyterhub
+        cs-aalto/app: jupyterhub
       serviceAccountName: jupyter-notebook-spawner
