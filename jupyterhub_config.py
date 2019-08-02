@@ -471,6 +471,7 @@ async def pre_spawn_hook(spawner):
                      'c.CourseDirectory.root = "/course"',
                      'c.CourseDirectory.groupshared = True',
                      'c.CourseDirectory.course_id = "{}"'.format(course_slug),
+                     'c.Exchange.course_id = "{}"'.format(course_slug),
                      'c.CourseDirectory.ignore = [".ipynb_checkpoints", "*.pyc*", "__pycache__", "feedback", ".*"]',
                      'c.CourseDirectory.max_size = 2*1024*(1024/1000.)',
                      'c.Exchange.assignment_dir = "/notebooks/"',
