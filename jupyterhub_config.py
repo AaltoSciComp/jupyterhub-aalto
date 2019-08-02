@@ -475,6 +475,7 @@ async def pre_spawn_hook(spawner):
                      'c.CourseDirectory.max_size = 2*1024*(1024/1000.)',
                      'c.Exchange.assignment_dir = "/notebooks/"',
                      'c.Exchange.timezone = "Europe/Helsinki"',
+                     'c.NbGraderAPI.timezone = "Europe/Helsinki"',
                      'c.AssignmentList.assignment_dir = "/notebooks/"',
                      'c.ExecutePreprocessor.timeout = 240',
                      'c.Execute.timeout = 240',
