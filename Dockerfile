@@ -7,8 +7,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Jupyterhub & co
-RUN pip install jupyter
-RUN pip install pyyaml
+RUN pip install jupyter python-dateutil pytz pyyaml
 
 # using a commit from Jul 22, 2019 instead of a release because there hasn't
 # been a new release in a long time
