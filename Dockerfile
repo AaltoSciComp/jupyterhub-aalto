@@ -15,10 +15,10 @@ RUN pip install https://github.com/jupyterhub/kubespawner/archive/8a6d66e.tar.gz
 
 # nbgrader & enable it
 # TODO: figure out if safe to remove. already in the base image
-RUN pip install git+https://github.com/AaltoScienceIT/nbgrader@live
-RUN jupyter nbextension install --sys-prefix --py nbgrader --overwrite
-RUN jupyter nbextension enable --sys-prefix --py nbgrader
-RUN jupyter serverextension enable --sys-prefix --py nbgrader
+RUN pip install git+https://github.com/AaltoScienceIT/nbgrader@live && \
+    jupyter nbextension install --sys-prefix --py nbgrader --overwrite && \
+    jupyter nbextension enable --sys-prefix --py nbgrader && \
+    jupyter serverextension enable --sys-prefix --py nbgrader
 
 # Enable SSH stuff
 COPY secrets/known_hosts /root/.ssh/known_hosts
