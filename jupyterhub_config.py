@@ -93,7 +93,7 @@ PROFILE_LIST_DEFAULT_BOTTOM = [
                       '<font color="#999999">%s</font>'%(IMAGE_DEFAULT.split(':')[-1]),
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
                               'image':IMAGE_DEFAULT, 'xx_name': 'gpu_testing',
-                              'node_selector':{'kubernetes.io/hostname': 'k8s-gpu-test.cs.aalto.fi'},
+                              'node_selector':{'cs-aalto/gpu': 'true'},
                               'tolerations':[{'key':'cs-aalto/gpu', 'operator':"Exists", 'effect':"NoSchedule"}, *DEFAULT_TOLERATIONS],}
     },
 ]
