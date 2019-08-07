@@ -1,7 +1,7 @@
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 
 # Syntax check the hub config file first.
-if ! python3 -m py_compile jupyterhub_config.py ; then
+if ! python3 -m py_compile $SCRIPTPATH/../jupyterhub_config.py ; then
     echo "jupyterhub_config.py has invalid syntax, aborting the hub restart."
     exit
 fi
