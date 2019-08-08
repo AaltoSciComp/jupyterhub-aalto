@@ -467,7 +467,8 @@ async def pre_spawn_hook(spawner):
 
 
         # Jupyter/nbgrader config
-        for line in ['c = get_config()',
+        for line in ['',
+                     'c = get_config()',
                      'c.CourseDirectory.root = "/course"',
                      'c.CourseDirectory.groupshared = True',
                      'c.CourseDirectory.course_id = "{}"'.format(course_slug),
@@ -486,7 +487,8 @@ async def pre_spawn_hook(spawner):
                      *course_data.get('nbgrader_config', '').split('\n'),
                      ]:
             cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
-        for line in ['c.AssignmentList.assignment_dir = "/notebooks/"',
+        for line in ['',
+                     'c.AssignmentList.assignment_dir = "/notebooks/"',
                      'c.ExecutePreprocessor.timeout = 240',
                      'c.Execute.timeout = 240',
                      ]:
