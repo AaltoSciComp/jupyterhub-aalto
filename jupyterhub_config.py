@@ -363,6 +363,10 @@ async def pre_spawn_hook(spawner):
         environ['JUPYTER_ENABLE_LAB'] = 'true'
         spawner.default_url = "lab/tree/notebooks/"
     #cmds.append('jupyter labextension enable @jupyterlab/google-drive')
+    # Install gpuplug in the GPU images
+    if spawner.node_selector and 'cs-aalto/gpu' in spawner.node_selector:
+        cmds.append("pip install --upgrade https://github.com/AaltoScienceIT/gpuplug/archive/master.zip")
+
 
     # Extra Aalto config
     #environ['AALTO_EXTRA_HOME_LINKS'] = '.ssh/'
