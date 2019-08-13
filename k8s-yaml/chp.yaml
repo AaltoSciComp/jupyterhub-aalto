@@ -51,4 +51,4 @@ spec:
         secret:
           secretName: chp-secret
       nodeSelector:
-        app: jupyterhub
+        cs-aalto/app: jupyterhub
