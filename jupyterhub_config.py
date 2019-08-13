@@ -70,8 +70,7 @@ PROFILE_LIST_DEFAULT = [
     {'display_name': 'Julia: General use (JupyterLab) '
                      '<font color="#999999">%s</font>'%(IMAGE_DEFAULT_JULIA.split(':')[-1]),
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
-                               'image': IMAGE_DEFAULT_JULIA,
-                               'node_selector':{'kubernetes.io/hostname': 'jupyter-k8s-node2.cs.aalto.fi'},},
+                               'image': IMAGE_DEFAULT_JULIA,},
     },
 ]
 if 'IMAGE_TESTING' in globals():
