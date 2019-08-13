@@ -309,7 +309,7 @@ def create_user_dir(username, uid, log=None):
     # create_user_dir.sh knows how to compete directory from (uid, username)
     #os.system('ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid))
     ret = subprocess.run(
-        'ssh jupyter-manager.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid),
+        'ssh jupyter-manager.cs.aalto.fi "/root/jupyterhub-aalto/scripts/create_user_dir.sh {0} {1}"'.format(username, uid),
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     if ret.returncode != 0:
         log.error('create_user_dir failed for %s %s', username, uid)
