@@ -15,7 +15,7 @@ import yaml
 # c.JupyterHub.log_level = 'DEBUG'
 
 IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:1.0.5'
-IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:1.0.0'
+IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:1.0.2'
 IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:1.0.2'
 #IMAGE_TESTING = 'aaltoscienceit/notebook-server:1.0.5'
 IMAGES_OLD = [
