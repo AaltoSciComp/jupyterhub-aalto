@@ -24,7 +24,7 @@ def setperm(path, perm, dirs_only=False):
 def setgrp(path, gid):
     """Recursively set group, don't touch if OK to preserve ctime"""
     ret = os.system('find %s ! -group %s -exec chgrp %s {} \\+'%(
-        path, gid, gid))    
+        path, gid, gid))
 
 def assert_stat(path, mode, match='exact', missing_ok=False, mask=0o7777):
     assert path.exists() or missing_ok, "Path %s is missing"%path
@@ -129,7 +129,7 @@ class Course():
         # Parent holder directory
         self.coursebasedir.mkdir(exist_ok=True)
         os.chmod(str(self.coursebasedir), MODE_BASE)
-        
+
         # Course dir
         self.coursedir.mkdir(exist_ok=True)
         os.chmod(str(self.coursedir), MODE_COURSE)
@@ -156,10 +156,10 @@ class Course():
                          self.exchangedir/self.slug/'outbound']:
                 setperm(dir_, "g+rwX")
                 setperm(dir_, "g+s", dirs_only=True)
-            
+
         setperm(self.exchangedir, "g+rwX")
         setperm(self.exchangedir, "g+s", dirs_only=True)
-    
+
 
 def load_courses():
     """Load all yaml files into course objects."""
@@ -174,7 +174,7 @@ def load_courses():
         courses[course_slug] = Course(course_slug, course_data)
     return courses
 
-    
+
 if __name__ == "__main__":
 
     import argparse
