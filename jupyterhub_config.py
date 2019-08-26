@@ -505,6 +505,7 @@ async def pre_spawn_hook(spawner):
             spawner.log.info("pre_spawn_hook: User %s is an instructor for %s", username, course_slug)
             allow_spawn = True
             cmds.append("enable_formgrader.sh")
+            environ['AALTO_NB_ENABLE_FORMGRADER'] = '1'
             # Instructors get the whole filesystem tree, because they
             # need to be able to access "/course", too.  Warning, you
             # will have different paths!  (fix later...)
