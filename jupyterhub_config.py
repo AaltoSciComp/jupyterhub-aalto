@@ -365,6 +365,17 @@ async def pre_spawn_hook(spawner):
     # Install gpuplug in the GPU images
     if spawner.node_selector and 'cs-aalto/gpu' in spawner.node_selector:
         cmds.append("pip install --upgrade https://github.com/AaltoScienceIT/gpuplug/archive/master.zip")
+        spawner.volumes.append({
+            "name": "gpuplug-sock",
+            "hostPath": {
+                "path": "/run/gpuplug.sock",
+                "type": "Socket",
+            }
+        })
+        spawner.volume_mounts.append({
+            "mountPath": "/run/gpuplug.sock",
+            "name": "gpuplug-sock"
+        })
 
 
     # Extra Aalto config
