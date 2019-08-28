@@ -14,12 +14,12 @@ import yaml
 
 # c.JupyterHub.log_level = 'DEBUG'
 
-IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:1.6.1'
-IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:1.6.1'
-IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:1.6.0'
+IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:1.7.0'
+IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:1.7.0'
+IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:1.7.0'
 #IMAGE_TESTING = 'aaltoscienceit/notebook-server:1.0.6'
 IMAGES_OLD = [
-    'aaltoscienceit/notebook-server:1.0.3',
+    'aaltoscienceit/notebook-server:1.6.1',
 ]
 DEFAULT_MEM_GUARANTEE = '.5G'
 DEFAULT_CPU_GUARANTEE = .10
