@@ -17,6 +17,7 @@ import yaml
 IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:1.7.0'
 IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:1.7.0'
 IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:1.7.0'
+IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.7.0'
 #IMAGE_TESTING = 'aaltoscienceit/notebook-server:1.0.6'
 IMAGES_OLD = [
     'aaltoscienceit/notebook-server:1.6.1',
@@ -89,9 +90,9 @@ for image in IMAGES_OLD:
     })
 PROFILE_LIST_DEFAULT_BOTTOM = [
     {'display_name': 'GPU testing '
-                      '<font color="#999999">%s</font>'%(IMAGE_DEFAULT.split(':')[-1]),
+                      '<font color="#999999">%s</font>'%(IMAGE_DEFAULT_CUDA.split(':')[-1]),
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
-                              'image':IMAGE_DEFAULT, 'xx_name': 'gpu_testing',
+                              'image':IMAGE_DEFAULT_CUDA, 'xx_name': 'gpu_testing',
                               'node_selector':{'cs-aalto/gpu': 'true'},
                               'tolerations':[{'key':'cs-aalto/gpu', 'operator':"Exists", 'effect':"NoSchedule"}, *DEFAULT_TOLERATIONS],}
     },
