@@ -163,14 +163,12 @@ c.KubeSpawner.mem_guarantee = DEFAULT_MEM_GUARANTEE
 
 # Volume mounts
 DEFAULT_VOLUMES = [
-  {"name": "user",
-   "nfs": {"server": "jhnas.org.aalto.fi", "path": "/vol/jupyter/u/{uid_last2digits}/{username}"}},  #{uid_last2digits}
-  {"name": "shareddata",
-   "nfs": {"server": "jhnas.org.aalto.fi", "path": "/vol/jupyter/shareddata/"}},
+  {"name": "jupyter-nfs",
+   'persistentVolumeClaim':{'claimName': 'jupyter-nfs'}},
 ]
 DEFAULT_VOLUME_MOUNTS = [
-  {"mountPath": "/notebooks", "name": "user"},
-  {"mountPath": "/mnt/jupyter/shareddata", "name": "shareddata", "readOnly":False},
+  {"name": "jupyter-nfs", "mountPath": "/notebooks", "subPath": "u/{uid_last2digits}/{username}", "readOnly": False},
+  {"name": "jupyter-nfs", "mountPath": "/mnt/jupyter/shareddata", "subPath": "shareddata/", "readOnly":False},
 ]
 c.KubeSpawner.volumes = DEFAULT_VOLUMES
 c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
@@ -344,9 +342,9 @@ async def pre_spawn_hook(spawner):
     # is constantly reused.
     spawner.volumes = copy.deepcopy(DEFAULT_VOLUMES)
     spawner.volume_mounts = copy.deepcopy(DEFAULT_VOLUME_MOUNTS)
-    assert spawner.volumes[0]['name'] == 'user'
+    assert 'uid_last2digits' in spawner.volume_mounts[0]['subPath']
     #print(spawner.volumes, file=sys.stderr)
-    spawner.volumes[0]['nfs']['path'] = spawner.volumes[0]['nfs']['path'].format(username=username, uid_last2digits=uid_last2digits)
+    spawner.volume_mounts[0]['subPath'] = spawner.volume_mounts[0]['subPath'].format(username=username, uid_last2digits=uid_last2digits)
     #print(spawner.volumes, file=sys.stderr)
 
     # Set basic spawner properties
@@ -454,30 +452,18 @@ async def pre_spawn_hook(spawner):
             spawner.default_url = "lab/tree/notebooks/"
 
         # Add course exchange
-        spawner.volumes.append({
-            "name": "exchange",
-            "nfs": {
-                "server": "jhnas.org.aalto.fi",
-                "path": "/vol/jupyter/exchange/{}".format(course_slug)
-            }
-        })
         # /srv/nbgrader/exchange is the default path
         exchange_readonly = (course_data.get('restrict_submit', False) and 'username' not in course_data.get('students', {})
                                                                        and 'username' not in course_data.get('instructors', {}))
         spawner.volume_mounts.append({"mountPath": "/srv/nbgrader/exchange",
-                                      "name": "exchange",
+                                      "name": "jupyter-nfs",
+                                      "subPath": "exchange/{}".format(course_slug),
                                       "readOnly": exchange_readonly})
         # Add coursedata dir, if it exists
         if course_data.get('datadir', False):
-            spawner.volumes.append({
-                "name": "coursedata",
-                "nfs": {
-                    "server": "jhnas.org.aalto.fi",
-                    "path": "/vol/jupyter/course/{}/data/".format(course_slug)
-                }
-            })
             spawner.volume_mounts.append({"mountPath": "/coursedata",
-                                          "name": "coursedata",
+                                          "subPath": "course/{}/data/".format(course_slug),
+                                          "name": "jupyter-nfs",
                                           "readOnly": username not in course_data.get('instructors', {})})
 
 
@@ -528,14 +514,7 @@ async def pre_spawn_hook(spawner):
             for line in ['c.NbGrader.logfile = "/course/.nbgraber.log"',
                         ]:
                 cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
-            spawner.volumes.append({
-                "name": "course",
-                "nfs": {
-                    "server": "jhnas.org.aalto.fi",
-                    "path": "/vol/jupyter/course/{}/files".format(course_slug)
-                }
-            })
-            spawner.volume_mounts.append({ "mountPath": "/course", "name": "course" })
+            spawner.volume_mounts.append({"mountPath": "/course", "name": "jupyter-nfs", "subPath": "course/{}/files".format(course_slug)})
             course_gid = int(course_data['gid'])
             spawner.log.debug("pre_spawn_hook: Course gid for {} is {}", course_slug, course_gid)
             cmds.append(r"umask 0007")  # also used through sudo
