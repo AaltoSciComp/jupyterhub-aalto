@@ -192,7 +192,7 @@ def GET_COURSES():
 
     # Cache, don't unconditionally reload every time.
     # Regenerate if Check if we must regenerate data
-    if COURSES_TS and COURSES_TS > time.time() - 10:
+    if COURSES_TS and COURSES_TS > time.time() - 10 and COURSES_TS < time.time() - 3600:
         return COURSES
     latest_yaml_ts = max(os.stat(course_file).st_mtime
                          for course_file in glob.glob(os.path.join(METADIR, '*.yaml')))
