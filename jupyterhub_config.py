@@ -232,6 +232,8 @@ def GET_COURSES():
         else:
             try:
                 course_data['instructors'] |= set(grp.getgrnam('jupyter-'+course_slug).gr_mem)
+                # Testcourse gets all instructors
+                courses['testcourse']['instructors'] |= set(grp.getgrnam('jupyter-'+course_slug).gr_mem)
             except KeyError:
                 print("ERROR: group {} can not look up group info".format(course_slug), file=sys.stderr)
 
