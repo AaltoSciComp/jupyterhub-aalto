@@ -467,7 +467,7 @@ async def pre_spawn_hook(spawner):
                                           "subPath": "course/{}/data/".format(course_slug),
                                           "name": "jupyter-nfs",
                                           "readOnly": username not in course_data.get('instructors', {})})
-            spawner.environ['COURSEDATA'] = '/coursedata/'
+            environ['COURSEDATA'] = '/coursedata/'
 
 
         # Jupyter/nbgrader config
