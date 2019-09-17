@@ -14,9 +14,10 @@ import yaml
 
 # c.JupyterHub.log_level = 'DEBUG'
 
-IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:1.7.0'
-IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:1.7.0'
-IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:1.7.0'
+IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:1.8.0'         # for generic images
+IMAGE_COURSE_DEFAULT = 'aaltoscienceit/notebook-server:1.7.0'  # for courses
+IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:1.8.0'
+IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:1.8.0'
 IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.7.0'
 #IMAGE_TESTING = 'aaltoscienceit/notebook-server:1.0.6'
 IMAGES_OLD = [
@@ -267,7 +268,8 @@ def get_profile_list(spawner):
                 course_notes = ' <font color="brown">(not public)</font>'
         display_name = course_data.get('name', course_slug)
         profile_list.append({
-            'display_name': display_name + course_notes,
+            'image': IMAGE_COURSE_DEFAULT,
+            'display_name': display_name + course_notes + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, IMAGE_COURSE_DEFAULT)+'</font>',
             'kubespawner_override': {
                 **EMPTY_PROFILE,
                 'course_slug': course_slug,
@@ -277,7 +279,7 @@ def get_profile_list(spawner):
             })
         if 'image' in course_data:
             profile = profile_list[-1]   # REFERENCE
-            profile['display_name'] = profile['display_name'] + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, course_data['image'])+'</font>'
+            profile['display_name'] = display_name + course_notes + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, course_data['image'])+'</font>'
             profile['kubespawner_override']['image'] = course_data['image']
         if is_instructor:
             profile = copy.deepcopy(profile_list[-1])  # COPY AND RE-APPEND
