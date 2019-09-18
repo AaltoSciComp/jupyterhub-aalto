@@ -34,6 +34,7 @@ INSTRUCTOR_CPU_LIMIT = DEFAULT_CPU_LIMIT
 INSTRUCTOR_MEM_GUARANTEE = '1G'
 INSTRUCTOR_CPU_GUARANTEE = DEFAULT_CPU_GUARANTEE
 ROOT_THEN_SU = True
+MOUNT_EXTRA_COURSES = True
 
 
 DEFAULT_NODE_SELECTOR = { }
@@ -179,6 +180,7 @@ c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
 COURSES = { }
 COURSES_TS = None
 METADIR = "/courses/meta"
+GROUPS = { }     # map username->{group:name, gid:number} for all allowed courses.
 def GET_COURSES():
     """Update the global COURSES dictionary.
 
@@ -188,6 +190,7 @@ def GET_COURSES():
 
     """
     global COURSES, COURSES_TS
+    global GROUPS
 
     # Cache, don't unconditionally reload every time.
     # Regenerate if Check if we must regenerate data
@@ -202,6 +205,7 @@ def GET_COURSES():
     #c.JupyterHub.log.debug("Re-generating course data")
     COURSES_TS = time.time()
     courses = { }
+    groups = { }
     # First round: load raw data with users and so on.
     for course_file in glob.glob(os.path.join(METADIR, '*.yaml')):
         try:
@@ -237,9 +241,13 @@ def GET_COURSES():
                 courses['testcourse']['instructors'] |= set(grp.getgrnam('jupyter-'+course_slug).gr_mem)
             except KeyError:
                 print("ERROR: group {} can not look up group info".format(course_slug), file=sys.stderr)
+            # Add a group directory mapping (instructor) -> {group, gid} of allowed courses
+            for instructor in course_data['instructors']:
+                groups.setdefault(instructor, set()).add((course_slug, course_data['gid']))
 
     # Set global variable from new local variable.
     COURSES = courses
+    GROUPS = groups
     return COURSES
 # Run it once to set the course data at startup.
 GET_COURSES()
@@ -329,6 +337,7 @@ async def pre_spawn_hook(spawner):
     #spawner.default_url = c.KubeSpawner.default_url
     await spawner.load_user_options()
     spawner._profile_list = [ ]
+    spawner.create_groups = [ ]
 
     # Get basic info
     username = spawner.user.name
@@ -349,6 +358,10 @@ async def pre_spawn_hook(spawner):
     assert 'uid_last2digits' in spawner.volume_mounts[0]['subPath']
     #print(spawner.volumes, file=sys.stderr)
     spawner.volume_mounts[0]['subPath'] = spawner.volume_mounts[0]['subPath'].format(username=username, uid_last2digits=uid_last2digits)
+    spawner.volume_mounts.append({"mountPath": "/m/jhnas/jupyter/u/{uid_last2digits}/{username}/".format(username=username, uid_last2digits=uid_last2digits),
+                                  "subPath": "u/{uid_last2digits}/{username}".format(username=username, uid_last2digits=uid_last2digits),
+                                  "name": "jupyter-nfs",
+                                  "readOnly": False})
     #print(spawner.volumes, file=sys.stderr)
 
     # Set basic spawner properties
@@ -439,6 +452,7 @@ async def pre_spawn_hook(spawner):
     #    cmds.append("fix-permissions /home/jovyan/.gitconfig")
 
     course_slug = getattr(spawner, 'course_slug', '')
+    as_instructor = False
     # We are not part of a course, so do only generic stuff
     # if gid is None, we have a course definition but no course data (only setting image)
     if not course_slug or GET_COURSES()[course_slug]['gid'] is None:
@@ -505,6 +519,7 @@ async def pre_spawn_hook(spawner):
         if username in course_data.get('instructors', {}):
             allow_spawn = True
         if username in course_data.get('instructors', {}) and getattr(spawner, 'as_instructor', False):
+            as_instructor = True
             spawner.log.info("pre_spawn_hook: User %s is an instructor for %s", username, course_slug)
             allow_spawn = True
             cmds.append("enable_formgrader.sh")
@@ -573,11 +588,12 @@ async def pre_spawn_hook(spawner):
         spawner.log.info("pre_spawn_hook: Running %s", hook_file)
         exec(open(hook_file).read())
 
+
     # import pprint
     # spawner.log.info("After hooks: spawner.node_selector: %s", spawner.node_selector)
     # spawner.log.info("After hooks: spawner.__dict__: %s", pprint.pformat(spawner.__dict__))
 
-    # Common final setup
+    # Set number of processors, etc
     #pprint(vars(spawner), stream=sys.stderr)
     #pprint(spawner.volumes, stream=sys.stderr)
     for var in ['OMP_NUM_THREADS',
@@ -585,6 +601,27 @@ async def pre_spawn_hook(spawner):
                 'NUMEXPR_NUM_THREADS',
                 'MKL_NUM_THREADS', ]:
         environ[var] = str(int(spawner.cpu_limit))
+    # Aux groups for instructors (other mounts)
+    if not (course_slug and not as_instructor) and ROOT_THEN_SU and MOUNT_EXTRA_COURSES:
+        spawner.log.info('pre_spawn_hook: instructor %s is in the following groups: %s', username, GROUPS.get(username))
+        for name, gid in GROUPS.get(username, []):
+            try:
+                if name == course_slug: continue
+                spawner.create_groups.append((name, gid))
+                spawner.supplemental_gids.append(gid)
+                spawner.volume_mounts.append({"mountPath": '/m/jhnas/jupyter/course/{}/'.format(name), #"{}/".format(name),
+                                              "subPath": "course/{}/".format(name),
+                                              "name": "jupyter-nfs",
+                                              "readOnly": COURSES[name].get('archived', False),})
+            except:
+                exc_info = sys.exc_info()
+                spawner.log.critical("ERROR: setting up mount %s for %s", name, username)
+                spawner.log.critical("".join(traceback.format_exception(*exc_info)).decode())
+
+        if spawner.create_groups:
+            environ['NB_CREATE_GROUPS'] = ','.join("jupyter-%s:%s"%(name,gid) for name,gid in spawner.create_groups)
+        environ['NB_SUPPLEMENTARY_GROUPS'] = ','.join(str(x) for x in spawner.supplemental_gids)
+    # Generate actual run commands and start
     cmds.append("source start-notebook.sh")   # args added later in KubeSpawner
     spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
 
