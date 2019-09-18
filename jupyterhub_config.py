@@ -443,6 +443,7 @@ async def pre_spawn_hook(spawner):
     create_user_dir(username, uid, log=spawner.log)
     #cmds.append(r'echo "if [ \"\$SHLVL\" = 1 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.profile')
     cmds.append(r'echo "if [ \"\$SHLVL\" = 1 -a \( \"\$PWD\" = \"\$HOME\" -o \"\$PWD\" = / \)  ] ; then cd /notebooks ; fi" >> /home/jovyan/.bashrc')
+    cmds.append(r'echo "nbgrader-instructor-exchange() { nbgrader \$1 --Exchange.root=/course/test-instructor-exchange/ \${@:2} ; }" >> /home/jovyan/.bashrc')
 
     #for line in ['[user]',
     #             '    name = {}'.format(fullname),
