@@ -16,7 +16,7 @@ import yaml
 
 IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:1.8.1'         # for generic images
 IMAGE_COURSE_DEFAULT = 'aaltoscienceit/notebook-server:1.7.0'  # for courses
-IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:1.8.1'
+IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:1.8.2'
 IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:1.8.0'
 IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.7.0'
 #IMAGE_TESTING = 'aaltoscienceit/notebook-server:1.0.6'
@@ -144,7 +144,7 @@ USER_RE = re.compile('^[a-z0-9.]+$')
 c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
 c.KubeSpawner.start_timeout = 60 * 5
 c.KubeSpawner.hub_connect_port = 8081
-c.KubeSpawner.http_timeout = 60 * 5
+#c.KubeSpawner.http_timeout = 30
 c.KubeSpawner.disable_user_config = True
 c.KubeSpawner.common_labels = { "cs-aalto/app": "notebook-server" }
 c.KubeSpawner.poll_interval = 150  # default 30, check each pod for aliveness this often

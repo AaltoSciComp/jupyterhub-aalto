@@ -8,3 +8,8 @@ kubectl delete configmap -n jupyter spawn-test
 # Delete non-stopping pods:
 # kubectl delete pod --force --grace-period=0 `kubectl get pods | grep Termin | grep jupyterhub | cut -d\  -f1`
 
+# Wait for stop
+echo "Waiting to stop existing pod..."
+while kubectl get pods -n jupyter | grep '^jupyterhub-.*Running' ; do
+    sleep 1
+done
