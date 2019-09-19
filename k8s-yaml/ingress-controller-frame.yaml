@@ -29,7 +29,7 @@ metadata:
   labels:
     app: ingress-nginx
 data:
-  proxy-body-size: 20m
+  proxy-body-size: 50m
   proxy-read-timeout: 300s
 ---
 
