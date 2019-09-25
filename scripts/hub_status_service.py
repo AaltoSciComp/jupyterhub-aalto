@@ -116,7 +116,7 @@ def get_stats(get):
             increment_bins(last_active, secs_ago)
             if server['started']:
                 start_ts = dateutil.parser.parse(server['started']).timestamp()
-                secs_ago = now - last_ts
+                secs_ago = now - start_ts
                 increment_bins(server_age, secs_ago)
 
         # Track server start time
