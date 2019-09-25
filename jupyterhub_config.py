@@ -585,15 +585,14 @@ async def pre_spawn_hook(spawner):
     # spawner.log.info("Before hooks: spawner.node_selector: %s", spawner.node_selector)
 
     # User- and course-specific hooks
-    hook_file = '/srv/jupyterhub/hooks-user/{}.py'.format(username)
-    if os.path.exists(hook_file):
-        spawner.log.info("pre_spawn_hook: Running %s", hook_file)
-        exec(open(hook_file).read())
-    hook_file = '/srv/jupyterhub/hooks-course/{}.py'.format(course_slug)
-    if course_slug and os.path.exists(hook_file):
-        spawner.log.info("pre_spawn_hook: Running %s", hook_file)
-        exec(open(hook_file).read())
-
+    for hook_subpath in ['hooks-all.py',
+                         'hooks-user/{}.py'.format(username),
+                         'hooks-course/{}.py'.format(course_slug),
+                        ]:
+        hook_file = '/srv/jupyterhub/' + hook_subpath
+        if os.path.exists(hook_file):
+            spawner.log.info("pre_spawn_hook: Running %s", hook_file)
+            exec(open(hook_file).read())
 
     # import pprint
     # spawner.log.info("After hooks: spawner.node_selector: %s", spawner.node_selector)
