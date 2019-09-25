@@ -85,11 +85,11 @@ def get_stats(get):
     STATUS['servers_active'] = sum([ len(user['servers']) for user in r ])
     STATUS['servers_pending'] = sum([ 1 if user['pending'] else 0 for user in r ])
     active_pod_names = defaultdict(int)
-    last_active = {'005m':0, '010m':0, '015m':0, '020m':0, '030m':0, '060m':0, '120m':0,}
+    last_active = {'le_005':0, 'le_010':0, 'le_015':0, 'le_020':0, 'le_030':0, 'le_060':0, 'le_120':0,}
     user_last_active = copy.deepcopy(last_active)
-    user_last_active.update({'360m':0, '1440m':0, '10080m':0})
+    user_last_active.update({'le_360':0, 'le_1440':0, 'le_10080':0})
     server_age = copy.deepcopy(last_active)
-    server_age.update({'180m': 0, '240m': 0, '300m': 0})
+    server_age.update({'le_180': 0, 'le_240': 0, 'le_300': 0})
     def increment_bins(data, value):
         """Go through dict 'data' and increment counters.
 
@@ -144,7 +144,7 @@ def get_stats(get):
     r = get('proxy')
     log.debug(r)
     STATUS['proxy_routes_count'] = len(r)
-    last_active = {'005m':0, '015m':0, '030m':0, '060m':0, '120m':0}
+    last_active = {'le_005':0, 'le_015':0, 'le_030':0, 'le_060':0, 'le_120':0}
     for prefix, route in r.items():
         last_ts = dateutil.parser.parse(route['data']['last_activity']).timestamp()
         secs_ago = now - last_ts
@@ -183,6 +183,10 @@ async def test_spawn():
 def make_prom_line(key, val, labels={}):
     label_list = []
     for l_key, l in labels.items():
+        if isinstance(l, str) and l.startswith('le_'):
+            # corvert "le_30" to le="30" for use in histograms
+            l_key = 'le'
+            l = l[3:]
         label_list.append('{}="{}"'.format(l_key, l))
 
     label_list_str = ",".join(label_list)
