@@ -514,6 +514,11 @@ async def pre_spawn_hook(spawner):
                      'c.Execute.timeout = 240',
                      ]:
             cmds.append(r"echo '{}' >> /etc/jupyter/jupyter_notebook_config.py".format(line))
+        # RStudio config
+        cmds.append(r'( test -d /etc/rstudio ',
+                    r'&& echo session-default-working-dir=~/notebooks/ >> /etc/rstudio/rsession.conf '
+                    r'&& echo session-default-new-project-dir=~/notebooks/ >> /etc/rstudio/rsession.conf '
+                    r'; true )')
 
         # Instructors
         allow_spawn = False
