@@ -95,7 +95,7 @@ def get_stats(get):
 
         Key format: 'NNNm' (number of minutes)."""
         for key in data:
-            if secs_ago < int(key[:-1])*60:
+            if secs_ago < int(key[3:])*60:
                 data[key] += 1
     for user in r:
         log.debug(user['servers'])
