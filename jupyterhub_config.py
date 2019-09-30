@@ -171,6 +171,7 @@ DEFAULT_VOLUMES = [
 DEFAULT_VOLUME_MOUNTS = [
   {"name": "jupyter-nfs", "mountPath": "/notebooks", "subPath": "u/{uid_last2digits}/{username}", "readOnly": False},
   {"name": "jupyter-nfs", "mountPath": "/mnt/jupyter/shareddata", "subPath": "shareddata/", "readOnly":False},
+  {"name": "jupyter-nfs", "mountPath": "/m/jhnas/jupyter/software", "subPath": "software/", "readOnly":True},
 ]
 c.KubeSpawner.volumes = DEFAULT_VOLUMES
 c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
