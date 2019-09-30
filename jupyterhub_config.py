@@ -638,9 +638,36 @@ def post_stop_hook(spawner):
     course_slug = getattr(spawner, 'course_slug', '')
     spawner.log.info("post_stop_hook: %s stopped %s", username, course_slug or 'None')
 
+from kubespawner.spawner import KubeSpawner
+if 'get_state_original' not in globals():
+    get_state_original = KubeSpawner.get_state
+def get_state(spawner):
+    """Add cull_max_time and cull_inactive_time to state, for use in culler
+
+    This adds two extra variables to the state dictionary.  This is
+    exposed to the culler via the API.  The culler script can then be
+    modified to use this.  These variables are not loaded when state is
+    restored - possible problem in future if state is re-saved.
+    """
+    state = get_state_original(spawner)
+    for name in ['cull_max_age', 'cull_inactive_time']:
+        if hasattr(spawner, name):
+            state[name] = getattr(spawner, name)
+    return state
+def load_state(spawner, state):
+    for name in ['pod_name', 'cull_max_age', 'cull_inactive_time']:
+        if name in state:
+            setattr(spawner, name, state.get(name))
+def clear_state(spawner, state):
+    for name in ['pod_name', 'cull_max_age', 'cull_inactive_time']:
+        if name in state:
+            setattr(spawner, name, state.get(name))
+
 
 c.KubeSpawner.pre_spawn_hook = pre_spawn_hook
 c.KubeSpawner.post_stop_hook = post_stop_hook
+KubeSpawner.get_state = get_state
+#KubeSpawner.load_state = load_state
 
 
 # Culler service
