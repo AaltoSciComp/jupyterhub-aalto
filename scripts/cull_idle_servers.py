@@ -177,6 +177,11 @@ def cull_idle(
         # if server['state']['profile_name'] == 'unlimited'
         #     return False
         # inactive_limit = server['state']['culltime']
+        if 'cull_max_age' in server['state']:
+            max_age = max(max_age, server['state']['cull_max_age'])
+        if 'cull_inactive_time' in server['state']:
+            inactive_limit = max(inactive_limit, server['state']['cull_inactive_time'])
+
 
         should_cull = (
             inactive is not None and inactive.total_seconds() >= inactive_limit
