@@ -639,8 +639,9 @@ def post_stop_hook(spawner):
     spawner.log.info("post_stop_hook: %s stopped %s", username, course_slug or 'None')
 
 from kubespawner.spawner import KubeSpawner
-if 'get_state_original' not in globals():
-    get_state_original = KubeSpawner.get_state
+if 'kubespawner_get_state' not in globals():
+    kubespawner_get_state  = KubeSpawner.get_state
+    kubespawner_load_state = KubeSpawner.load_state
 def get_state(spawner):
     """Add cull_max_time and cull_inactive_time to state, for use in culler
 
@@ -649,17 +650,20 @@ def get_state(spawner):
     modified to use this.  These variables are not loaded when state is
     restored - possible problem in future if state is re-saved.
     """
-    state = get_state_original(spawner)
+    state = kubespawner_get_state(spawner)
     for name in ['cull_max_age', 'cull_inactive_time']:
         if hasattr(spawner, name):
             state[name] = getattr(spawner, name)
     return state
 def load_state(spawner, state):
-    for name in ['pod_name', 'cull_max_age', 'cull_inactive_time']:
+    kubespawner_load_state(spawner, state)
+    for name in ['cull_max_age', 'cull_inactive_time']:
         if name in state:
             setattr(spawner, name, state.get(name))
+import jupyterhub.spawner
 def clear_state(spawner):
-    for name in ['pod_name', 'cull_max_age', 'cull_inactive_time']:
+    jupyterhub.spawner.Spawner.clear_state(spawner)
+    for name in ['cull_max_age', 'cull_inactive_time']:
         if hasattr(spawner, name):
             delattr(spawner, name)
 
