@@ -658,16 +658,17 @@ def load_state(spawner, state):
     for name in ['pod_name', 'cull_max_age', 'cull_inactive_time']:
         if name in state:
             setattr(spawner, name, state.get(name))
-def clear_state(spawner, state):
+def clear_state(spawner):
     for name in ['pod_name', 'cull_max_age', 'cull_inactive_time']:
-        if name in state:
-            setattr(spawner, name, state.get(name))
+        if hasattr(spawner, name):
+            delattr(spawner, name)
 
 
 c.KubeSpawner.pre_spawn_hook = pre_spawn_hook
 c.KubeSpawner.post_stop_hook = post_stop_hook
 KubeSpawner.get_state = get_state
-#KubeSpawner.load_state = load_state
+KubeSpawner.load_state = load_state
+KubeSpawner.clear_state = clear_state
 
 
 # Culler service
