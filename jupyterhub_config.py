@@ -468,7 +468,7 @@ async def pre_spawn_hook(spawner):
         spawner.log.debug("pre_spawn_hook: course %s", course_slug)
         course_data = GET_COURSES()[course_slug]
         spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
-        if getattr(course_data, 'jupyterlab', False):
+        if course_data.get('jupyterlab', False):
             environ['JUPYTER_ENABLE_LAB'] = 'true'
             spawner.default_url = "lab/tree/notebooks/"
 
