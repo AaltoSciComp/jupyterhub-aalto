@@ -23,15 +23,15 @@ IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.7.0'
 IMAGES_OLD = [
     'aaltoscienceit/notebook-server:1.6.1',
 ]
-DEFAULT_MEM_GUARANTEE = '.5G'
+DEFAULT_MEM_GUARANTEE = 512 * 2**20
 DEFAULT_CPU_GUARANTEE = .10
-DEFAULT_MEM_LIMIT = '3G'
+DEFAULT_MEM_LIMIT = 3 * 2**30
 DEFAULT_CPU_LIMIT = 4
 DEFAULT_TIMEOUT = 3600 * 1
 DEFAULT_TIMELIMIT = 3600 * 8
 INSTRUCTOR_MEM_LIMIT = DEFAULT_MEM_LIMIT
 INSTRUCTOR_CPU_LIMIT = DEFAULT_CPU_LIMIT
-INSTRUCTOR_MEM_GUARANTEE = '1G'
+INSTRUCTOR_MEM_GUARANTEE = 1 * 2**30
 INSTRUCTOR_CPU_GUARANTEE = DEFAULT_CPU_GUARANTEE
 ROOT_THEN_SU = True
 MOUNT_EXTRA_COURSES = True
@@ -536,7 +536,10 @@ async def pre_spawn_hook(spawner):
             # need to be able to access "/course", too.  Warning, you
             # will have different paths!  (fix later...)
             #spawner.cpu_limit = 1
-            spawner.mem_limit = INSTRUCTOR_MEM_LIMIT
+            if isinstance(spawner.mem_limit, int) and isinstance(INSTRUCTOR_MEM_LIMIT, int):
+                spawner.mem_limit = max(spawner.mem_limit, INSTRUCTOR_MEM_LIMIT)
+            else:
+                spawner.mem_limit = INSTRUCTOR_MEM_LIMIT
             spawner.cpu_guarantee = INSTRUCTOR_CPU_GUARANTEE
             spawner.mem_guarantee = INSTRUCTOR_MEM_GUARANTEE
             for line in ['c.NbGrader.logfile = "/course/.nbgraber.log"',
