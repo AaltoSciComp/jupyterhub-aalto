@@ -254,6 +254,17 @@ def GET_COURSES():
 # Run it once to set the course data at startup.
 GET_COURSES()
 
+def select_image(image_name):
+    """Get an image name from the name in the argument
+
+    Usually, it will be the same.  But, if an all-uppercase name such as
+    DEFAULT is given, then use IMAGE_$name from globals() instead.  This
+    allows certain courses to be continually updated.
+    """
+    if image_name.isupper():
+        if 'IMAGE_'+image_name in globals():
+            return globals()['IMAGE_'+image_name]
+    return image_name
 
 def get_profile_list(spawner):
     """gerenate the k8s profile_list.
@@ -288,15 +299,17 @@ def get_profile_list(spawner):
             'x_jupyter_enable_lab': False,
             })
         if 'image' in course_data:
+            course_image = select_image(course_data['image'])
             profile = profile_list[-1]   # REFERENCE
-            profile['display_name'] = display_name + course_notes + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, course_data['image'])+'</font>'
-            profile['kubespawner_override']['image'] = course_data['image']
+            profile['display_name'] = display_name + course_notes + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, course_image)+'</font>'
+            profile['kubespawner_override']['image'] = course_image
         if is_instructor:
             profile = copy.deepcopy(profile_list[-1])  # COPY AND RE-APPEND
             profile['display_name'] = display_name + ' <font color="blue">(instructor)</font>'
             if 'image_instructor' in course_data:
-                profile['display_name'] = profile['display_name'] + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, course_data['image_instructor'])+'</font>'
-                profile['kubespawner_override']['image'] = course_data['image_instructor']
+                course_image_instructor = select_image(course_data['image_instructor'])
+                profile['display_name'] = profile['display_name'] + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, course_image_instructor)+'</font>'
+                profile['kubespawner_override']['image'] = course_image_instructor
             profile['kubespawner_override']['as_instructor'] = True
             profile_list.append(profile)
 
