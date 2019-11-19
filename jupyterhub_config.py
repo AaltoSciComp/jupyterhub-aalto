@@ -383,6 +383,7 @@ async def pre_spawn_hook(spawner):
     #storage_capacity = ???
     spawner.environment = environ = { }  # override env
     environ['AALTO_JUPYTERHUB'] = '1'
+    environ['PYTHONPATH'] = '/m/jhnas/jupyter/software/pymod/'  # Remove once all notebooks have the newer hooks.
     environ['TZ'] = os.environ.get('TZ', 'Europe/Helsinki')
     cmds = [ ]
     # Remove the .jupyter config that is already there
