@@ -5,6 +5,7 @@ import os
 from pprint import pprint
 import pwd # for resolving username --> uid
 import re
+import shlex
 import socket
 import subprocess
 import sys
@@ -330,12 +331,13 @@ c.KubeSpawner.profile_list = get_profile_list  #(None)
 
 
 
-def create_user_dir(username, uid, log=None):
+def create_user_dir(username, uid, human_name="", log=None):
     # create_user_dir.sh knows how to compete directory from (uid, username)
     #os.system('ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid))
     ret = subprocess.run(
-        'ssh jupyter-manager.cs.aalto.fi "/root/jupyterhub-aalto/scripts/create_user_dir.sh {0} {1}"'.format(username, uid),
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        ['ssh', 'jupyter-manager.cs.aalto.fi',
+         "/root/jupyterhub-aalto/scripts/create_user_dir.sh", shlex.quote(username), str(uid), shlex.quote(human_name)],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     if ret.returncode != 0:
         log.error('create_user_dir failed for %s %s', username, uid)
         log.error(ret.stdout.decode())
@@ -362,6 +364,7 @@ async def pre_spawn_hook(spawner):
     homedir = userinfo.pw_dir
     if homedir.startswith('/u/'): homedir = homedir[3:]
     uid = userinfo.pw_uid
+    human_name = userinfo.pw_gecos
     uid_last2digits = "%02d"%(uid%100)
     spawner.log.info("pre_spawn_hook: %s starting %s", username, getattr(spawner, 'course_slug', 'None'))
 
@@ -456,7 +459,7 @@ async def pre_spawn_hook(spawner):
         # on startup.
         #cmds.append("adduser jovyan users")
 
-    create_user_dir(username, uid, log=spawner.log)
+    create_user_dir(username, uid, human_name=human_name, log=spawner.log)
     #cmds.append(r'echo "if [ \"\$SHLVL\" = 1 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.profile')
     cmds.append(r'echo "if [ \"\$SHLVL\" = 1 -a \( \"\$PWD\" = \"\$HOME\" -o \"\$PWD\" = / \)  ] ; then cd /notebooks ; fi" >> /home/jovyan/.bashrc')
     cmds.append(r'echo "nbgrader-instructor-exchange() { nbgrader \$1 --Exchange.root=/course/test-instructor-exchange/ \${@:2} ; }" >> /home/jovyan/.bashrc')
