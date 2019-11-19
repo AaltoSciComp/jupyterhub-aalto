@@ -36,7 +36,7 @@ set -e
 touch "/mnt/jupyter/admin/lastlogin/$username"
 echo "uid: $uid" > "/mnt/jupyter/admin/lastlogin/$username"
 echo "ts: $(date +%s)" >> "/mnt/jupyter/admin/lastlogin/$username"
-echo "human_name: \"$3\"" > "/mnt/jupyter/admin/lastlogin/$username"
+echo "human_name: \"$3\"" >> "/mnt/jupyter/admin/lastlogin/$username"
 
 uid_last2digits=$(printf %02d $(($uid % 100)) )
 dir_name="/mnt/jupyter/u/$uid_last2digits/$username"
