@@ -5,6 +5,7 @@ import os
 from pprint import pprint
 import pwd # for resolving username --> uid
 import re
+import shlex
 import socket
 import subprocess
 import sys
@@ -18,7 +19,7 @@ IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:1.8.8'         # for generic ima
 IMAGE_COURSE_DEFAULT = 'aaltoscienceit/notebook-server:1.7.0'  # for courses
 IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:1.8.10'
 IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:1.8.0'
-IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.7.0'
+IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.8.8'
 #IMAGE_TESTING = 'aaltoscienceit/notebook-server:1.0.6'
 IMAGES_OLD = [
     'aaltoscienceit/notebook-server:1.6.1',
@@ -330,12 +331,15 @@ c.KubeSpawner.profile_list = get_profile_list  #(None)
 
 
 
-def create_user_dir(username, uid, log=None):
+def create_user_dir(username, uid, human_name="", log=None):
     # create_user_dir.sh knows how to compete directory from (uid, username)
     #os.system('ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid))
+    human_name = re.sub('[^\w -]*', '', human_name, flags=re.I)
+    human_name = human_name.replace(' ', '_')
     ret = subprocess.run(
-        'ssh jupyter-manager.cs.aalto.fi "/root/jupyterhub-aalto/scripts/create_user_dir.sh {0} {1}"'.format(username, uid),
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        ['ssh', 'jupyter-manager.cs.aalto.fi',
+         "/root/jupyterhub-aalto/scripts/create_user_dir.sh", shlex.quote(username), str(uid), shlex.quote(human_name)],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     if ret.returncode != 0:
         log.error('create_user_dir failed for %s %s', username, uid)
         log.error(ret.stdout.decode())
@@ -362,6 +366,7 @@ async def pre_spawn_hook(spawner):
     homedir = userinfo.pw_dir
     if homedir.startswith('/u/'): homedir = homedir[3:]
     uid = userinfo.pw_uid
+    human_name = userinfo.pw_gecos
     uid_last2digits = "%02d"%(uid%100)
     spawner.log.info("pre_spawn_hook: %s starting %s", username, getattr(spawner, 'course_slug', 'None'))
 
@@ -383,6 +388,7 @@ async def pre_spawn_hook(spawner):
     #storage_capacity = ???
     spawner.environment = environ = { }  # override env
     environ['AALTO_JUPYTERHUB'] = '1'
+    environ['PYTHONPATH'] = '/m/jhnas/jupyter/software/pymod/'  # Remove once all notebooks have the newer hooks.
     environ['TZ'] = os.environ.get('TZ', 'Europe/Helsinki')
     cmds = [ ]
     # Remove the .jupyter config that is already there
@@ -455,7 +461,7 @@ async def pre_spawn_hook(spawner):
         # on startup.
         #cmds.append("adduser jovyan users")
 
-    create_user_dir(username, uid, log=spawner.log)
+    create_user_dir(username, uid, human_name=human_name, log=spawner.log)
     #cmds.append(r'echo "if [ \"\$SHLVL\" = 1 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.profile')
     cmds.append(r'echo "if [ \"\$SHLVL\" = 1 -a \( \"\$PWD\" = \"\$HOME\" -o \"\$PWD\" = / \)  ] ; then cd /notebooks ; fi" >> /home/jovyan/.bashrc')
     cmds.append(r'echo "nbgrader-instructor-exchange() { nbgrader \$1 --Exchange.root=/course/test-instructor-exchange/ \${@:2} ; }" >> /home/jovyan/.bashrc')
@@ -520,6 +526,7 @@ async def pre_spawn_hook(spawner):
                      'c.Exchange.path_includes_course = True',
                      'c.Validator.validate_all = True',
                      'c.CollectApp.check_owner = False',
+                     'c.ExportApp.plugin_class = "mycourses_exporter.MyCoursesExportPlugin"',
                      *course_data.get('nbgrader_config', '').split('\n'),
                      ]:
             cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
