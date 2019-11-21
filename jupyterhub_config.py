@@ -335,7 +335,7 @@ def create_user_dir(username, uid, human_name="", log=None):
     # create_user_dir.sh knows how to compete directory from (uid, username)
     #os.system('ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid))
     human_name = re.sub('[^\w -]*', '', human_name, flags=re.I)
-    human_name = human_name.replace(' ', '_')
+    human_name = human_name.replace(' ', '++')
     ret = subprocess.run(
         ['ssh', 'jupyter-manager.cs.aalto.fi',
          "/root/jupyterhub-aalto/scripts/create_user_dir.sh", shlex.quote(username), str(uid), shlex.quote(human_name)],
