@@ -1,4 +1,6 @@
 import copy
+import datetime
+from datetime import date
 import glob
 import grp
 import os
@@ -24,6 +26,12 @@ IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.8.8'
 IMAGES_OLD = [
     'aaltoscienceit/notebook-server:1.6.1',
 ]
+IMAGES_BYDATE = {
+    # Add new to BOTTOM.
+    'standard': [
+        (date(2019, 11, 11), 'aaltoscienceit/notebook-server:1.8.8'),
+        ],
+    }
 DEFAULT_MEM_GUARANTEE = 512 * 2**20
 DEFAULT_CPU_GUARANTEE = .10
 DEFAULT_MEM_LIMIT = 3 * 2**30
@@ -255,6 +263,30 @@ def GET_COURSES():
 # Run it once to set the course data at startup.
 GET_COURSES()
 
+UPDATE_IMAGES_TS = None
+IMAGES_UPDATEFILE = os.path.join(METADIR, 'IMAGES.py')
+def UPDATE_IMAGES():
+    """Update the default images based on a timeout"""
+    # If the definition file doesn't exist, do nothing
+    if not os.path.exists(IMAGES_UPDATEFILE):
+        return
+    global UPDATE_IMAGES_TS
+    if UPDATE_IMAGES_TS and UPDATE_IMAGES_TS > time.time() - 10 and UPDATE_IMAGES_TS < time.time() - 3600:
+        return
+    last_ts = os.stat(IMAGES_UPDATEFILE).st_mtime
+    if UPDATE_IMAGES_TS and UPDATE_IMAGES_TS > last_ts:
+        return
+    UPDATE_IMAGES_TS = time.time()
+
+    try:
+        exec(open(IMAGES_UPDATEFILE).read(), globals())
+    except:
+        exc_info = sys.exc_info()
+        print("ERROR: error loading file {}".format(IMAGES_UPDATEFILE), file=sys.stderr)
+        print("".join(traceback.format_exception(*exc_info)).decode(), file=sys.stderr)
+
+
+
 def select_image(image_name):
     """Get an image name from the name in the argument
 
@@ -262,14 +294,36 @@ def select_image(image_name):
     DEFAULT is given, then use IMAGE_$name from globals() instead.  This
     allows certain courses to be continually updated.
     """
-    if image_name.isupper():
+    # Find a date-based image
+    if (isinstance(image_name, (tuple, list))
+        and isinstance(image_name[0], str)
+        and isinstance(image_name[1], date)
+       ):
+        # Select the right class - standard, r-ubuntu, etc.
+        image_list = IMAGES_BYDATE[image_name[0]]
+        image_date = image_name[1]
+        # Naive algorithm, we can't use bisect.bisect because we don't have a
+        # pure key-based lookup and it doesn't have a key= function.
+        # Search backwards, look for first (actually last in the list) image
+        # equal to or less the date we give.
+        for i in range(len(image_list)-1, -1, -1):
+            if image_list[i][0] <= image_date:
+                return image_list[i][1]
+        # Not found, return nothing.
+        return IMAGE_COURSE_DEFAULT
+
+    # If the image name is a string and all uppercase, look up the global
+    # variable IMAGE_{name} and return that.
+    if isinstance(image_name, str) and image_name.isupper():
         if 'IMAGE_'+image_name in globals():
             return globals()['IMAGE_'+image_name]
+    # Otherwise: just use the name as-is.
     return image_name
 
 def get_profile_list(spawner):
     """gerenate the k8s profile_list.
     """
+    UPDATE_IMAGES()
     #c.JupyterHub.log.debug("Recreating profile list")
     # All courses
     profile_list = [ ]
