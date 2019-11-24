@@ -504,7 +504,11 @@ async def pre_spawn_hook(spawner):
             spawner.volume_mounts.append({"mountPath": "/coursedata",
                                           "subPath": "course/{}/data/".format(course_slug),
                                           "name": "jupyter-nfs",
-                                          "readOnly": username not in course_data.get('instructors', {})})
+                                          "readOnly": ((username not in course_data.get('instructors', {}))
+                                                       and not course_data.get('datadir_readwrite', False)
+                                                       and not getattr(spawner, 'as_instructor', False)
+                                                       ),
+                                          })
             environ['COURSEDATA'] = '/coursedata/'
 
 
