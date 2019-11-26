@@ -26,12 +26,15 @@ IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.8.8'
 IMAGES_OLD = [
     'aaltoscienceit/notebook-server:1.6.1',
 ]
-IMAGES_BYDATE = {
-    # Add new to BOTTOM.
-    'standard': [
-        (date(2019, 11, 11), 'aaltoscienceit/notebook-server:1.8.8'),
-        ],
-    }
+
+# NOTE: Image definitions have been moved to jupyterhub-aalto-course-meta/IMAGES.py
+#       Do not define images here
+#IMAGES_BYDATE = {
+#    # Add new to BOTTOM.
+#    'standard': [
+#        (date(2019, 11, 11), 'aaltoscienceit/notebook-server:1.8.8'),
+#    ],
+#}
 DEFAULT_MEM_GUARANTEE = 512 * 2**20
 DEFAULT_CPU_GUARANTEE = .10
 DEFAULT_MEM_LIMIT = 3 * 2**30
