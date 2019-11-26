@@ -358,7 +358,7 @@ def get_profile_list(spawner):
             profile = profile_list[-1]   # REFERENCE
             profile['display_name'] = display_name + course_notes + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, course_image)+'</font>'
             profile['kubespawner_override']['image'] = course_image
-        if is_instructor:
+        if is_instructor or is_admin:
             profile = copy.deepcopy(profile_list[-1])  # COPY AND RE-APPEND
             profile['display_name'] = display_name + ' <font color="blue">(instructor)</font>'
             if 'image_instructor' in course_data:
