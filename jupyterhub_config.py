@@ -577,7 +577,7 @@ async def pre_spawn_hook(spawner):
                      'c.CourseDirectory.course_id = "{}"'.format(course_slug),
                      'c.Exchange.course_id = "{}"'.format(course_slug),
                      'c.CourseDirectory.ignore = [".ipynb_checkpoints", "*.pyc*", "__pycache__", "feedback", ".*"]',
-                     'c.CourseDirectory.max_file_size = int(10*1024*(1024/1000.))+1',  #KB, translate to KiB
+                     'c.CourseDirectory.max_file_size = int(30*1024*(1024/1000.))+1',  #KB, translate to KiB
                      'c.Exchange.assignment_dir = "/notebooks/"',
                      'c.Exchange.timezone = "Europe/Helsinki"',
                      'c.NbGraderAPI.timezone = "Europe/Helsinki"',
