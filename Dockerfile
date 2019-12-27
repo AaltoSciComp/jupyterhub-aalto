@@ -1,4 +1,4 @@
-FROM jupyterhub/jupyterhub:1.0
+FROM jupyterhub/jupyterhub:1.1.0b1
 
 # Install dependencies
 RUN apt-get update && \
