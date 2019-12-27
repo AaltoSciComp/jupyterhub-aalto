@@ -7,11 +7,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Jupyterhub & co
-RUN pip install jupyter python-dateutil pytz pyyaml
+RUN python3 -m pip install jupyter python-dateutil pytz pyyaml
 
-# using a commit from Jul 22, 2019 instead of a release because there hasn't
+# using a commit from Dec 27, 2019 instead of a release because there hasn't
 # been a new release in a long time
-RUN pip install https://github.com/jupyterhub/kubespawner/archive/1b4539c.tar.gz
+RUN python3 -m pip install https://github.com/jupyterhub/kubespawner/archive/1b4539c.tar.gz
 
 # Enable SSH stuff
 COPY secrets/known_hosts /root/.ssh/known_hosts
@@ -31,6 +31,7 @@ RUN chmod +x /usr/local/bin/join_ad.sh
 COPY scripts/run.sh /run.sh
 RUN chmod +x /run.sh
 
+# These two copies are no longer needed - dynamically mounted in.
 COPY scripts/cull_idle_servers.py /cull_idle_servers.py
 COPY scripts/hub_status_service.py /hub_status_service.py
 RUN chmod +x /cull_idle_servers.py /hub_status_service.py
