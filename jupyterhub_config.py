@@ -55,7 +55,9 @@ DEFAULT_TOLERATIONS = [
     ]
 EMPTY_PROFILE = {'node_selector': DEFAULT_NODE_SELECTOR,
                  'tolerations': DEFAULT_TOLERATIONS,
-                 'default_url': 'tree/notebooks'}
+                 'default_url': 'tree/notebooks',
+                 'image': IMAGE_DEFAULT,
+                }
 
 def unique_suffix(base, other):
     """Return the unique suffix of other, relative to base."""
@@ -347,11 +349,11 @@ def get_profile_list(spawner):
                 course_notes = ' <font color="brown">(not public)</font>'
         display_name = course_data.get('name', course_slug)
         profile_list.append({
-            'image': IMAGE_COURSE_DEFAULT,
             'display_name': display_name + course_notes + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, IMAGE_COURSE_DEFAULT)+'</font>',
             'kubespawner_override': {
                 **EMPTY_PROFILE,
                 'course_slug': course_slug,
+                'image': IMAGE_COURSE_DEFAULT,
                 **course_data.get('kubespawner_override', {}),
                 },
             'x_jupyter_enable_lab': False,
