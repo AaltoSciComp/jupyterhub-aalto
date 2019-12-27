@@ -11,7 +11,7 @@ RUN pip install jupyter python-dateutil pytz pyyaml
 
 # using a commit from Jul 22, 2019 instead of a release because there hasn't
 # been a new release in a long time
-RUN pip install https://github.com/jupyterhub/kubespawner/archive/8a6d66e.tar.gz
+RUN pip install https://github.com/jupyterhub/kubespawner/archive/1b4539c.tar.gz
 
 # Enable SSH stuff
 COPY secrets/known_hosts /root/.ssh/known_hosts
