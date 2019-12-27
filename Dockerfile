@@ -2,7 +2,7 @@ FROM jupyterhub/jupyterhub:1.1.0b1
 
 # Install dependencies
 RUN apt-get update && \
-    apt-get install vim -y --no-install-recommends && \
+    apt-get install -y --no-install-recommends openssh-client vim && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
