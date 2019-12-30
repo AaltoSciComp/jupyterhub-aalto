@@ -17,14 +17,14 @@ import yaml
 
 # c.JupyterHub.log_level = 'DEBUG'
 
-IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:1.8.8'         # for generic images
-IMAGE_COURSE_DEFAULT = 'aaltoscienceit/notebook-server:1.8.8'  # for courses
-IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:1.8.11'
-IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:1.8.0'
+IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:2.0.0'         # for generic images
+IMAGE_COURSE_DEFAULT = 'aaltoscienceit/notebook-server:2.0.0'  # for courses
+IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:2.0.0'
+IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:2.0.0'
 IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.8.8'
 #IMAGE_TESTING = 'aaltoscienceit/notebook-server:1.0.6'
 IMAGES_OLD = [
-    'aaltoscienceit/notebook-server:1.6.1',
+    'aaltoscienceit/notebook-server:1.8.8',
 ]
 
 # NOTE: Image definitions have been moved to jupyterhub-aalto-course-meta/IMAGES.py
