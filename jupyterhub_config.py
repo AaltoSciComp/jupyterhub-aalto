@@ -17,8 +17,8 @@ import yaml
 
 # c.JupyterHub.log_level = 'DEBUG'
 
-IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:2.0.0'         # for generic images
-IMAGE_COURSE_DEFAULT = 'aaltoscienceit/notebook-server:2.0.0'  # for courses
+IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:2.0.1'         # for generic images
+IMAGE_COURSE_DEFAULT = 'aaltoscienceit/notebook-server:2.0.1'  # for courses
 IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:2.0.0'
 IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:2.0.0'
 IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.8.8'
