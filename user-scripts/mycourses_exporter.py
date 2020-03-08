@@ -69,6 +69,7 @@ class MyCoursesExportPlugin(ExportPlugin):
         # Generete a format string for each row entry
         keys = ['username']
         keys.extend(list(map(lambda a : a.name, gradebook.assignments)))
+        keys = [ x for x in keys if x ]  # Remove empty keys
         fh.write(",".join(keys) + "\n")
         fmt = ",".join(["{" + x + "}" for x in keys]) + "\n"
 
