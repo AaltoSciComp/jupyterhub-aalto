@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Convert a csv file with a username to email address.
 
 This uses an active directory lookup.  Before running, run 'kinit' otherwise
@@ -28,12 +29,17 @@ import subprocess
 import re
 import sys
 
+def normalize_username(username):
+    return username.split('@', 1)[0]
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input', nargs='?', help="File to read, default stdin")
     parser.add_argument('output', nargs='?', help="File to write, default stdout")
     parser.add_argument('--column', '-c', metavar='USERNAME_COLUMN', help='this is the column with the username (zero-indexed, default 0)', nargs='?', default=0)
     args = parser.parse_args()
+
+    input_ = open(args.input) if args.input else sys.stdin
 
     if args.output:
         output = open(args.output, 'w')
@@ -45,12 +51,13 @@ def main():
 
     # Read usernames to list
     lines = []
-    for line in open(args.input) if args.input else sys.stdin:
+    for line in input_:
         line = line.strip()
         line = line.split(',')
         username = line[int(args.column)]
         if not line:
             continue
+        username = normalize_username(username)
         usernames.append(username)
         lines.append(line)
 
@@ -59,8 +66,8 @@ def main():
     searchexpression = "(|{})".format(''.join(searches))
     cmd = ['net', 'ads', 'search', searchexpression, 'samaccountname', 'mail']
     out = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-    
-    # Capture username / email pairs    
+
+    # Capture username / email pairs
     for line in out.decode().strip().split('\n\n')[1:]:
         username_capture = re.search('sAMAccountName: ([.a-zA-Z0-9]+)', line)
         mail_capture = re.search('mail: ([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)', line)
@@ -73,11 +80,13 @@ def main():
     # Print found mails to the output file
     for line in lines:
         username = line[int(args.column)]
-        if username_map.get(username, None) is not None:
-            line.insert(int(args.column)+1, username_map.get(username))
-            print(','.join(line), file=output)
-        else:
-            print("Couldn't find mail for: {}".format(username), file=sys.stderr)
+        username = normalize_username(username)
+        # Insert username
+        email = username_map.get(username, '')
+        if not email:
+            print("# Couldn't find mail for: {}".format(username), file=sys.stderr)
+        line.insert(int(args.column)+1, email)
+        print(','.join(line), file=output)
 
 main()
 
