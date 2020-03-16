@@ -629,6 +629,7 @@ async def pre_spawn_hook(spawner):
                         ]:
                 cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
             spawner.volume_mounts.append({"mountPath": "/course", "name": "jupyter-nfs", "subPath": "course/{}/files".format(course_slug)})
+            spawner.volume_mounts.append({"mountPath": "/m/jhnas/jupyter/course/{}".format(course_slug), "name": "jupyter-nfs", "subPath": "course/{}".format(course_slug)})
             course_gid = int(course_data['gid'])
             spawner.log.debug("pre_spawn_hook: Course gid for {} is {}", course_slug, course_gid)
             cmds.append(r"umask 0007")  # also used through sudo
@@ -702,7 +703,7 @@ async def pre_spawn_hook(spawner):
                 if name == course_slug: continue
                 spawner.create_groups.append((name, gid))
                 spawner.supplemental_gids.append(gid)
-                spawner.volume_mounts.append({"mountPath": '/m/jhnas/jupyter/course/{}/'.format(name), #"{}/".format(name),
+                spawner.volume_mounts.append({"mountPath": '/m/jhnas/jupyter/course/{}/'.format(name),
                                               "subPath": "course/{}/".format(name),
                                               "name": "jupyter-nfs",
                                               "readOnly": COURSES[name].get('archived', False),})
