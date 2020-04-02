@@ -416,6 +416,7 @@ async def pre_spawn_hook(spawner):
     await spawner.load_user_options()
     spawner._profile_list = [ ]
     spawner.create_groups = [ ]
+    spawner.environment = environ = { }  # override env
 
     # Get basic info
     username = spawner.user.name
@@ -437,15 +438,16 @@ async def pre_spawn_hook(spawner):
     assert 'uid_last2digits' in spawner.volume_mounts[0]['subPath']
     #print(spawner.volumes, file=sys.stderr)
     spawner.volume_mounts[0]['subPath'] = spawner.volume_mounts[0]['subPath'].format(username=username, uid_last2digits=uid_last2digits)
-    spawner.volume_mounts.append({"mountPath": "/m/jhnas/jupyter/u/{uid_last2digits}/{username}/".format(username=username, uid_last2digits=uid_last2digits),
+    notebook_path = "/m/jhnas/jupyter/u/{uid_last2digits}/{username}/".format(username=username, uid_last2digits=uid_last2digits)
+    spawner.volume_mounts.append({"mountPath": notebook_path,
                                   "subPath": "u/{uid_last2digits}/{username}".format(username=username, uid_last2digits=uid_last2digits),
                                   "name": "jupyter-nfs",
                                   "readOnly": False})
+    environ['NB_NOTEBOOK_PATH'] = notebook_path
     #print(spawner.volumes, file=sys.stderr)
 
     # Set basic spawner properties
     #storage_capacity = ???
-    spawner.environment = environ = { }  # override env
     environ['AALTO_JUPYTERHUB'] = '1'
     environ['PYTHONPATH'] = '/m/jhnas/jupyter/software/pymod/'  # Remove once all notebooks have the newer hooks.
     environ['TZ'] = os.environ.get('TZ', 'Europe/Helsinki')
@@ -544,6 +546,7 @@ async def pre_spawn_hook(spawner):
     # Course configuration - only if it is a course
     else:
         spawner.log.debug("pre_spawn_hook: course %s", course_slug)
+        environ['NB_COURSE'] = course_slug
         course_data = GET_COURSES()[course_slug]
         spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
         if course_data.get('jupyterlab', False):
