@@ -673,6 +673,10 @@ async def pre_spawn_hook(spawner):
             spawner.log.info("pre_spawn_hook: User %s is blocked spawning %s", username, course_slug)
             raise RuntimeError("You ({}) are not allowed to use the {} environment.  Please contact the course instructors".format(username, course_slug))
 
+    # token: add the token here
+    # you can use these variables: username, course_slug.  Set on `environ`.
+
+
     # import pprint
     # spawner.log.info("Before hooks: spawner.node_selector: %s", spawner.node_selector)
 
@@ -726,6 +730,7 @@ async def pre_spawn_hook(spawner):
 def post_stop_hook(spawner):
     username = spawner.user.name
     course_slug = getattr(spawner, 'course_slug', '')
+    # token: remove the token here
     spawner.log.info("post_stop_hook: %s stopped %s", username, course_slug or 'None')
 
 from kubespawner.spawner import KubeSpawner
