@@ -14,6 +14,10 @@ import sys
 import time
 import traceback
 import yaml
+from kubernetes import client, config
+from base64 import b64encode
+import secrets
+import string
 
 # c.JupyterHub.log_level = 'DEBUG'
 
@@ -191,6 +195,9 @@ DEFAULT_VOLUME_MOUNTS = [
 c.KubeSpawner.volumes = DEFAULT_VOLUMES
 c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
 
+# Kubernetes client config for job token management
+config.load_incluster_config()
+k8s_api = client.CoreV1Api()
 
 # Find all of our courses and profiles
 COURSES = { }
@@ -673,9 +680,27 @@ async def pre_spawn_hook(spawner):
             spawner.log.info("pre_spawn_hook: User %s is blocked spawning %s", username, course_slug)
             raise RuntimeError("You ({}) are not allowed to use the {} environment.  Please contact the course instructors".format(username, course_slug))
 
-    # token: add the token here
-    # you can use these variables: username, course_slug.  Set on `environ`.
+    # Generate job token used for submitting remote node jobs
+    token_string = ''.join(secrets.choice(string.ascii_uppercase + string.ascii_lowercase) for _ in range(32))
+    token_encoded = b64encode(bytes(token_string, "utf-8")).decode('utf-8')
+    environ["JOB_TOKEN"] = token_string
 
+    # Token name is like jobtoken-username-courseslug
+    token_name_parts = ["jobtoken", username]
+    if course_slug != '':
+        token_name_parts.append(course_slug)
+    token_name = '-'.join(token_name_parts)
+
+    # Create the actual token
+    k8s_api.create_namespaced_secret("jupyter", {
+    "metadata": {
+        "name": token_name,
+        "namespace": "jupyter"
+    },
+        "data": {
+            "job-token": token_encoded
+        }
+    })
 
     # import pprint
     # spawner.log.info("Before hooks: spawner.node_selector: %s", spawner.node_selector)
@@ -730,7 +755,14 @@ async def pre_spawn_hook(spawner):
 def post_stop_hook(spawner):
     username = spawner.user.name
     course_slug = getattr(spawner, 'course_slug', '')
-    # token: remove the token here
+
+    # Delete the remote job token
+    token_name_parts = ["jobtoken", username]
+    if course_slug != '':
+        token_name_parts.append(course_slug)
+    token_name = '-'.join(token_name_parts)
+    k8s_api.delete_namespaced_secret(token_name, "jupyter")
+
     spawner.log.info("post_stop_hook: %s stopped %s", username, course_slug or 'None')
 
 from kubespawner.spawner import KubeSpawner
