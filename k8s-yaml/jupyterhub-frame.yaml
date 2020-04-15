@@ -34,6 +34,9 @@ rules:
 - apiGroups: [""]
   resources: ["events"]
   verbs: ["list", "watch"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["list", "watch", "get", "create", "delete"]
 ---
 apiVersion: v1
 kind: ServiceAccount
