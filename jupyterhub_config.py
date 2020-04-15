@@ -778,19 +778,19 @@ def get_state(spawner):
     restored - possible problem in future if state is re-saved.
     """
     state = kubespawner_get_state(spawner)
-    for name in ['cull_max_age', 'cull_inactive_time']:
+    for name in ['cull_max_age', 'cull_inactive_time', 'course_slug']:
         if hasattr(spawner, name):
             state[name] = getattr(spawner, name)
     return state
 def load_state(spawner, state):
     kubespawner_load_state(spawner, state)
-    for name in ['cull_max_age', 'cull_inactive_time']:
+    for name in ['cull_max_age', 'cull_inactive_time', 'course_slug']:
         if name in state:
             setattr(spawner, name, state.get(name))
 import jupyterhub.spawner
 def clear_state(spawner):
     jupyterhub.spawner.Spawner.clear_state(spawner)
-    for name in ['cull_max_age', 'cull_inactive_time']:
+    for name in ['cull_max_age', 'cull_inactive_time', 'course_slug']:
         if hasattr(spawner, name):
             delattr(spawner, name)
 
