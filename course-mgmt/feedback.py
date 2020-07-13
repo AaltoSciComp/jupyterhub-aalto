@@ -32,13 +32,13 @@ def main():
             users.update(set(args.user.split(',')))
     else:
         users = None
-    
+
     if args.assignment:
         assignments = args.assignment
     else:
         assignments = None
 
-    # Find all the user directories
+    # Find all the user directories.  Map username -> NN/username
     userdirs = { }
     userdir_re = re.compile(USERDIR.format(digits='([0-9]{2})', username='([^/]+)'))
     for path in glob.glob(USERDIR.format(digits='*', username='*')):
@@ -46,23 +46,32 @@ def main():
         userdirs[m.group(2)] = USERDIR.format(digits=m.group(1), username=m.group(2))
         #print(m.group(1), m.group(2))
 
-    # Find our users
+    # List *all* feedback dirs under $course/feedback/$assignment/$username.
     course_slug = args.course
     print(course_slug, COURSEDIR.format(slug=course_slug)+'feedback/*')
     user_paths = glob.glob(COURSEDIR.format(slug=course_slug)+'feedback/*')
     #print(course_assignments)
 
     for user_source_path in user_paths:
+        # Find username
         m = re.match('.*/([^/]+)$', user_source_path)
         username = m.group(1)
+        # Skip completely unknown users
         if users and username not in users:
             continue
+        # Find the user's uid
         print(user_source_path)
         data = yaml.load(open(USERINFO.format(username=username))) or { }
         uid = data.get('uid', 0)
         print(username, uid)
 
         user_source = Path(user_source_path)
+
+        # For each assignment
+        # Find the timestamp
+        # release the feedback
+
+        # BELOW DOESN'T APPLY WITH NEW FORMAT
 
         # If we have limited to one assignment, and it doesn't exist
         # in the user source, don't do anything.
