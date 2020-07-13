@@ -1,4 +1,4 @@
-FROM jupyterhub/jupyterhub:1.1.0b1
+FROM jupyterhub/jupyterhub:1.1.0
 
 # Install dependencies
 RUN apt-get update && \
@@ -9,11 +9,11 @@ RUN apt-get update && \
 # Jupyterhub & co
 RUN python3 -m pip install jupyter python-dateutil pytz pyyaml kubernetes
 # This should *not* be needed but there is a bug: #2852
-RUN python3 -m pip install --force --no-deps jupyterhub==1.1.0.b1
+RUN python3 -m pip install --force --no-deps jupyterhub==1.1.0
 
 # using a commit from Dec 27, 2019 instead of a release because there hasn't
 # been a new release in a long time
-RUN python3 -m pip install https://github.com/jupyterhub/kubespawner/archive/1b4539c.tar.gz
+RUN python3 -m pip install https://github.com/jupyterhub/kubespawner/archive/a6c3ea8.tar.gz
 
 # Enable SSH stuff
 COPY secrets/known_hosts /root/.ssh/known_hosts
