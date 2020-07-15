@@ -191,7 +191,7 @@ def cull_idle(
             max_age = state['cull_max_age']
         if 'cull_inactive_time' in state:
             inactive_limit = state['cull_inactive_time']
-        app_log.info(f"CULL IDLE: {user['name']}/{server_name}: {cull_time} inactive={inactive} inactive_limit={inactive_limit} age={age} last_activity={server['last_activity']}")
+        app_log.info(f"CULL IDLE: {user['name']}/{server_name}: {max_age} inactive={inactive} inactive_limit={inactive_limit} age={age} last_activity={server['last_activity']}")
 
         should_cull = (
             inactive is not None and inactive.total_seconds() >= inactive_limit
