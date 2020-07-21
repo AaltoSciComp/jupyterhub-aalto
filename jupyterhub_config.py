@@ -686,7 +686,7 @@ async def pre_spawn_hook(spawner):
             raise RuntimeError("You ({}) are not allowed to use the {} environment.  Please contact the course instructors".format(username, course_slug))
 
     # Generate job token used for submitting remote node jobs
-    token_string = ''.join(secrets.choice(string.ascii_uppercase + string.ascii_lowercase) for _ in range(32))
+    token_string = secrets.token_hex(32)
     token_encoded = b64encode(bytes(token_string, "utf-8")).decode('utf-8')
     environ["JOB_TOKEN"] = token_string
 
