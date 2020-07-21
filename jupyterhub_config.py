@@ -74,21 +74,25 @@ def unique_suffix(base, other):
 
 # Default profile list
 PROFILE_LIST_DEFAULT = [
-    {'display_name': 'Python: General use (JupyterLab) '
+    {'slug': 'general-python',
+     'display_name': 'Python: General use (JupyterLab) '
                       '<font color="#999999">%s</font>'%(IMAGE_DEFAULT.split(':')[-1]),
      'default': True,
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True, },
     },
-    {'display_name': 'Python: General use (classic notebook) '
+    {'slug': 'general-python-notebook',
+     'display_name': 'Python: General use (classic notebook) '
                      '<font color="#999999">%s</font>'%(IMAGE_DEFAULT.split(':')[-1]),
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': ''},
     },
-    {'display_name': 'R: General use (JupyterLab) '
+    {'slug': 'general-r',
+     'display_name': 'R: General use (JupyterLab) '
                      '<font color="#999999">%s</font>'%(IMAGE_DEFAULT_R.split(':')[-1]),
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': IMAGE_DEFAULT_R, },
     },
-    {'display_name': 'Julia: General use (JupyterLab) '
+    {'slug': 'general-julia',
+     'display_name': 'Julia: General use (JupyterLab) '
                      '<font color="#999999">%s</font>'%(IMAGE_DEFAULT_JULIA.split(':')[-1]),
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': IMAGE_DEFAULT_JULIA,},
@@ -356,6 +360,7 @@ def get_profile_list(spawner):
                 course_notes = ' <font color="brown">(not public)</font>'
         display_name = course_data.get('name', course_slug)
         profile_list.append({
+            'slug': course_slug,
             'display_name': display_name + course_notes + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, IMAGE_COURSE_DEFAULT)+'</font>',
             'kubespawner_override': {
                 **EMPTY_PROFILE,
