@@ -15,6 +15,7 @@ import time
 import traceback
 import yaml
 from kubernetes import client, config
+import kubernetes.client.rest
 from base64 import b64encode
 import secrets
 import string
@@ -696,7 +697,16 @@ async def pre_spawn_hook(spawner):
         token_name_parts.append(course_slug)
     token_name = '-'.join(token_name_parts)
 
+    # Delete token, if it exists
+    try:
+        spawner.log.debug('pre_spawn_hook: %s: token: trying to delete %s', username, token_name)
+        k8s_api.delete_namespaced_secret(token_name, "jupyter")
+    except kubernetes.client.rest.ApiException:
+        exc_info = sys.exc_info()
+        spawner.log.info('pre_spawn_hook: %s: caught exception while deleting token: %s', username, token_name)
+        #print("".join(traceback.format_exception(*exc_info)))
     # Create the actual token
+    spawner.log.debug('pre_spawn_hook: %s: creating job token %s', username, token_name)
     k8s_api.create_namespaced_secret("jupyter", {
     "metadata": {
         "name": token_name,
@@ -759,6 +769,7 @@ async def pre_spawn_hook(spawner):
 
 def post_stop_hook(spawner):
     username = spawner.user.name
+    spawner.log.info("post_stop_hook: %s stopping %s", username, getattr(spawner, 'course_slug', 'None'))
     course_slug = getattr(spawner, 'course_slug', '')
 
     # Delete the remote job token
@@ -766,7 +777,11 @@ def post_stop_hook(spawner):
     if course_slug != '':
         token_name_parts.append(course_slug)
     token_name = '-'.join(token_name_parts)
-    k8s_api.delete_namespaced_secret(token_name, "jupyter")
+    spawner.log.info('post_stop_hook: %s: trying to delete token_name=%s', username, token_name)
+    try:
+        k8s_api.delete_namespaced_secret(token_name, "jupyter")
+    except kubernetes.client.rest.ApiException:
+        spawner.log.info('post_stop_hook: %s: caught exception while deleting token: %s', username, token_name)
 
     spawner.log.info("post_stop_hook: %s stopped %s", username, course_slug or 'None')
 
