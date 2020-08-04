@@ -188,9 +188,9 @@ def cull_idle(
         if 'child_conf' in state:
             state = state['child_conf']
         if 'cull_max_age' in state:
-            max_age = state['cull_max_age']
+            max_age = max(max_age, state['cull_max_age'])
         if 'cull_inactive_time' in state:
-            inactive_limit = state['cull_inactive_time']
+            inactive_limit = max(inactive_limit, state['cull_inactive_time'])
         app_log.info(f"CULL IDLE: {user['name']}/{server_name}: {max_age} inactive={inactive} inactive_limit={inactive_limit} age={age} last_activity={server['last_activity']}")
 
         should_cull = (
