@@ -379,6 +379,7 @@ def get_profile_list(spawner):
         if is_instructor or is_admin:
             profile = copy.deepcopy(profile_list[-1])  # COPY AND RE-APPEND
             profile['display_name'] = display_name + ' <font color="blue">(instructor)</font>'
+            profile['slug'] = profile['slug'] + '-instructor'
             if 'image_instructor' in course_data:
                 course_image_instructor = select_image(course_data['image_instructor'])
                 profile['display_name'] = profile['display_name'] + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, course_image_instructor)+'</font>'
