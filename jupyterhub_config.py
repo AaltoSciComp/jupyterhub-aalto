@@ -442,7 +442,10 @@ async def pre_spawn_hook(spawner):
     uid = userinfo.pw_uid
     human_name = userinfo.pw_gecos
     uid_last2digits = "%02d"%(uid%100)
-    spawner.log.info("pre_spawn_hook: %s starting %s", username, getattr(spawner, 'course_slug', 'None'))
+    spawner.log.info("pre_spawn_hook: %s starting course_slug=%s, slug=%s",
+                     username,
+                     getattr(spawner, 'course_slug', 'None'),
+                     getattr(spawner, 'slug', 'None'))
 
 
     # Make a copy of the *default* class volumes.  The "spawner" object
@@ -673,6 +676,8 @@ async def pre_spawn_hook(spawner):
                 cmds.append(r"test ! -e /course/gradebook.db && touch /course/gradebook.db && chmod 660 /course/gradebook.db || true")
                 # umask 0007 inserted above
         else:
+            if getattr(spawner, 'as_instructor', False):
+                spawner.log.info("pre_spawn_hook: %s tried to start %s as instructor, but was not allowed", username, course_slug)
             cmds.append("disable_formgrader.sh")
 
         # Student config
