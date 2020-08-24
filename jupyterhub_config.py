@@ -24,7 +24,7 @@ import string
 
 IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:3.0.0'         # for generic images
 IMAGE_COURSE_DEFAULT = 'aaltoscienceit/notebook-server:3.0.0'  # for courses
-IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:3.0.1'
+IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:3.0.2'
 IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:3.0.0'
 IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.8.8'
 #IMAGE_TESTING = 'aaltoscienceit/notebook-server:1.0.6'
