@@ -227,7 +227,7 @@ def GET_COURSES():
     latest_yaml_ts = max(os.stat(course_file).st_mtime
                          for course_file in glob.glob(os.path.join(METADIR, '*.yaml')))
     # If all course timestamps are older than COURSES_TS, return cached copy.
-    #    ... but if it is more than one hour old, never return cached copy
+    #    ... but if it is more than one hour old, never return cached copy.
     if COURSES_TS and COURSES_TS > latest_yaml_ts and not COURSES_TS < time.time() - 3600:
         return COURSES
 
@@ -857,4 +857,3 @@ c.JupyterHub.services = [
                 '/srv/jupyterhub/hub_status_service.py' if os.path.exists('/srv/jupyterhub/hub_status_service.py') else '/hub_status_service.py'],
   },
 ]
-
