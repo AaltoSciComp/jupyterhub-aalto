@@ -221,12 +221,14 @@ def GET_COURSES():
     global GROUPS
 
     # Cache, don't unconditionally reload every time.
-    # Regenerate if Check if we must regenerate data
-    if COURSES_TS and COURSES_TS > time.time() - 10 and COURSES_TS < time.time() - 3600:
+    # Always return cached if we have last loaded courses less than 10 seconds ago
+    if COURSES_TS and COURSES_TS > time.time() - 10:
         return COURSES
     latest_yaml_ts = max(os.stat(course_file).st_mtime
                          for course_file in glob.glob(os.path.join(METADIR, '*.yaml')))
-    if COURSES_TS and COURSES_TS > latest_yaml_ts:
+    # If all course timestamps are older than COURSES_TS, return cached copy.
+    #    ... but if it is more than one hour old, never return cached copy.
+    if COURSES_TS and COURSES_TS > latest_yaml_ts and not COURSES_TS < time.time() - 3600:
         return COURSES
 
     # Regenerate the course dict from yamls on disk.
@@ -284,14 +286,19 @@ UPDATE_IMAGES_TS = None
 IMAGES_UPDATEFILE = os.path.join(METADIR, 'IMAGES.py')
 def UPDATE_IMAGES():
     """Update the default images based on a timeout"""
+    global UPDATE_IMAGES_TS
+
     # If the definition file doesn't exist, do nothing
     if not os.path.exists(IMAGES_UPDATEFILE):
         return
-    global UPDATE_IMAGES_TS
-    if UPDATE_IMAGES_TS and UPDATE_IMAGES_TS > time.time() - 10 and UPDATE_IMAGES_TS < time.time() - 3600:
+    # Cache, don't unconditionally reload every time.
+    # Always return cached if we have last loaded courses less than 10 seconds ago
+    if UPDATE_IMAGES_TS and UPDATE_IMAGES_TS > time.time() - 10:
         return
     last_ts = os.stat(IMAGES_UPDATEFILE).st_mtime
-    if UPDATE_IMAGES_TS and UPDATE_IMAGES_TS > last_ts:
+    # If timestamp is older than cached, return cached copy.
+    #    ... but if it is more than one hour old, never return cached copy
+    if UPDATE_IMAGES_TS and UPDATE_IMAGES_TS > last_ts and not  UPDATE_IMAGES_TS < time.time() - 3600:
         return
     UPDATE_IMAGES_TS = time.time()
 
@@ -850,4 +857,3 @@ c.JupyterHub.services = [
                 '/srv/jupyterhub/hub_status_service.py' if os.path.exists('/srv/jupyterhub/hub_status_service.py') else '/hub_status_service.py'],
   },
 ]
-
