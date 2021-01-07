@@ -358,10 +358,10 @@ def get_profile_list(spawner):
         is_instructor = spawner.user.name in course_data.get('instructors', [])
         is_teststudent = spawner.user.name in {'student1', 'student2', 'student3'}
         is_admin = spawner.user.admin
-        is_active = course_data.get('active', True)
+        is_archive = course_data.get('archive', False)
         is_private = course_data.get('private', False)
         course_notes = ""
-        if not is_active:
+        if is_archive:
             continue
         if is_private:
             if not (is_instructor or is_student or is_teststudent or is_admin):
