@@ -482,14 +482,14 @@ async def pre_spawn_hook(spawner):
     # Remove the .jupyter config that is already there
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.bashrc")
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.profile")
-    #cmds.append("pip install --upgrade --no-deps https://github.com/AaltoScienceIT/nbgrader/archive/live.zip")
+    #cmds.append("pip install --upgrade --no-deps https://github.com/AaltoSciComp/nbgrader/archive/live.zip")
     if getattr(spawner, 'x_jupyter_enable_lab', False):
         environ['JUPYTER_ENABLE_LAB'] = 'true'
         spawner.default_url = "lab/tree/notebooks/"
     #cmds.append('jupyter labextension enable @jupyterlab/google-drive')
     # Install gpuplug in the GPU images
     if spawner.node_selector and 'cs-aalto/gpu' in spawner.node_selector:
-        cmds.append("pip install --upgrade https://github.com/AaltoScienceIT/gpuplug/archive/master.zip")
+        cmds.append("pip install --upgrade https://github.com/AaltoSciComp/gpuplug/archive/master.zip")
         spawner.volumes.append({
             "name": "gpuplug-sock",
             "hostPath": {
