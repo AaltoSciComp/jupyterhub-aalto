@@ -52,7 +52,7 @@ INSTRUCTOR_MEM_GUARANTEE = 1 * 2**30
 INSTRUCTOR_CPU_GUARANTEE = DEFAULT_CPU_GUARANTEE
 ROOT_THEN_SU = True
 MOUNT_EXTRA_COURSES = True
-
+DEFAULT_INSTRUCTORS = {'darstr1'}
 
 DEFAULT_NODE_SELECTOR = { }
 DEFAULT_TOLERATIONS = [
@@ -269,6 +269,7 @@ def GET_COURSES():
         else:
             try:
                 course_data['instructors'] |= set(grp.getgrnam('jupyter-'+course_slug).gr_mem)
+                course_data['instructors'] |= DEFAULT_INSTRUCTORS
                 # Testcourse gets all instructors
                 courses['testcourse']['instructors'] |= set(grp.getgrnam('jupyter-'+course_slug).gr_mem)
             except KeyError:
