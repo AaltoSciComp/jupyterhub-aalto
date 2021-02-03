@@ -61,7 +61,7 @@ DEFAULT_TOLERATIONS = [
 EMPTY_PROFILE = {'node_selector': DEFAULT_NODE_SELECTOR,
                  'tolerations': DEFAULT_TOLERATIONS,
                  'default_url': 'tree/notebooks',
-                 'image': IMAGE_DEFAULT,
+                 'image': 'IMAGE_DEFAULT',
                 }
 
 def unique_suffix(base, other):
@@ -78,48 +78,41 @@ def unique_suffix(base, other):
 # Default profile list
 PROFILE_LIST_DEFAULT = [
     {'slug': 'general-python',
-     'display_name': 'Python: General use (JupyterLab) '
-                      '<font color="#999999">%s</font>'%(IMAGE_DEFAULT.split(':')[-1]),
+     'display_name': 'Python: General use (JupyterLab) ',
      'default': True,
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True, },
     },
     {'slug': 'general-python-notebook',
-     'display_name': 'Python: General use (classic notebook) '
-                     '<font color="#999999">%s</font>'%(IMAGE_DEFAULT.split(':')[-1]),
+     'display_name': 'Python: General use (classic notebook) ',
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': ''},
     },
     {'slug': 'general-r',
-     'display_name': 'R: General use (JupyterLab) '
-                     '<font color="#999999">%s</font>'%(IMAGE_DEFAULT_R.split(':')[-1]),
+     'display_name': 'R: General use (JupyterLab) ',
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
-                               'image': IMAGE_DEFAULT_R, },
+                               'image': 'IMAGE_DEFAULT_R', },
     },
     {'slug': 'general-julia',
-     'display_name': 'Julia: General use (JupyterLab) '
-                     '<font color="#999999">%s</font>'%(IMAGE_DEFAULT_JULIA.split(':')[-1]),
+     'display_name': 'Julia: General use (JupyterLab) ',
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
-                               'image': IMAGE_DEFAULT_JULIA,},
+                               'image': 'IMAGE_DEFAULT_JULIA',},
     },
 ]
 if 'IMAGE_TESTING' in globals():
     PROFILE_LIST_DEFAULT.append(
-    {'display_name': '(testing) Python: General use (JupyterLab) '
-                     '<font color="#999999">%s</font>'%(IMAGE_TESTING.split(':')[-1]),
+    {'display_name': '(testing) Python: General use (JupyterLab) ',
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
-                               'image': IMAGE_TESTING, }
+                               'image': 'IMAGE_TESTING', }
     })
 for image in IMAGES_OLD:
     PROFILE_LIST_DEFAULT.append(
-    {'display_name': '<font color="#AAAAAA">Old version (JupyterLab)</font> '
-                     '<font color="#999999">%s</font>'%(unique_suffix(IMAGE_DEFAULT, image)),
+    {'display_name': '<font color="#AAAAAA">Old version (JupyterLab)</font> ',
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': image, }
     })
 PROFILE_LIST_DEFAULT_BOTTOM = [
-    {'display_name': 'GPU testing '
-                      '<font color="#999999">%s</font>'%(IMAGE_DEFAULT_CUDA.split(':')[-1]),
+    {'display_name': 'GPU testing ',
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
-                              'image':IMAGE_DEFAULT_CUDA, 'xx_name': 'gpu_testing',
+                              'image': 'IMAGE_DEFAULT_CUDA', 'xx_name': 'gpu_testing',
                               'node_selector':{'cs-aalto/gpu': 'true'},
                               'tolerations':[{'key':'cs-aalto/gpu', 'operator':"Exists", 'effect':"NoSchedule"}, *DEFAULT_TOLERATIONS],}
     },
@@ -310,7 +303,7 @@ def UPDATE_IMAGES():
     except:
         exc_info = sys.exc_info()
         print("ERROR: error loading file {}".format(IMAGES_UPDATEFILE), file=sys.stderr)
-        print("".join(traceback.format_exception(*exc_info)).decode(), file=sys.stderr)
+        print("".join(traceback.format_exception(*exc_info)), file=sys.stderr)
 
 
 
@@ -322,6 +315,7 @@ def select_image(image_name):
     allows certain courses to be continually updated.
     """
     # Find a date-based image
+    print('select_image:', image_name, file=sys.stderr)
     if (isinstance(image_name, (tuple, list))
         and isinstance(image_name[0], str)
         and isinstance(image_name[1], date)
@@ -329,6 +323,7 @@ def select_image(image_name):
         # Select the right class - standard, r-ubuntu, etc.
         image_list = IMAGES_BYDATE[image_name[0]]
         image_date = image_name[1]
+        assert isinstance(image_date, date)
         # Naive algorithm, we can't use bisect.bisect because we don't have a
         # pure key-based lookup and it doesn't have a key= function.
         # Search backwards, look for first (actually last in the list) image
@@ -340,11 +335,16 @@ def select_image(image_name):
         return IMAGE_COURSE_DEFAULT
 
     # If the image name is a string and all uppercase, look up the global
-    # variable IMAGE_{name} and return that.
+    # variable IMAGE_{name} (or just {name} and return that).
     if isinstance(image_name, str) and image_name.isupper():
         if 'IMAGE_'+image_name in globals():
             return globals()['IMAGE_'+image_name]
+        if image_name in globals():
+            return globals()[image_name]
     # Otherwise: just use the name as-is.
+    if not isinstance(image_name, str):
+        print('Unknown image type:', file=sys.stderr)
+        return IMAGE_COURSE_DEFAULT
     return image_name
 
 def get_profile_list(spawner):
@@ -372,7 +372,7 @@ def get_profile_list(spawner):
         display_name = course_data.get('name', course_slug)
         profile_list.append({
             'slug': course_slug,
-            'display_name': display_name + course_notes + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, IMAGE_COURSE_DEFAULT)+'</font>',
+            'display_name': display_name + course_notes,
             'kubespawner_override': {
                 **EMPTY_PROFILE,
                 'course_slug': course_slug,
@@ -384,7 +384,7 @@ def get_profile_list(spawner):
         if 'image' in course_data:
             course_image = select_image(course_data['image'])
             profile = profile_list[-1]   # REFERENCE
-            profile['display_name'] = display_name + course_notes + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, course_image)+'</font>'
+            profile['display_name'] = display_name + course_notes
             profile['kubespawner_override']['image'] = course_image
         if is_instructor or is_admin:
             profile = copy.deepcopy(profile_list[-1])  # COPY AND RE-APPEND
@@ -392,7 +392,7 @@ def get_profile_list(spawner):
             profile['slug'] = profile['slug'] + '-instructor'
             if 'image_instructor' in course_data:
                 course_image_instructor = select_image(course_data['image_instructor'])
-                profile['display_name'] = profile['display_name'] + ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, course_image_instructor)+'</font>'
+                profile['display_name'] = profile['display_name']
                 profile['kubespawner_override']['image'] = course_image_instructor
             profile['kubespawner_override']['as_instructor'] = True
             profile_list.append(profile)
@@ -403,6 +403,13 @@ def get_profile_list(spawner):
 
     profile_list.sort(key=lambda x: x['display_name'])
     profile_list = copy.deepcopy(PROFILE_LIST_DEFAULT) + profile_list + copy.deepcopy(PROFILE_LIST_DEFAULT_BOTTOM)
+    # Update all of the default images
+    for profile in profile_list:
+        profile['kubespawner_override']['image'] = select_image(profile['kubespawner_override']['image'])
+        if profile.get('slug', '').startswith('general'):
+            profile['display_name'] += '<font color="#999999">%s</font>'%(profile['kubespawner_override']['image'].split(':')[-1])
+        else:
+            profile['display_name'] += ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, profile['kubespawner_override']['image']) + '</font>'
 
     return profile_list
 # In next version of kubespawner, leave as callable to regen every
