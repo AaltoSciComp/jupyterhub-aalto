@@ -479,6 +479,11 @@ async def pre_spawn_hook(spawner):
     environ['PYTHONPATH'] = '/m/jhnas/jupyter/software/pymod/'  # Remove once all notebooks have the newer hooks.
     environ['TZ'] = os.environ.get('TZ', 'Europe/Helsinki')
     cmds = [ ]
+    # This is needed for sudo security vulnerability: remove sudo from image,
+    # after the user part has started.
+    environ['GRANT_SUDO'] = '1'
+    cmds.append("mkdir -p /usr/local/bin/start-notebook-user.d/")
+    cmds.append("echo 'sudo rm -f /usr/bin/{sudo,sudoedit}' > /usr/local/bin/start-notebook-user.d/rm-sudo.sh")
     # Remove the .jupyter config that is already there
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.bashrc")
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.profile")
