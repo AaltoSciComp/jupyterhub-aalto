@@ -70,6 +70,8 @@ def unique_suffix(base, other):
         base = base.replace('aaltoscienceit', 'registry.cs.aalto.fi/jupyter')
     prefix = os.path.commonprefix([base, other])
     suffix = other[len(prefix):]
+    if suffix == '':
+        return ''
     if ':' not in suffix:
         suffix = other.rsplit(':', 1)[-1]
     return suffix
