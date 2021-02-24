@@ -669,7 +669,7 @@ async def pre_spawn_hook(spawner):
                 spawner.mem_limit = INSTRUCTOR_MEM_LIMIT
             spawner.cpu_guarantee = INSTRUCTOR_CPU_GUARANTEE
             spawner.mem_guarantee = INSTRUCTOR_MEM_GUARANTEE
-            for line in ['c.NbGrader.logfile = "/course/.nbgraber.log"',
+            for line in ['c.NbGrader.logfile = "/course/.nbgrader.log"',
                         ]:
                 cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
             spawner.volume_mounts.append({"mountPath": "/course", "name": "jupyter-nfs", "subPath": "course/{}/files".format(course_slug)})
