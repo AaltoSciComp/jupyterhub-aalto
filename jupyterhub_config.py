@@ -317,7 +317,7 @@ def select_image(image_name):
     allows certain courses to be continually updated.
     """
     # Find a date-based image
-    print('select_image:', image_name, file=sys.stderr)
+    #print('select_image:', image_name, file=sys.stderr)
     if (isinstance(image_name, (tuple, list))
         and isinstance(image_name[0], str)
         and isinstance(image_name[1], date)
