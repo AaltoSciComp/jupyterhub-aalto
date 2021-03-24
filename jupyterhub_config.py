@@ -164,7 +164,7 @@ USER_RE = re.compile('^[a-z0-9.]+$')
 c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
 c.KubeSpawner.start_timeout = 60 * 5
 c.KubeSpawner.hub_connect_port = 8081
-c.KubeSpawner.http_timeout = 40
+c.KubeSpawner.http_timeout = 60
 c.KubeSpawner.disable_user_config = True
 c.KubeSpawner.common_labels = { "cs-aalto/app": "notebook-server" }
 c.KubeSpawner.poll_interval = 150  # default 30, check each pod for aliveness this often
@@ -219,7 +219,7 @@ def GET_COURSES():
 
     # Cache, don't unconditionally reload every time.
     # Always return cached if we have last loaded courses less than 10 seconds ago
-    if COURSES_TS and COURSES_TS > time.time() - 10:
+    if COURSES_TS and COURSES_TS > time.time() - 60:
         return COURSES
     latest_yaml_ts = max(os.stat(course_file).st_mtime
                          for course_file in glob.glob(os.path.join(METADIR, '*.yaml')))
@@ -291,7 +291,7 @@ def UPDATE_IMAGES():
         return
     # Cache, don't unconditionally reload every time.
     # Always return cached if we have last loaded courses less than 10 seconds ago
-    if UPDATE_IMAGES_TS and UPDATE_IMAGES_TS > time.time() - 10:
+    if UPDATE_IMAGES_TS and UPDATE_IMAGES_TS > time.time() - 60:
         return
     last_ts = os.stat(IMAGES_UPDATEFILE).st_mtime
     # If timestamp is older than cached, return cached copy.
