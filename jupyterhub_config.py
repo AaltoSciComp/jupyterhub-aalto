@@ -156,7 +156,7 @@ class NormalizingPAMAuthenticator(PAMAuthenticator):
         return super().normalize_username(pwd.getpwuid(uid).pw_name)
 c.JupyterHub.authenticator_class = NormalizingPAMAuthenticator
 #c.Authenticator.delete_invalid_users = True  # delete users once no longer in Aalto AD
-c.Authenticator.admin_users = {'darstr1', 'laines5', 'vienama1'}
+c.Authenticator.admin_users = {'darstr1', 'laines5'}
 USER_RE = re.compile('^[a-z0-9.]+$')
 
 
