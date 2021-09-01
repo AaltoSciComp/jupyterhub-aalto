@@ -770,7 +770,8 @@ async def pre_spawn_hook(spawner):
     for var in ['OMP_NUM_THREADS',
                 'OPENBLAS_NUM_THREADS',
                 'NUMEXPR_NUM_THREADS',
-                'MKL_NUM_THREADS', ]:
+                'MKL_NUM_THREADS',
+                'JULIA_NUM_THREADS', ]:
         environ[var] = str(int(spawner.cpu_limit))
     # Aux groups for instructors (other mounts)
     if not (course_slug and not as_instructor) and ROOT_THEN_SU and MOUNT_EXTRA_COURSES:
