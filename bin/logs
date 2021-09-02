@@ -1,1 +1,4 @@
-kubectl logs -n jupyter "$@" $(kubectl get pods -n jupyter | grep jupyterhub | grep Running | cut -f1 -d' ' | tail -1) -f
+NAMESPACE=${1:-jupyter}
+echo "Namespace: $NAMESPACE"
+
+kubectl logs -n $NAMESPACE "$@" $(kubectl get pods -n $NAMESPACE | grep jupyterhub | grep Running | cut -f1 -d' ' | tail -1) -f

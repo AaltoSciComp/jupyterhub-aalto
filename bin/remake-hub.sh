@@ -1,4 +1,6 @@
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+NAMESPACE=${1:-jupyter}
+echo "Namespace: $NAMESPACE"
 
 # Syntax check the hub config file first.
 if ! python3 -m py_compile $SCRIPTPATH/../jupyterhub_config.py ; then
@@ -6,7 +8,15 @@ if ! python3 -m py_compile $SCRIPTPATH/../jupyterhub_config.py ; then
     exit
 fi
 
-$SCRIPTPATH/delete-hub.sh
+$SCRIPTPATH/delete-hub.sh $NAMESPACE
 # sometimes this proxy pid needs deletion... eventually find a better solution.
-rm -f /mnt/jupyter/admin/hubdata/jupyterhub-proxy.pid
-$SCRIPTPATH/create-hub.sh
+if [ "$NAMESPACE" = "jupyter" ]; then
+    JUPYTER_PATH=/mnt/jupyter
+elif [ "$NAMESPACE" = "jupyter-test" ]; then
+    JUPYTER_PATH=/mnt/jupyter/jupyter-test
+fi
+rm -f $JUPYTER_PATH/admin/hubdata/jupyterhub-proxy.pid
+mkdir -p $JUPYTER_PATH/software
+mkdir -p $JUPYTER_PATH/shareddata
+
+$SCRIPTPATH/create-hub.sh $NAMESPACE
