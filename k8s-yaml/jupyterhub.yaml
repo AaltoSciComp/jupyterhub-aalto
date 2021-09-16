@@ -66,15 +66,15 @@ spec:
         - name: spawn-test
           mountPath: /srv/jupyterhub/spawn_test.py
           subPath: spawn_test.py
-#        - name: idrsa
-#          mountPath: /root/.ssh/id_rsa
-#          subPath: id_rsa_hub
-#        - name: idrsapub
-#          mountPath: /root/.ssh/id_rsa.pub
-#          subPath: id_rsa_hub.pub
-#        - name: knownhosts
-#          mountPath: /root/.ssh/known_hosts
-#          subPath: known_hosts
+        - name: idrsa
+          mountPath: /root/.ssh/id_rsa
+          subPath: id_rsa_hub
+        - name: idrsapub
+          mountPath: /root/.ssh/id_rsa.pub
+          subPath: id_rsa_hub.pub
+        - name: knownhosts
+          mountPath: /root/.ssh/known_hosts
+          subPath: known_hosts
         imagePullPolicy: Never
       tolerations:
       - {key: cs-aalto/app, value: jupyterhub,             operator: Equal, effect: NoSchedule}
@@ -109,9 +109,11 @@ spec:
       - name: idrsa
         secret:
           secretName: idrsa
+          defaultMode: 0600
       - name: idrsapub
         secret:
           secretName: idrsapub
+          defaultMode: 0600
       - name: knownhosts
         secret:
           secretName: knownhosts
