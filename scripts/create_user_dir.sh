@@ -3,6 +3,9 @@
 set -e  # exit immediately on any command failing
 set -x  # debugging
 
+JUPYTER_DIR=/mnt/jupyter
+LASTLOGIN_DIR="$JUPYTER_DIR/admin/lastlogin"
+
 # Place this in ssh/authorised_keys with this key:
 #   restrict,command="bash path/to/this.sh" ssh-rsa ...
 if [ -n "$SSH_ORIGINAL_COMMAND" ] ; then
@@ -33,13 +36,14 @@ if [ -z "$uid" ] ; then
 fi
 set -e
 
-touch "/mnt/jupyter/admin/lastlogin/$username"
-echo "uid: $uid" > "/mnt/jupyter/admin/lastlogin/$username"
-echo "ts: $(date +%s)" >> "/mnt/jupyter/admin/lastlogin/$username"
-echo "human_name: \"$3\"" >> "/mnt/jupyter/admin/lastlogin/$username"
+mkdir -p "$LASTLOGIN_DIR"
+touch "$LASTLOGIN_DIR/$username"
+echo "uid: $uid" > "$LASTLOGIN_DIR/$username"
+echo "ts: $(date +%s)" >> "$LASTLOGIN_DIR/$username"
+echo "human_name: \"$3\"" >> "$LASTLOGIN_DIR/$username"
 
 uid_last2digits=$(printf %02d $(($uid % 100)) )
-dir_name="/mnt/jupyter/u/$uid_last2digits/$username"
+dir_name="$JUPYTER_DIR/u/$uid_last2digits/$username"
 default_group=70000
 
 #if [ ! -d "$dir_name" ]; then

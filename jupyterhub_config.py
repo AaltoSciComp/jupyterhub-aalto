@@ -33,6 +33,13 @@ IMAGES_OLD = [
     'aaltoscienceit/notebook-server:4.1.5',
 ]
 
+# Name of the manager node
+JMGR_HOSTNAME = "jupyter-manager.cs.aalto.fi"
+# Path to the cloned repo on the manager node.
+# NOTE: jupyter-manager.cs.aalto.fi defines a hardcoded command in
+# authorized_keys, the path here is most likely ignored
+JMGR_REPO_DIR = "/root/jupyterhub-aalto"
+
 # NOTE: Image definitions have been moved to jupyterhub-aalto-course-meta/IMAGES.py
 #       Do not define images here
 #IMAGES_BYDATE = {
@@ -55,9 +62,11 @@ ROOT_THEN_SU = True
 MOUNT_EXTRA_COURSES = True
 DEFAULT_INSTRUCTORS = {'darstr1'}
 
+NAMESPACE = 'jupyter'
+
 DEFAULT_NODE_SELECTOR = { }
 DEFAULT_TOLERATIONS = [
-    {'key': 'cs-aalto/app', 'value': 'jupyter', 'operator': 'Equal', 'effect': 'NoSchedule'},
+    {'key': 'cs-aalto/app', 'value': NAMESPACE, 'operator': 'Equal', 'effect': 'NoSchedule'},
     ]
 EMPTY_PROFILE = {'node_selector': DEFAULT_NODE_SELECTOR,
                  'tolerations': DEFAULT_TOLERATIONS,
@@ -451,9 +460,14 @@ def create_user_dir(username, uid, human_name="", log=None):
     #os.system('ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid))
     human_name = re.sub('[^\w -]*', '', human_name, flags=re.I)
     human_name = human_name.replace(' ', '++')
+    # NOTE: jupyter-manager.cs.aalto.fi defines a hardcoded command in
+    # authorized_keys, the command here is most likely ignored
     ret = subprocess.run(
-        ['ssh', 'jupyter-manager.cs.aalto.fi',
-         "/root/jupyterhub-aalto/scripts/create_user_dir.sh", shlex.quote(username), str(uid), shlex.quote(human_name)],
+        [
+            'ssh', JMGR_HOSTNAME,
+            f"{JMGR_REPO_DIR}/scripts/create_user_dir.sh",
+            shlex.quote(username), str(uid), shlex.quote(human_name)
+        ],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     if ret.returncode != 0:
         log.error('create_user_dir failed for %s %s', username, uid)
@@ -806,17 +820,17 @@ async def pre_spawn_hook(spawner):
     ## Delete token, if it exists
     #try:
     #    spawner.log.debug('pre_spawn_hook: %s: token: trying to delete %s', username, token_name)
-    #    k8s_api.delete_namespaced_secret(token_name, "jupyter")
+    #    k8s_api.delete_namespaced_secret(token_name, NAMESPACE)
     #except kubernetes.client.rest.ApiException:
     #    exc_info = sys.exc_info()
     #    spawner.log.info('pre_spawn_hook: %s: caught exception while deleting token: %s', username, token_name)
     #    #print("".join(traceback.format_exception(*exc_info)))
     ## Create the actual token
     #spawner.log.debug('pre_spawn_hook: %s: creating job token %s', username, token_name)
-    #k8s_api.create_namespaced_secret("jupyter", {
+    #k8s_api.create_namespaced_secret(NAMESPACE, {
     #"metadata": {
     #    "name": token_name,
-    #    "namespace": "jupyter"
+    #    "namespace": NAMESPACE
     #},
     #    "data": {
     #        "job-token": token_encoded
@@ -895,7 +909,7 @@ def post_stop_hook(spawner):
     #token_name = '-'.join(token_name_parts)
     #spawner.log.info('post_stop_hook: %s: trying to delete token_name=%s', username, token_name)
     #try:
-    #    k8s_api.delete_namespaced_secret(token_name, "jupyter")
+    #    k8s_api.delete_namespaced_secret(token_name, NAMESPACE)
     #except kubernetes.client.rest.ApiException:
     #    spawner.log.info('post_stop_hook: %s: caught exception while deleting token: %s', username, token_name)
 

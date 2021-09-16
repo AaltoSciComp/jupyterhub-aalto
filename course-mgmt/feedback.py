@@ -6,10 +6,10 @@ import sys
 import yaml
 import subprocess
 
-BASE = '/mnt/jupyter/'
-COURSEDIR = BASE+'course/{slug}/files/'
-USERDIR = BASE+'u/{digits}/{username}/'
-USERINFO = BASE+'admin/lastlogin/{username}'
+JUPYTER_DIR = '/mnt/jupyter'
+COURSEDIR = JUPYTER_DIR + '/course/{slug}/files/'
+USERDIR = JUPYTER_DIR + '/u/{digits}/{username}/'
+USERINFO = JUPYTER_DIR + '/admin/lastlogin/{username}'
 USER_GID = 70000
 
 def main():

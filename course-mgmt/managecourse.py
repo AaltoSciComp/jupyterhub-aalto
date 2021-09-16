@@ -4,11 +4,13 @@ from pathlib import Path
 import sys
 import yaml
 
-METADIR = "/mnt/jupyter/course/meta/"            # course .yaml:s
-COURSEBASEDIR = "/mnt/jupyter/course/{slug}"     # course base dir (contains course/data dirs)
-COURSEDIR = "/mnt/jupyter/course/{slug}/files/"  # course dir
-DATADIR = "/mnt/jupyter/course/{slug}/data/"     # course data dir (optional)
-EXCHANGEDIR = "/mnt/jupyter/exchange/"
+JUPYTER_DIR = "/mnt/jupyter"
+
+METADIR = JUPYTER_DIR + "/course/meta/"            # course .yaml:s
+COURSEBASEDIR = JUPYTER_DIR + "/course/{slug}"     # course base dir (contains course/data dirs)
+COURSEDIR = JUPYTER_DIR + "/course/{slug}/files/"  # course dir
+DATADIR = JUPYTER_DIR + "/course/{slug}/data/"     # course data dir (optional)
+EXCHANGEDIR = JUPYTER_DIR + "/exchange/"
 
 MODE_BASE     = 0o0755     # exactly equal  - /{slug}
 MODE_COURSE   = 0o2770     # exactly equal  - /{slug}/files
