@@ -249,8 +249,9 @@ def GET_COURSES():
     # Always return cached if we have last loaded courses less than 10 seconds ago
     if COURSES_TS and COURSES_TS > time.time() - 60:
         return COURSES
-    latest_yaml_ts = max(os.stat(course_file).st_mtime
-                         for course_file in glob.glob(os.path.join(METADIR, '*.yaml')))
+    latest_yaml_ts = max([os.stat(course_file).st_mtime
+                         for course_file in glob.glob(os.path.join(METADIR, '*.yaml'))],
+                         default=0)
     # If all course timestamps are older than COURSES_TS, return cached copy.
     #    ... but if it is more than one hour old, never return cached copy.
     if COURSES_TS and COURSES_TS > latest_yaml_ts and not COURSES_TS < time.time() - 3600:
