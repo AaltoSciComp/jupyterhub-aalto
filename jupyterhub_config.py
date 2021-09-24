@@ -218,7 +218,6 @@ DEFAULT_VOLUMES = [
 ]
 DEFAULT_VOLUME_MOUNTS = [
   {"name": "jupyter-nfs", "mountPath": "/notebooks", "subPath": "u/{uid_last2digits}/{username}", "readOnly": False},
-  {"name": "jupyter-nfs", "mountPath": "/mnt/jupyter/shareddata", "subPath": "shareddata/", "readOnly":False},
   {"name": "jupyter-nfs", "mountPath": "/m/jhnas/jupyter/shareddata", "subPath": "shareddata/", "readOnly":False},
   {"name": "jupyter-nfs", "mountPath": "/m/jhnas/jupyter/software", "subPath": "software/", "readOnly":True},
 ]
@@ -533,6 +532,9 @@ async def pre_spawn_hook(spawner):
     environ['GRANT_SUDO'] = '1'
     cmds.append("mkdir -p /usr/local/bin/start-notebook-user.d/")
     #cmds.append("echo 'sudo rm -f /usr/bin/{sudo,sudoedit}' > /usr/local/bin/start-notebook-user.d/rm-sudo.sh")
+    # /m/jhnas/jupyter is mounted over nfs, symlink to /mnt/jupyter to
+    # allow scripts to use the same path as on jupyter-manager
+    cmds.append("ln -s /m/jhnas/jupyter /mnt/jupyter")
     # Remove the .jupyter config that is already there
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.bashrc")
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.profile")
