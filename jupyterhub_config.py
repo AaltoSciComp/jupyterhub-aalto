@@ -103,6 +103,7 @@ if 'IMAGE_TESTING' in globals():
     PROFILE_LIST_DEFAULT.append(
     {'display_name': '(testing) Python: General use (JupyterLab) ',
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
+                               'node_selector':{'kubernetes.io/hostname': 'k8s-node4.cs.aalto.fi'},
                                'image': 'IMAGE_TESTING', }
     })
 for image in IMAGES_OLD:
