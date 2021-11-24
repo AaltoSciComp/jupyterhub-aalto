@@ -1,1 +1,1 @@
-kubectl exec -it -n jupyter $(kubectl get pods -n jupyter | grep jupyterhub | grep Running | tail -1 | cut -d' ' -f1) bash
+kubectl exec -it -n jupyter $(kubectl get pods -n jupyter | grep jupyterhub | grep Running | tail -1 | cut -d' ' -f1) -- ${@:-bash}
