@@ -27,7 +27,7 @@ IMAGE_COURSE_DEFAULT = 'aaltoscienceit/notebook-server:4.1.5'  # for courses
 IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:4.1.5'
 IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:4.1.0'
 IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.8.8'
-#IMAGE_TESTING = 'aaltoscienceit/notebook-server:1.0.6'
+IMAGE_TESTING = 'registry.cs.aalto.fi/jupyter/notebook-server:5.0.0-dev1'
 IMAGES_OLD = [
     #'aaltoscienceit/notebook-server:1.8.8',
 ]
