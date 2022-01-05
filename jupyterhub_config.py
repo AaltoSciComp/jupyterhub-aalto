@@ -30,6 +30,7 @@ IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.8.8'
 IMAGE_TESTING = 'registry.cs.aalto.fi/jupyter/notebook-server:5.0.0-dev1'
 IMAGES_OLD = [
     #'aaltoscienceit/notebook-server:1.8.8',
+    'aaltoscienceit/notebook-server:4.1.5',
 ]
 
 # NOTE: Image definitions have been moved to jupyterhub-aalto-course-meta/IMAGES.py
