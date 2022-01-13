@@ -455,6 +455,7 @@ async def pre_spawn_hook(spawner):
 
     # Get basic info
     username = spawner.user.name
+    is_admin = spawner.user.admin
     if not USER_RE.match(username):
         raise RuntimeError("Invalid username: %s, logout and use lowercase Aalto username."%username)
     userinfo = pwd.getpwnam(username)
@@ -591,6 +592,8 @@ async def pre_spawn_hook(spawner):
         spawner.log.debug("pre_spawn_hook: course %s", course_slug)
         environ['NB_COURSE'] = course_slug
         course_data = GET_COURSES()[course_slug]
+        # admins are always considered instructors if they spawn the instructor instance
+        is_instructor = is_admin or username in course_data.get('instructors', {})
         spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
         if course_data.get('jupyterlab', False):
             environ['JUPYTER_ENABLE_LAB'] = 'true'
@@ -598,6 +601,7 @@ async def pre_spawn_hook(spawner):
 
         # Add course exchange
         # /srv/nbgrader/exchange is the default path
+        # TODO: check if the quotes are intended here
         exchange_readonly = (course_data.get('restrict_submit', False) and 'username' not in course_data.get('students', {})
                                                                        and 'username' not in course_data.get('instructors', {}))
         spawner.volume_mounts.append({"mountPath": "/srv/nbgrader/exchange",
@@ -609,7 +613,7 @@ async def pre_spawn_hook(spawner):
             spawner.volume_mounts.append({"mountPath": "/coursedata",
                                           "subPath": "course/{}/data/".format(course_slug),
                                           "name": "jupyter-nfs",
-                                          "readOnly": ((username not in course_data.get('instructors', {}))
+                                          "readOnly": ((not is_instructor)
                                                        and not course_data.get('datadir_readwrite', False)
                                                        and not getattr(spawner, 'as_instructor', False)
                                                        ),
@@ -653,9 +657,9 @@ async def pre_spawn_hook(spawner):
 
         # Instructors
         allow_spawn = False
-        if username in course_data.get('instructors', {}):
+        if is_instructor:
             allow_spawn = True
-        if username in course_data.get('instructors', {}) and getattr(spawner, 'as_instructor', False):
+        if is_instructor and getattr(spawner, 'as_instructor', False):
             as_instructor = True
             spawner.log.info("pre_spawn_hook: User %s is an instructor for %s", username, course_slug)
             allow_spawn = True
