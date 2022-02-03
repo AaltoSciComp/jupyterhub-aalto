@@ -26,15 +26,15 @@ c: traitlets.config.loader.Config
 
 # c.JupyterHub.log_level = 'DEBUG'
 
-IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:4.1.5'         # for generic images
-IMAGE_COURSE_DEFAULT = 'aaltoscienceit/notebook-server:4.1.5'  # for courses
-IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:4.1.5'
+IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:5.0.4'         # for generic images
+IMAGE_COURSE_DEFAULT = 'aaltoscienceit/notebook-server:5.0.4'  # for courses
+IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:5.0.4'
 IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:4.1.0'
 IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.8.8'
-IMAGE_TESTING = 'registry.cs.aalto.fi/jupyter/notebook-server:5.0.0-dev1'
+IMAGE_TESTING = 'registry.cs.aalto.fi/jupyter/notebook-server:5.0.4'
 IMAGES_OLD = [
     #'aaltoscienceit/notebook-server:1.8.8',
-    'aaltoscienceit/notebook-server:4.1.5',
+    'aaltoscienceit/notebook-server:5.0.4',
 ]
 
 # Name of the manager node
