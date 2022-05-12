@@ -20,6 +20,10 @@ from base64 import b64encode
 import secrets
 import string
 
+# Not really necessary, just to make linters happy
+import traitlets.config
+c: traitlets.config.loader.Config
+
 # c.JupyterHub.log_level = 'DEBUG'
 
 IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:4.1.5'         # for generic images
