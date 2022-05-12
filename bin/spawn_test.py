@@ -2,10 +2,15 @@
 
 This script starts
 """
+import sys
 
-#API = 'http://10.104.184.130:8081/hub/api/'
-# API = 'https://jupyter.cs.aalto.fi/hub/api/'
-API = 'http://localhost:8081/hub/api/'
+if len(sys.argv) > 1:
+    API = sys.argv[1]
+else:
+    API = 'http://localhost:8081/hub/api/'
+
+print(f"API = {API}")
+
 # This file needs two lines in it: 0th line is token, 1st line is
 # username to spawn servers of.  This can be made from the JH Token
 # page.

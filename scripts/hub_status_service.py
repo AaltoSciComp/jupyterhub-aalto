@@ -42,7 +42,7 @@ log.setLevel(logging.WARN)
 class TokenAuth(requests.auth.AuthBase):
     def __init__(self, token):
         self.token = token
-    def __call__(self, r):
+    def __call__(self, r: requests.Request):
         # Implement my authentication
         r.headers['Authorization'] = 'token %s'%self.token
         return r
@@ -160,7 +160,7 @@ async def test_spawn():
     log.info("Testing spawn")
     try:
         os.environ['SPAWN_TEST_USERNAME'] = 'cistudent1'
-        p = await asyncio.create_subprocess_exec('python3', '/srv/jupyterhub/spawn_test.py',
+        p = await asyncio.create_subprocess_exec('python3', '/srv/jupyterhub/spawn_test.py', API,
                                   stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,)
         stdout, _not_stderr = await p.communicate()
         ret = p.returncode
