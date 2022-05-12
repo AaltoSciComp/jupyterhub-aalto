@@ -1,28 +1,30 @@
 import copy
-import datetime
-from datetime import date
 import glob
 import grp
+import json
 import os
-from pprint import pprint
-import pwd # for resolving username --> uid
+import pwd  # for resolving username --> uid
 import re
+import secrets
 import shlex
-import socket
 import subprocess
 import sys
 import time
 import traceback
-import yaml
-from kubernetes import client, config
-import kubernetes.client.rest
 from base64 import b64encode
-import secrets
-import string
+from datetime import date
+from typing import Dict, List, Tuple
+
+import kubernetes.client.rest
+import traitlets.config
+import yaml
+from jupyterhub.auth import PAMAuthenticator
+from kubernetes import client, config
+from kubespawner.spawner import KubeSpawner
+from oauthenticator.azuread import AzureAdOAuthenticator
 
 # Not really necessary, just to make linters happy
-import traitlets.config
-c: traitlets.config.loader.Config
+c: traitlets.config.Config
 
 # c.JupyterHub.log_level = 'DEBUG'
 
@@ -46,12 +48,8 @@ JMGR_REPO_DIR = "/root/jupyterhub-aalto"
 
 # NOTE: Image definitions have been moved to jupyterhub-aalto-course-meta/IMAGES.py
 #       Do not define images here
-#IMAGES_BYDATE = {
-#    # Add new to BOTTOM.
-#    'standard': [
-#        (date(2019, 11, 11), 'aaltoscienceit/notebook-server:1.8.8'),
-#    ],
-#}
+IMAGES_BYDATE: Dict[str, List[Tuple[date, str]]]
+
 DEFAULT_MEM_GUARANTEE = 512 * 2**20
 DEFAULT_CPU_GUARANTEE = .10
 DEFAULT_MEM_LIMIT = 5 * 2**30
@@ -78,7 +76,7 @@ EMPTY_PROFILE = {'node_selector': DEFAULT_NODE_SELECTOR,
                  'image': 'IMAGE_DEFAULT',
                 }
 
-def unique_suffix(base, other):
+def unique_suffix(base: str, other: str):
     """Return the unique suffix of other, relative to base."""
     if 'registry.cs.aalto.fi' in other:
         base = base.replace('aaltoscienceit', 'registry.cs.aalto.fi/jupyter')
@@ -136,13 +134,6 @@ PROFILE_LIST_DEFAULT_BOTTOM = [
 ]
 
 
-# Set up generic without jupyterlab
-# RStan
-
-
-
-
-
 c.Application.log_level = 'INFO'
 
 # Basic JupyterHub config
@@ -164,9 +155,7 @@ c.ConfigurableHTTPProxy.should_start = False
 # Authentication
 use_oauthenticator = True
 if use_oauthenticator and os.path.exists('/etc/azuread_oauth.json'):
-    import json
     oauth_info = json.load(open('/etc/azuread_oauth.json'))
-    from oauthenticator.azuread import AzureAdOAuthenticator
     c.JupyterHub.authenticator_class = AzureAdOAuthenticator
     c.AzureAdOAuthenticator.tenant_id = oauth_info['tenantId']
     c.AzureAdOAuthenticator.client_id = oauth_info['appId'] # client_app
@@ -179,9 +168,8 @@ if use_oauthenticator and os.path.exists('/etc/azuread_oauth.json'):
     c.AzureAdOAuthenticator.username_claim = 'samAccountName' # 'email' with /v2.0/
     c.AzureAdOAuthenticator.login_service = "Aalto account" # text label only
 else:
-    from jupyterhub.auth import PAMAuthenticator
     class NormalizingPAMAuthenticator(PAMAuthenticator):
-        def normalize_username(self, username):
+        def normalize_username(self, username: str):
             # pass through uid to ensure that all names that
             # correspond to one uid map to the same jupyterhub user
             uid = pwd.getpwnam(username).pw_uid
@@ -249,7 +237,7 @@ def GET_COURSES():
     global GROUPS
 
     # Cache, don't unconditionally reload every time.
-    # Always return cached if we have last loaded courses less than 10 seconds ago
+    # Always return cached if we have last loaded courses less than 60 seconds ago
     if COURSES_TS and COURSES_TS > time.time() - 60:
         return COURSES
     latest_yaml_ts = max([os.stat(course_file).st_mtime
@@ -263,7 +251,7 @@ def GET_COURSES():
     # Regenerate the course dict from yamls on disk.
     #c.JupyterHub.log.debug("Re-generating course data")
     COURSES_TS = time.time()
-    courses = { }
+    courses: Dict[str, Dict] = { }
     groups = { }
     # First round: load raw data with users and so on.
     for course_file in glob.glob(os.path.join(METADIR, '*.yaml')):
@@ -322,13 +310,13 @@ def UPDATE_IMAGES():
     if not os.path.exists(IMAGES_UPDATEFILE):
         return
     # Cache, don't unconditionally reload every time.
-    # Always return cached if we have last loaded courses less than 10 seconds ago
+    # Always return cached if we have last loaded courses less than 60 seconds ago
     if UPDATE_IMAGES_TS and UPDATE_IMAGES_TS > time.time() - 60:
         return
     last_ts = os.stat(IMAGES_UPDATEFILE).st_mtime
     # If timestamp is older than cached, return cached copy.
     #    ... but if it is more than one hour old, never return cached copy
-    if UPDATE_IMAGES_TS and UPDATE_IMAGES_TS > last_ts and not  UPDATE_IMAGES_TS < time.time() - 3600:
+    if UPDATE_IMAGES_TS and UPDATE_IMAGES_TS > last_ts and not UPDATE_IMAGES_TS < time.time() - 3600:
         return
     UPDATE_IMAGES_TS = time.time()
 
@@ -381,7 +369,7 @@ def select_image(image_name):
         return IMAGE_COURSE_DEFAULT
     return image_name
 
-def get_profile_list(spawner):
+def get_profile_list(spawner: KubeSpawner):
     """generate the k8s profile_list.
     """
     UPDATE_IMAGES()
@@ -435,6 +423,7 @@ def get_profile_list(spawner):
             profile['kubespawner_override']['as_instructor'] = True
             profile_list.append(profile)
 
+    #from pprint import pprint
     #pprint(GET_COURSES().items(), stream=sys.stderr)
     #pprint(spawner.user.name, stream=sys.stderr)
     #pprint(profile_list, stream=sys.stderr)
@@ -459,7 +448,7 @@ c.KubeSpawner.profile_list = get_profile_list  #(None)
 
 
 
-def create_user_dir(username, uid, human_name="", log=None):
+def create_user_dir(username: str, uid: int, human_name="", log=None):
     # create_user_dir.sh knows how to compete directory from (uid, username)
     #os.system('ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid))
     human_name = re.sub('[^\w -]*', '', human_name, flags=re.I)
@@ -481,7 +470,7 @@ def create_user_dir(username, uid, human_name="", log=None):
         log.debug(ret.stdout.decode())
 
 
-async def pre_spawn_hook(spawner):
+async def pre_spawn_hook(spawner: KubeSpawner):
     # Note: spawners Python objects are persistent, and if you don't
     # clear certain attributes, they will persist across restarts!
     #spawner.node_selector = { }
@@ -844,7 +833,6 @@ async def pre_spawn_hook(spawner):
     #    }
     #})
 
-    # import pprint
     # spawner.log.info("Before hooks: spawner.node_selector: %s", spawner.node_selector)
 
     # User- and course-specific hooks
@@ -903,7 +891,7 @@ async def pre_spawn_hook(spawner):
     spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
 
 
-def post_stop_hook(spawner):
+def post_stop_hook(spawner: KubeSpawner):
     username = spawner.user.name
     spawner.log.info("post_stop_hook: %s stopping %s", username, getattr(spawner, 'course_slug', 'None'))
     course_slug = getattr(spawner, 'course_slug', '')
@@ -922,11 +910,12 @@ def post_stop_hook(spawner):
 
     spawner.log.info("post_stop_hook: %s stopped %s", username, course_slug or 'None')
 
-from kubespawner.spawner import KubeSpawner
 if 'kubespawner_get_state' not in globals():
     kubespawner_get_state  = KubeSpawner.get_state
     kubespawner_load_state = KubeSpawner.load_state
-def get_state(spawner):
+
+
+def get_state(spawner: KubeSpawner):
     """Add cull_max_time and cull_inactive_time to state, for use in culler
 
     This adds two extra variables to the state dictionary.  This is
@@ -939,13 +928,15 @@ def get_state(spawner):
         if hasattr(spawner, name):
             state[name] = getattr(spawner, name)
     return state
-def load_state(spawner, state):
+def load_state(spawner: KubeSpawner, state: dict):
     kubespawner_load_state(spawner, state)
     for name in ['cull_max_age', 'cull_inactive_time', 'course_slug']:
         if name in state:
             setattr(spawner, name, state.get(name))
 import jupyterhub.spawner
-def clear_state(spawner):
+
+
+def clear_state(spawner: KubeSpawner):
     jupyterhub.spawner.Spawner.clear_state(spawner)
     for name in ['cull_max_age', 'cull_inactive_time', 'course_slug']:
         if hasattr(spawner, name):
