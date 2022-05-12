@@ -98,8 +98,7 @@ class Course():
             os.system('find {} -perm /u=s,o=w -ls'.format(self.datadir))
         else:
             if Path(DATADIR.format(slug=self.slug)).exists():
-                print("Warning: {} has a datadir but should'n...".format(slug))
-
+                print(f"Warning: {self.slug} has a datadir but shouldn't...")
         # Exchange dir
         assert self.exchangedir.exists()
         assert_stat(self.exchangedir, MODE_EXCHANGE)

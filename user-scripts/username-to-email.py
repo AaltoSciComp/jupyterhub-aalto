@@ -29,7 +29,7 @@ import subprocess
 import re
 import sys
 
-def normalize_username(username):
+def normalize_username(username: str):
     return username.split('@', 1)[0]
 
 def main():

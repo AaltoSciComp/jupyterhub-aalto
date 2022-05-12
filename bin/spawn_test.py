@@ -64,7 +64,7 @@ log.debug("Checking if running...")
 r = requests.get(API+'users/%s'%username, auth=auth)
 # User not created yet.
 if r.status_code == 404:
-    log.critical("User dose not exist: %s"%username)
+    log.critical("User does not exist: %s"%username)
     #r = requests.post(API+'users/%s'%username, auth=auth)
     #r.raise_for_status()
 
