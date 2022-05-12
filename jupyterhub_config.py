@@ -24,7 +24,10 @@ from oauthenticator.azuread import AzureAdOAuthenticator
 c: traitlets.config.Config
 
 # c.JupyterHub.log_level = 'DEBUG'
+c.Authenticator.admin_users = {'darstr1', 'laines5', 'koset1'}
 
+# These values are used as defaults if meta/IMAGES.py doesn't exist. Otherwise
+# overridden automatically.
 IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:5.0.4'         # for generic images
 IMAGE_COURSE_DEFAULT = 'aaltoscienceit/notebook-server:5.0.4'  # for courses
 IMAGE_DEFAULT_R = 'aaltoscienceit/notebook-server-r-ubuntu:5.0.4'
@@ -173,7 +176,7 @@ else:
             return super().normalize_username(pwd.getpwuid(uid).pw_name)
     c.JupyterHub.authenticator_class = NormalizingPAMAuthenticator
 #c.Authenticator.delete_invalid_users = True  # delete users once no longer in Aalto AD
-c.Authenticator.admin_users = {'darstr1', 'laines5', 'koset1'}
+# FIXME: does '.' here match all characters?
 USER_RE = re.compile('^[a-z0-9.]+$')
 
 
