@@ -34,6 +34,9 @@ RUN chmod 600 /etc/sssd/sssd.conf /etc/krb5.keytab
 COPY secrets/join_ad.sh /usr/local/bin/join_ad.sh
 RUN chmod +x /usr/local/bin/join_ad.sh
 
+# OAuth secrets
+COPY secrets/azuread_oauth.json /etc/azuread_oauth.json
+
 COPY scripts/run.sh /run.sh
 RUN chmod +x /run.sh
 
