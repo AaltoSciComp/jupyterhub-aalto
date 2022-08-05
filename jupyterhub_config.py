@@ -512,7 +512,7 @@ async def pre_spawn_hook(spawner):
     # after the user part has started.
     environ['GRANT_SUDO'] = '1'
     cmds.append("mkdir -p /usr/local/bin/start-notebook-user.d/")
-    cmds.append("echo 'sudo rm -f /usr/bin/{sudo,sudoedit}' > /usr/local/bin/start-notebook-user.d/rm-sudo.sh")
+    #cmds.append("echo 'sudo rm -f /usr/bin/{sudo,sudoedit}' > /usr/local/bin/start-notebook-user.d/rm-sudo.sh")
     # Remove the .jupyter config that is already there
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.bashrc")
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.profile")
