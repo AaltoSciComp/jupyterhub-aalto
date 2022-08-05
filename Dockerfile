@@ -7,7 +7,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Jupyterhub & co
-RUN python3 -m pip install jupyter python-dateutil pytz pyyaml kubernetes oauthenticator
+#  PyJWT is for oauthenticator
+RUN python3 -m pip install jupyter python-dateutil pytz pyyaml kubernetes oauthenticator PyJWT
 # This should *not* be needed but there is a bug: #2852
 RUN python3 -m pip install --force --no-deps jupyterhub==1.4.2
 # Install latest to get newer features:
