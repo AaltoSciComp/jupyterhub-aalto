@@ -149,14 +149,31 @@ c.ConfigurableHTTPProxy.should_start = False
 
 
 # Authentication
-from jupyterhub.auth import PAMAuthenticator
-class NormalizingPAMAuthenticator(PAMAuthenticator):
-    def normalize_username(self, username):
-        # pass through uid to ensure that all names that
-        # correspond to one uid map to the same jupyterhub user
-        uid = pwd.getpwnam(username).pw_uid
-        return super().normalize_username(pwd.getpwuid(uid).pw_name)
-c.JupyterHub.authenticator_class = NormalizingPAMAuthenticator
+use_oauthenticator = True
+if use_oauthenticator and os.path.exists('/etc/azuread_oauth.json'):
+    import json
+    oauth_info = json.load(open('/etc/azuread_oauth.json'))
+    from oauthenticator.azuread import AzureAdOAuthenticator
+    c.JupyterHub.authenticator_class = AzureAdOAuthenticator
+    c.AzureAdOAuthenticator.tenant_id = oauth_info['tenantId']
+    c.AzureAdOAuthenticator.client_id = oauth_info['appId'] # client_app
+    c.AzureAdOAuthenticator.client_secret = oauth_info['secret']
+    # Override URLs here to use /v2.0/.
+    c.AzureAdOAuthenticator.authorize_url = 'https://login.microsoftonline.com/{0}/oauth2/v2.0/authorize'.format(oauth_info['tenantId'])
+    c.AzureAdOAuthenticator.token_url = 'https://login.microsoftonline.com/{0}/oauth2/v2.0/token'.format(oauth_info['tenantId'])
+    c.AzureAdOAuthenticator.oauth_callback_url = "https://jupyter.cs.aalto.fi/hub/oauth_callback"
+    c.AzureAdOAuthenticator.scope = ['openid', 'user.read']
+    c.AzureAdOAuthenticator.username_claim = 'samAccountName' # 'email' with /v2.0/
+    c.AzureAdOAuthenticator.login_service = "Aalto account" # text label only
+else:
+    from jupyterhub.auth import PAMAuthenticator
+    class NormalizingPAMAuthenticator(PAMAuthenticator):
+        def normalize_username(self, username):
+            # pass through uid to ensure that all names that
+            # correspond to one uid map to the same jupyterhub user
+            uid = pwd.getpwnam(username).pw_uid
+            return super().normalize_username(pwd.getpwuid(uid).pw_name)
+    c.JupyterHub.authenticator_class = NormalizingPAMAuthenticator
 #c.Authenticator.delete_invalid_users = True  # delete users once no longer in Aalto AD
 c.Authenticator.admin_users = {'darstr1', 'laines5', 'welinf1'}
 USER_RE = re.compile('^[a-z0-9.]+$')
