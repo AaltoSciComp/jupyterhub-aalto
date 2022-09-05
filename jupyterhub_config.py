@@ -369,7 +369,7 @@ def select_image(image_name):
     return image_name
 
 def get_profile_list(spawner):
-    """gerenate the k8s profile_list.
+    """generate the k8s profile_list.
     """
     UPDATE_IMAGES()
     #c.JupyterHub.log.debug("Recreating profile list")
@@ -377,7 +377,8 @@ def get_profile_list(spawner):
     profile_list = [ ]
     for course_slug, course_data in GET_COURSES().items():
         is_student = spawner.user.name in course_data.get('students', [])
-        is_instructor = spawner.user.name in course_data.get('instructors', [])
+        instructors = course_data.get('instructors', [])
+        is_instructor = spawner.user.name in instructors
         is_teststudent = spawner.user.name in {'student1', 'student2', 'student3'}
         is_admin = spawner.user.admin
         is_archive = course_data.get('archive', False)
@@ -407,7 +408,10 @@ def get_profile_list(spawner):
             profile = profile_list[-1]   # REFERENCE
             profile['display_name'] = display_name + course_notes
             profile['kubespawner_override']['image'] = course_image
-        if is_instructor or is_admin:
+        if is_instructor or is_admin and (course_data['gid'] or instructors):
+            # If the course doesn't have a group or manually defined
+            # instructors, the instructor version won't be shown in the course
+            # list
             profile = copy.deepcopy(profile_list[-1])  # COPY AND RE-APPEND
             profile['display_name'] = display_name + ' <font color="blue">(instructor)</font>'
             profile['slug'] = profile['slug'] + '-instructor'
