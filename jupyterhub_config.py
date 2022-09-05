@@ -604,134 +604,136 @@ async def pre_spawn_hook(spawner):
 
     enable_formgrader = False
 
-    # We are not part of a course, so do only generic stuff
-    # if gid is None, we have a course definition but no course data (only setting image)
-    if not course_slug or GET_COURSES()[course_slug]['gid'] is None:
+    if not course_slug:
+        # We are not part of a course, so do only generic stuff
+        # if gid is None, we have a course definition but no course data (only setting image)
         # The pod_name must always be set, otherwise it uses the last pod name.
         spawner.pod_name = 'jupyter-{}{}'.format(username, '-'+spawner.name if spawner.name else '')
-
-    # Course configuration - only if it is a course
     else:
-        spawner.log.debug("pre_spawn_hook: course %s", course_slug)
-        environ['NB_COURSE'] = course_slug
         course_data = GET_COURSES()[course_slug]
-        # admins are always considered instructors if they spawn the instructor instance
-        is_instructor = is_admin or username in course_data.get('instructors', {})
-        spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
         if course_data.get('jupyterlab', False):
             environ['JUPYTER_ENABLE_LAB'] = 'true'
             spawner.default_url = "lab/tree/notebooks/"
+        spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
+        spawner.log.debug("pre_spawn_hook: course %s", course_slug)
+        environ['NB_COURSE'] = course_slug
 
-        # Add course exchange
-        # /srv/nbgrader/exchange is the default path
-        # TODO: check if the quotes are intended here
-        exchange_readonly = (course_data.get('restrict_submit', False) and 'username' not in course_data.get('students', {})
-                                                                       and 'username' not in course_data.get('instructors', {}))
-        spawner.volume_mounts.append({"mountPath": "/srv/nbgrader/exchange",
-                                      "name": "jupyter-nfs",
-                                      "subPath": "exchange/{}".format(course_slug),
-                                      "readOnly": exchange_readonly})
-        # Add coursedata dir, if it exists
-        if course_data.get('datadir', False):
-            spawner.volume_mounts.append({"mountPath": "/coursedata",
-                                          "subPath": "course/{}/data/".format(course_slug),
-                                          "name": "jupyter-nfs",
-                                          "readOnly": ((not is_instructor)
-                                                       and not course_data.get('datadir_readwrite', False)
-                                                       and not getattr(spawner, 'as_instructor', False)
-                                                       ),
-                                          })
-            environ['COURSEDATA'] = '/coursedata/'
+        # Course configuration - only if it has instructors. Courses without
+        # instructors do not have any course data nor assignments
+        if course_data['gid'] or course_data.get('instructors', []):
+            # admins are always considered instructors if they spawn the instructor instance
+            is_instructor = is_admin or username in course_data.get('instructors', {})
+
+            # Add course exchange
+            # /srv/nbgrader/exchange is the default path
+            # TODO: check if the quotes are intended here
+            exchange_readonly = (course_data.get('restrict_submit', False) and 'username' not in course_data.get('students', {})
+                                                                        and 'username' not in course_data.get('instructors', {}))
+            spawner.volume_mounts.append({"mountPath": "/srv/nbgrader/exchange",
+                                        "name": "jupyter-nfs",
+                                        "subPath": "exchange/{}".format(course_slug),
+                                        "readOnly": exchange_readonly})
+            # Add coursedata dir, if it exists
+            if course_data.get('datadir', False):
+                spawner.volume_mounts.append({"mountPath": "/coursedata",
+                                            "subPath": "course/{}/data/".format(course_slug),
+                                            "name": "jupyter-nfs",
+                                            "readOnly": ((not is_instructor)
+                                                        and not course_data.get('datadir_readwrite', False)
+                                                        and not getattr(spawner, 'as_instructor', False)
+                                                        ),
+                                            })
+                environ['COURSEDATA'] = '/coursedata/'
 
 
-        # Jupyter/nbgrader config
-        for line in ['',
-                     'c = get_config()',
-                     'c.CourseDirectory.root = "/course"',
-                     'c.CourseDirectory.groupshared = True',
-                     'c.CourseDirectory.course_id = "{}"'.format(course_slug),
-                     'c.Exchange.course_id = "{}"'.format(course_slug),
-                     'c.CourseDirectory.ignore = [".ipynb_checkpoints", "*.pyc*", "__pycache__", "feedback", ".*"]',
-                     'c.CourseDirectory.max_file_size = int(30*1024*(1024/1000.))+1',  #KB, translate to KiB
-                     'c.Exchange.assignment_dir = "/notebooks/"',
-                     'c.Exchange.timezone = "Europe/Helsinki"',
-                     'c.NbGraderAPI.timezone = "Europe/Helsinki"',
-                     'c.AssignmentList.assignment_dir = "/notebooks/"',
-                     'c.ExecutePreprocessor.timeout = 240',
-                     'c.Execute.timeout = 240',
-                     'c.Exchange.path_includes_course = True',
-                     'c.Validator.validate_all = True',
-                     'c.CollectApp.check_owner = False',
-                     'c.ExportApp.plugin_class = "mycourses_exporter.MyCoursesExportPlugin"',
-                     *course_data.get('nbgrader_config', '').split('\n'),
-                     ]:
-            cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
-        for line in ['',
-                     'c.AssignmentList.assignment_dir = "/notebooks/"',
-                     'c.ExecutePreprocessor.timeout = 240',
-                     'c.Execute.timeout = 240',
-                     ]:
-            cmds.append(r"echo '{}' >> /etc/jupyter/jupyter_notebook_config.py".format(line))
-        # RStudio config
-        cmds.append(r'( test -d /etc/rstudio '
-                    r'&& echo session-default-working-dir=~/notebooks/ >> /etc/rstudio/rsession.conf '
-                    r'&& echo session-default-new-project-dir=~/notebooks/ >> /etc/rstudio/rsession.conf '
-                    r'; true )')
-
-        # Instructors
-        allow_spawn = False
-        if is_instructor:
-            allow_spawn = True
-        if is_instructor and getattr(spawner, 'as_instructor', False):
-            as_instructor = True
-            spawner.log.info("pre_spawn_hook: User %s is an instructor for %s", username, course_slug)
-            allow_spawn = True
-            enable_formgrader = True
-            environ['AALTO_NB_ENABLE_FORMGRADER'] = '1'
-            # Instructors get the whole filesystem tree, because they
-            # need to be able to access "/course", too.  Warning, you
-            # will have different paths!  (fix later...)
-            #spawner.cpu_limit = 1
-            if isinstance(spawner.mem_limit, int) and isinstance(INSTRUCTOR_MEM_LIMIT, int):
-                spawner.mem_limit = max(spawner.mem_limit, INSTRUCTOR_MEM_LIMIT)
-            else:
-                spawner.mem_limit = INSTRUCTOR_MEM_LIMIT
-            spawner.cpu_guarantee = INSTRUCTOR_CPU_GUARANTEE
-            spawner.mem_guarantee = INSTRUCTOR_MEM_GUARANTEE
-            for line in ['c.NbGrader.logfile = "/course/.nbgrader.log"',
+            # Jupyter/nbgrader config
+            for line in ['',
+                        'c = get_config()',
+                        'c.CourseDirectory.root = "/course"',
+                        'c.CourseDirectory.groupshared = True',
+                        'c.CourseDirectory.course_id = "{}"'.format(course_slug),
+                        'c.Exchange.course_id = "{}"'.format(course_slug),
+                        'c.CourseDirectory.ignore = [".ipynb_checkpoints", "*.pyc*", "__pycache__", "feedback", ".*"]',
+                        'c.CourseDirectory.max_file_size = int(30*1024*(1024/1000.))+1',  #KB, translate to KiB
+                        'c.Exchange.assignment_dir = "/notebooks/"',
+                        'c.Exchange.timezone = "Europe/Helsinki"',
+                        'c.NbGraderAPI.timezone = "Europe/Helsinki"',
+                        'c.AssignmentList.assignment_dir = "/notebooks/"',
+                        'c.ExecutePreprocessor.timeout = 240',
+                        'c.Execute.timeout = 240',
+                        'c.Exchange.path_includes_course = True',
+                        'c.Validator.validate_all = True',
+                        'c.CollectApp.check_owner = False',
+                        'c.ExportApp.plugin_class = "mycourses_exporter.MyCoursesExportPlugin"',
+                        *course_data.get('nbgrader_config', '').split('\n'),
                         ]:
                 cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
-            spawner.volume_mounts.append({"mountPath": "/course", "name": "jupyter-nfs", "subPath": "course/{}/files".format(course_slug)})
-            spawner.volume_mounts.append({"mountPath": "/m/jhnas/jupyter/course/{}".format(course_slug), "name": "jupyter-nfs", "subPath": "course/{}".format(course_slug)})
-            course_gid = int(course_data['gid'])
-            spawner.log.debug("pre_spawn_hook: Course gid for {} is {}", course_slug, course_gid)
-            cmds.append(r"umask 0007")  # also used through sudo
-            environ['NB_UMASK'] = '0007'
-            if ROOT_THEN_SU:
-                # This branch happens only if we are root (see above)
-                environ['NB_GID'] = str(course_gid)
-                environ['NB_GROUP'] = 'jupyter-'+course_slug
-                # The start.sh script renumbers the default group 100 to $NB_GID.  We rename it first.
-                #cmds.append("groupmod -n {} users".format('jupyter-'+course_slug))
-                # We *need* to be in group 100, because a lot of the
-                # default files (conda, etc) are group=rw=100.  We add
-                # a *duplicate* group 100, and only the first one is
-                # renamed in the image (in the jupyter start.sh)
-                #cmds.append("groupadd --gid 100 --non-unique users")
-                #cmds.append("adduser jovyan users")
-                cmds.append(r"sed -r -i 's/^(UMASK.*)022/\1007/' /etc/login.defs")
-                cmds.append(r"echo Defaults umask=0007, umask_override >> /etc/sudoers")
-                #cmds.append(r"{{ test ! -e /course/gradebook.db && sudo -u nobody touch /course/gradebook.db && chown {} /course/gradebook.db && chmod 660 /course/gradebook.db ; true ; }}".format(username))  # {{ and }} escape .format()
-                #environ['NB_PRE_START_HOOK'] =  r"set -x ; sudo -u {username} bash -c 'set -x ; test ! -e /course/gradebook.db && touch /course/gradebook.db && chmod 660 /course/gradebook.db || true ;'".format(username=username)  # {{ and }} escape .format()
+            for line in ['',
+                        'c.AssignmentList.assignment_dir = "/notebooks/"',
+                        'c.ExecutePreprocessor.timeout = 240',
+                        'c.Execute.timeout = 240',
+                        ]:
+                cmds.append(r"echo '{}' >> /etc/jupyter/jupyter_notebook_config.py".format(line))
+            # RStudio config
+            cmds.append(r'( test -d /etc/rstudio '
+                        r'&& echo session-default-working-dir=~/notebooks/ >> /etc/rstudio/rsession.conf '
+                        r'&& echo session-default-new-project-dir=~/notebooks/ >> /etc/rstudio/rsession.conf '
+                        r'; true )')
+
+            # Instructors
+            allow_spawn = False
+            if is_instructor:
+                allow_spawn = True
+            if is_instructor and getattr(spawner, 'as_instructor', False):
+                as_instructor = True
+                spawner.log.info("pre_spawn_hook: User %s is an instructor for %s", username, course_slug)
+                allow_spawn = True
+                enable_formgrader = True
+                environ['AALTO_NB_ENABLE_FORMGRADER'] = '1'
+                # Instructors get the whole filesystem tree, because they
+                # need to be able to access "/course", too.  Warning, you
+                # will have different paths!  (fix later...)
+                #spawner.cpu_limit = 1
+                if isinstance(spawner.mem_limit, int) and isinstance(INSTRUCTOR_MEM_LIMIT, int):
+                    spawner.mem_limit = max(spawner.mem_limit, INSTRUCTOR_MEM_LIMIT)
+                else:
+                    spawner.mem_limit = INSTRUCTOR_MEM_LIMIT
+                spawner.cpu_guarantee = INSTRUCTOR_CPU_GUARANTEE
+                spawner.mem_guarantee = INSTRUCTOR_MEM_GUARANTEE
+                for line in ['c.NbGrader.logfile = "/course/.nbgrader.log"',
+                            ]:
+                    cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
+                spawner.volume_mounts.append({"mountPath": "/course", "name": "jupyter-nfs", "subPath": "course/{}/files".format(course_slug)})
+                spawner.volume_mounts.append({"mountPath": "/m/jhnas/jupyter/course/{}".format(course_slug), "name": "jupyter-nfs", "subPath": "course/{}".format(course_slug)})
+                course_gid = int(course_data['gid'])
+                spawner.log.debug("pre_spawn_hook: Course gid for {} is {}", course_slug, course_gid)
+                cmds.append(r"umask 0007")  # also used through sudo
+                environ['NB_UMASK'] = '0007'
+                if ROOT_THEN_SU:
+                    # This branch happens only if we are root (see above)
+                    environ['NB_GID'] = str(course_gid)
+                    environ['NB_GROUP'] = 'jupyter-'+course_slug
+                    # The start.sh script renumbers the default group 100 to $NB_GID.  We rename it first.
+                    #cmds.append("groupmod -n {} users".format('jupyter-'+course_slug))
+                    # We *need* to be in group 100, because a lot of the
+                    # default files (conda, etc) are group=rw=100.  We add
+                    # a *duplicate* group 100, and only the first one is
+                    # renamed in the image (in the jupyter start.sh)
+                    #cmds.append("groupadd --gid 100 --non-unique users")
+                    #cmds.append("adduser jovyan users")
+                    cmds.append(r"sed -r -i 's/^(UMASK.*)022/\1007/' /etc/login.defs")
+                    cmds.append(r"echo Defaults umask=0007, umask_override >> /etc/sudoers")
+                    #cmds.append(r"{{ test ! -e /course/gradebook.db && sudo -u nobody touch /course/gradebook.db && chown {} /course/gradebook.db && chmod 660 /course/gradebook.db ; true ; }}".format(username))  # {{ and }} escape .format()
+                    #environ['NB_PRE_START_HOOK'] =  r"set -x ; sudo -u {username} bash -c 'set -x ; test ! -e /course/gradebook.db && touch /course/gradebook.db && chmod 660 /course/gradebook.db || true ;'".format(username=username)  # {{ and }} escape .format()
+                else:
+                    spawner.gid = spawner.fs_gid = course_gid
+                    spawner.supplemental_gids.insert(0, course_gid)
+                    cmds.append(r"test ! -e /course/gradebook.db && touch /course/gradebook.db && chmod 660 /course/gradebook.db || true")
+                    # umask 0007 inserted above
             else:
-                spawner.gid = spawner.fs_gid = course_gid
-                spawner.supplemental_gids.insert(0, course_gid)
-                cmds.append(r"test ! -e /course/gradebook.db && touch /course/gradebook.db && chmod 660 /course/gradebook.db || true")
-                # umask 0007 inserted above
-        else:
-            if getattr(spawner, 'as_instructor', False):
-                spawner.log.info("pre_spawn_hook: %s tried to start %s as instructor, but was not allowed", username, course_slug)
-            enable_formgrader = False
+                if getattr(spawner, 'as_instructor', False):
+                    spawner.log.info("pre_spawn_hook: %s tried to start %s as instructor, but was not allowed", username, course_slug)
+                enable_formgrader = False
 
         # Student config
         if username in course_data.get('students', {}):
