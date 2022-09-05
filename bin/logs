@@ -1,1 +1,1 @@
-kubectl logs -n jupyter "$@" $(kubectl get pods -n jupyter | grep jupyterhub | grep Running | cut -f1 -d' ' | tail -1)
+kubectl logs -n jupyter "$@" $(kubectl get pods -n jupyter | grep jupyterhub | grep Running | cut -f1 -d' ' | tail -1) -f
