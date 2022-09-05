@@ -601,10 +601,12 @@ async def pre_spawn_hook(spawner):
 
     course_slug = getattr(spawner, 'course_slug', '')
     as_instructor = False
+
+    enable_formgrader = False
+
     # We are not part of a course, so do only generic stuff
     # if gid is None, we have a course definition but no course data (only setting image)
     if not course_slug or GET_COURSES()[course_slug]['gid'] is None:
-        cmds.append("disable_formgrader.sh")
         # The pod_name must always be set, otherwise it uses the last pod name.
         spawner.pod_name = 'jupyter-{}{}'.format(username, '-'+spawner.name if spawner.name else '')
 
@@ -684,7 +686,7 @@ async def pre_spawn_hook(spawner):
             as_instructor = True
             spawner.log.info("pre_spawn_hook: User %s is an instructor for %s", username, course_slug)
             allow_spawn = True
-            cmds.append("enable_formgrader.sh")
+            enable_formgrader = True
             environ['AALTO_NB_ENABLE_FORMGRADER'] = '1'
             # Instructors get the whole filesystem tree, because they
             # need to be able to access "/course", too.  Warning, you
@@ -729,7 +731,7 @@ async def pre_spawn_hook(spawner):
         else:
             if getattr(spawner, 'as_instructor', False):
                 spawner.log.info("pre_spawn_hook: %s tried to start %s as instructor, but was not allowed", username, course_slug)
-            cmds.append("disable_formgrader.sh")
+            enable_formgrader = False
 
         # Student config
         if username in course_data.get('students', {}):
@@ -742,6 +744,11 @@ async def pre_spawn_hook(spawner):
         if not allow_spawn and course_data.get('private', False):
             spawner.log.info("pre_spawn_hook: User %s is blocked spawning %s", username, course_slug)
             raise RuntimeError("You ({}) are not allowed to use the {} environment.  Please contact the course instructors".format(username, course_slug))
+
+    if enable_formgrader:
+        cmds.append("enable_formgrader.sh")
+    else:
+        cmds.append("disable_formgrader.sh")
 
     # Generate job token used for submitting remote node jobs
     token_string = secrets.token_hex(32)
