@@ -408,7 +408,7 @@ def get_profile_list(spawner):
             profile = profile_list[-1]   # REFERENCE
             profile['display_name'] = display_name + course_notes
             profile['kubespawner_override']['image'] = course_image
-        if is_instructor or is_admin and (course_data['gid'] or instructors):
+        if (is_instructor or is_admin) and (course_data['gid'] or instructors):
             # If the course doesn't have a group or manually defined
             # instructors, the instructor version won't be shown in the course
             # list
@@ -618,6 +618,10 @@ async def pre_spawn_hook(spawner):
         spawner.log.debug("pre_spawn_hook: course %s", course_slug)
         environ['NB_COURSE'] = course_slug
 
+        # Indicates whether the user has an explicit permission to launch
+        # private courses (by being admin, instructor, explicitly listed student etc)
+        allow_spawn = False
+
         # Course configuration - only if it has instructors. Courses without
         # instructors do not have any course data nor assignments
         if course_data['gid'] or course_data.get('instructors', []):
@@ -681,7 +685,6 @@ async def pre_spawn_hook(spawner):
                         r'; true )')
 
             # Instructors
-            allow_spawn = False
             if is_instructor:
                 allow_spawn = True
             if is_instructor and getattr(spawner, 'as_instructor', False):
