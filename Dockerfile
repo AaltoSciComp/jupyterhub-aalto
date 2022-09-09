@@ -41,11 +41,6 @@ COPY secrets/azuread_oauth.json /etc/azuread_oauth.json
 COPY scripts/run.sh /run.sh
 RUN chmod +x /run.sh
 
-# These two copies are no longer needed - dynamically mounted in.
-COPY scripts/cull_idle_servers.py /cull_idle_servers.py
-COPY scripts/hub_status_service.py /hub_status_service.py
-RUN chmod +x /cull_idle_servers.py /hub_status_service.py
-
 RUN mkdir /courses
 
 CMD ["bash", "-c", "/run.sh"]
