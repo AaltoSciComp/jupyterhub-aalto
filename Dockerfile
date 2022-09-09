@@ -1,4 +1,7 @@
-FROM jupyterhub/jupyterhub:1.4.2
+ARG JH_VERSION=1.4.2
+FROM jupyterhub/jupyterhub:${JH_VERSION}
+ARG JH_VERSION
+ENV JH_VERSION=${JH_VERSION}
 
 # Install dependencies
 RUN apt-get update && \
@@ -10,12 +13,13 @@ RUN apt-get update && \
 #  PyJWT is for oauthenticator
 RUN python3 -m pip install jupyter python-dateutil pytz pyyaml kubernetes oauthenticator PyJWT
 # This should *not* be needed but there is a bug: #2852
-RUN python3 -m pip install --force --no-deps jupyterhub==1.4.2
+RUN python3 -m pip install --force --no-deps jupyterhub==${JH_VERSION}
 # Install latest to get newer features:
 #RUN python3 -m pip install https://github.com/jupyterhub/jupyterhub/archive/f3c3225.tar.gz
 
 # kubespawner
-RUN python3 -m pip install jupyterhub-kubespawner
+# List jupyterhub as a dependency to prevent pip from upgrading the package
+RUN python3 -m pip install jupyterhub-kubespawner jupyterhub==${JH_VERSION}
 # using a commit from Dec 27, 2019 instead of a release because there hasn't
 # been a new release in a long time
 #RUN python3 -m pip install https://github.com/jupyterhub/kubespawner/archive/a6c3ea8.tar.gz
