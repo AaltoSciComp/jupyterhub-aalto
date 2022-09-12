@@ -542,7 +542,7 @@ async def pre_spawn_hook(spawner):
 
 
     # Extra Aalto config
-    #environ['AALTO_EXTRA_HOME_LINKS'] = '.ssh/'
+    environ['AALTO_EXTRA_HOME_LINKS'] = '.config/rstudio/'
     # Hack to change validation timeout to 120
     # Some images still have python3.6, some 3.7; let's deal with it
     #cmds.append(r"PYTHON_DIR=$(ls -d /opt/conda/lib/python3.*)")
