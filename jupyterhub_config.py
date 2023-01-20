@@ -473,6 +473,7 @@ async def pre_spawn_hook(spawner):
     spawner._profile_list = [ ]
     spawner.create_groups = [ ]
     spawner.environment = environ = { }  # override env
+    spawner.extra_labels = copy.deepcopy(spawner.extra_labels)
 
     # Get basic info
     username = spawner.user.name
@@ -609,6 +610,8 @@ async def pre_spawn_hook(spawner):
         # if gid is None, we have a course definition but no course data (only setting image)
         # The pod_name must always be set, otherwise it uses the last pod name.
         spawner.pod_name = 'jupyter-{}{}'.format(username, '-'+spawner.name if spawner.name else '')
+        # extra_labels are only on pods and the like (not PVCs)
+        spawner.extra_labels['cs-aalto/jupyter-course'] = 'generic'
     else:
         course_data = GET_COURSES()[course_slug]
         if course_data.get('jupyterlab', False):
@@ -617,6 +620,7 @@ async def pre_spawn_hook(spawner):
         spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
         spawner.log.debug("pre_spawn_hook: course %s", course_slug)
         environ['NB_COURSE'] = course_slug
+        spawner.extra_labels['cs-aalto/jupyter-course'] = course_slug
 
         # Indicates whether the user has an explicit permission to launch
         # private courses (by being admin, instructor, explicitly listed student etc)
