@@ -670,6 +670,7 @@ async def pre_spawn_hook(spawner):
                         'c.ExecutePreprocessor.timeout = 240',
                         'c.Execute.timeout = 240',
                         'c.Exchange.path_includes_course = True',
+                        'c.Exchange.root = "/srv/nbgrader/exchange"',
                         'c.Validator.validate_all = True',
                         'c.CollectApp.check_owner = False',
                         'c.ExportApp.plugin_class = "mycourses_exporter.MyCoursesExportPlugin"',
