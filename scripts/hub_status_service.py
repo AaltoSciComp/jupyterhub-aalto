@@ -3,7 +3,7 @@
 This script starts
 """
 
-API = 'http://10.104.184.130:8081/hub/api/'
+API = 'http://localhost:8081/hub/api/'
 # This file needs two lines in it: 0th line is token, 1st line is
 # username to spawn servers of.  This can be made from the JH Token
 # page.
@@ -203,7 +203,7 @@ if __name__ == '__main__':
 
         ##########
         from tornado.httpclient import AsyncHTTPClient, HTTPRequest
-        API = os.environ['JUPYTERHUB_API_URL']+'/'
+        # API = os.environ['JUPYTERHUB_API_URL']+'/'
         client = AsyncHTTPClient()
         def get(path):
             req = HTTPRequest(
