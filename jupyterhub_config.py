@@ -153,7 +153,7 @@ c.ConfigurableHTTPProxy.should_start = False
 
 
 # Authentication
-use_oauthenticator = True
+use_oauthenticator = False
 if use_oauthenticator and os.path.exists('/etc/azuread_oauth.json'):
     oauth_info = json.load(open('/etc/azuread_oauth.json'))
     c.JupyterHub.authenticator_class = AzureAdOAuthenticator
