@@ -742,10 +742,33 @@ async def pre_spawn_hook(spawner):
                     spawner.supplemental_gids.insert(0, course_gid)
                     cmds.append(r"test ! -e /course/gradebook.db && touch /course/gradebook.db && chmod 660 /course/gradebook.db || true")
                     # umask 0007 inserted above
+
+                # Handle the extra instructor groups config
+                if 'extra_instructor_groups' in course_data:
+                    for name, gid in course_data['extra_instructor_groups']:
+                        spawner.create_groups.append((name, gid))
+                        spawner.supplemental_gids.append(gid)
+
+
+            # Student attempting spawning a course (or instructor with
+            # as_instructor=False to test the student mode)
             else:
+                enable_formgrader = False
+
+                # Print a warning if a student tried to start with
+                # as_instructor (shouldn't be possible but making sure there
+                # are no logic mistakes above).  The previous block is denied
+                # and goes here, print a warning to assist in debugging.
                 if getattr(spawner, 'as_instructor', False):
                     spawner.log.info("pre_spawn_hook: %s tried to start %s as instructor, but was not allowed", username, course_slug)
-                enable_formgrader = False
+
+                # Handle the extra student groups config
+                if 'extra_student_groups' in course_data:
+                    for name, gid in spawner.course_data['extra_student_groups']:
+                        spawner.create_groups.append((name, gid))
+                        spawner.supplemental_gids.append(gid)
+
+
 
         # Student config
         if username in course_data.get('students', {}):
@@ -822,6 +845,11 @@ async def pre_spawn_hook(spawner):
                 'JULIA_NUM_THREADS', ]:
         environ[var] = str(int(spawner.cpu_limit))
     # Aux groups for instructors (other mounts)
+
+    # The course data from other courses the instructor has access to should
+    # always be added so instructors can refer to older material.  Except: if
+    # you are starting a course (course_slug is true) and running in student
+    # testing mode (not as_instructor)
     if not (course_slug and not as_instructor) and ROOT_THEN_SU and MOUNT_EXTRA_COURSES:
         spawner.log.info('pre_spawn_hook: instructor %s is in the following groups: %s', username, GROUPS.get(username))
         for name, gid in GROUPS.get(username, []):
@@ -838,9 +866,11 @@ async def pre_spawn_hook(spawner):
                 spawner.log.critical("ERROR: setting up mount %s for %s", name, username)
                 spawner.log.critical("".join(traceback.format_exception(*exc_info)).decode())
 
-        if spawner.create_groups:
-            environ['NB_CREATE_GROUPS'] = ','.join("jupyter-%s:%s"%(name,gid) for name,gid in spawner.create_groups)
-        environ['NB_SUPPLEMENTARY_GROUPS'] = ','.join(str(x) for x in spawner.supplemental_gids)
+    # If we add the user to other groups, set variables to handle it in the spawner
+    if spawner.create_groups:
+        environ['NB_CREATE_GROUPS'] = ','.join("jupyter-%s:%s"%(name,gid) for name,gid in spawner.create_groups)
+    environ['NB_SUPPLEMENTARY_GROUPS'] = ','.join(str(x) for x in spawner.supplemental_gids)
+
     # Generate actual run commands and start
     cmds.append("source start-notebook.sh")   # args added later in KubeSpawner
     spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
