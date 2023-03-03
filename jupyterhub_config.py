@@ -683,6 +683,10 @@ async def pre_spawn_hook(spawner):
                         'c.Execute.timeout = 240',
                         ]:
                 cmds.append(r"echo '{}' >> /etc/jupyter/jupyter_notebook_config.py".format(line))
+            if hasattr(course_data, 'student_umask'):
+                print('setting student umask to %s'%spawner.student_umask)
+                environ['NB_UMASK'] = spawner.student_umask  # must be STRING
+
             # RStudio config
             cmds.append(r'( test -d /etc/rstudio '
                         r'&& echo session-default-working-dir=~/notebooks/ >> /etc/rstudio/rsession.conf '
