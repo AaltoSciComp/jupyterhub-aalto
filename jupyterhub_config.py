@@ -764,7 +764,7 @@ async def pre_spawn_hook(spawner):
 
                 # Handle the extra student groups config
                 if 'extra_student_groups' in course_data:
-                    for name, gid in spawner.course_data['extra_student_groups']:
+                    for name, gid in course_data['extra_student_groups']:
                         spawner.create_groups.append((name, gid))
                         spawner.supplemental_gids.append(gid)
 
