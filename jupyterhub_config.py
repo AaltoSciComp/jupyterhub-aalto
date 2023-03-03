@@ -855,7 +855,7 @@ async def pre_spawn_hook(spawner):
         for name, gid in GROUPS.get(username, []):
             try:
                 if name == course_slug: continue
-                spawner.create_groups.append((name, gid))
+                spawner.create_groups.append((f"jupyter-{name}", gid))
                 spawner.supplemental_gids.append(gid)
                 spawner.volume_mounts.append({"mountPath": '/m/jhnas/jupyter/course/{}/'.format(name),
                                               "subPath": "course/{}/".format(name),
@@ -868,7 +868,7 @@ async def pre_spawn_hook(spawner):
 
     # If we add the user to other groups, set variables to handle it in the spawner
     if spawner.create_groups:
-        environ['NB_CREATE_GROUPS'] = ','.join("jupyter-%s:%s"%(name,gid) for name,gid in spawner.create_groups)
+        environ['NB_CREATE_GROUPS'] = ','.join(f"{name}:{gid}" for name,gid in spawner.create_groups)
     environ['NB_SUPPLEMENTARY_GROUPS'] = ','.join(str(x) for x in spawner.supplemental_gids)
 
     # Generate actual run commands and start
