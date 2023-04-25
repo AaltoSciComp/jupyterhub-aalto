@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 SCRIPTPATH="$( cd "$(dirname "$0")" || exit ; pwd -P )"
-NAMESPACE=${1:-jupyter}
+NAMESPACE=${1:-jupyter-test}
 # shellcheck source-path=bin
 source "$SCRIPTPATH/_check_namespace.sh"
 

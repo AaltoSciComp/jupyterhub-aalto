@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: jupyter-nfs-pv
+  name: jupyter-test-nfs-pv
 spec:
   capacity:
     # Capacity doesn't really matter, not used. Just make it match the
@@ -17,13 +17,13 @@ spec:
     - nfsvers=3
   nfs:
     server: jhnas.org.aalto.fi
-    path: /vol/jupyter
+    path: /vol/jupyter/jupyter-test
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: jupyter-nfs
-  namespace: jupyter
+  namespace: jupyter-test
 spec:
   accessModes:
     - ReadWriteMany

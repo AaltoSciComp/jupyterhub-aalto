@@ -3,13 +3,12 @@ import os
 import re
 import subprocess
 from pathlib import Path
-
 import yaml
 
-JUPYTER_DIR = "/mnt/jupyter"
-COURSEDIR = JUPYTER_DIR + "/course/{slug}/files/"
-USERDIR = JUPYTER_DIR + "/u/{digits}/{username}/"
-USERINFO = JUPYTER_DIR + "/admin/lastlogin/{username}"
+JUPYTER_DIR = '/mnt/jupyter/jupyter-test'
+COURSEDIR = JUPYTER_DIR + '/course/{slug}/files/'
+USERDIR = JUPYTER_DIR + '/u/{digits}/{username}/'
+USERINFO = JUPYTER_DIR + '/admin/lastlogin/{username}'
 USER_GID = 70000
 
 

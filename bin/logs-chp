@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-NAMESPACE=${1:-jupyter}
+NAMESPACE=${1:-jupyter-test}
 echo "Namespace: $NAMESPACE"
 
 last_chp="$(kubectl get pods -n "$NAMESPACE" | grep configurable-http-proxy | grep Running | cut -f1 -d' ' | tail -1)"

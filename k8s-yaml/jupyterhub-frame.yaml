@@ -3,10 +3,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: jupyterhub-svc
-  namespace: jupyter
+  namespace: jupyter-test
 spec:
   selector:
-    cs-aalto/app: jupyterhub
+    cs-aalto/app: jupyterhub-test
   ports:
   # - protocol: TCP
   #   port: 80
@@ -24,7 +24,7 @@ spec:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  namespace: jupyter
+  namespace: jupyter-test
   name: jupyter-notebook-spawner
 rules:
 - apiGroups: [""]
@@ -41,19 +41,19 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: jupyter-notebook-spawner
-  namespace: jupyter
+  namespace: jupyter-test
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: notebook-spawner-binding
-  namespace: jupyter
+  namespace: jupyter-test
 roleRef:
   name: jupyter-notebook-spawner
   kind: Role
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: User
-  name: system:serviceaccount:jupyter:jupyter-notebook-spawner
+  name: system:serviceaccount:jupyter-test:jupyter-notebook-spawner
   apiGroup: rbac.authorization.k8s.io
-  namespace: jupyter
+  namespace: jupyter-test

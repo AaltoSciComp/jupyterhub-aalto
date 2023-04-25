@@ -3,7 +3,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: jupyterhub-ingress
-  namespace: jupyter
+  namespace: jupyter-test
   annotations:
     # nginx.ingress.kubernetes.io/secure-backends: "true"
     # nginx.ingress.kubernetes.io/rewrite-target: /
@@ -16,11 +16,11 @@ metadata:
 spec:
   tls:
   - hosts:
-    - jupyter.cs.aalto.fi
+    - jupyter-test.cs.aalto.fi
     # Change name to tls-le when using LE certificates
     secretName: tls-le
   rules:
-  - host: jupyter.cs.aalto.fi
+  - host: jupyter-test.cs.aalto.fi
     http:
       paths:
       - path: /

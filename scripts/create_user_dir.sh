@@ -3,7 +3,7 @@
 set -e  # exit immediately on any command failing
 set -x  # debugging
 
-JUPYTER_DIR=/mnt/jupyter
+JUPYTER_DIR=/mnt/jupyter/jupyter-test
 LASTLOGIN_DIR="$JUPYTER_DIR/admin/lastlogin"
 
 # NOTE: The value doesn't seem to have actually ever been used

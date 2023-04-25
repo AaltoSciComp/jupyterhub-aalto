@@ -3,21 +3,21 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    cs-aalto/app: jupyterhub
+    cs-aalto/app: jupyterhub-test
   name: jupyterhub
-  namespace: jupyter
+  namespace: jupyter-test
 spec:
   replicas: 1
   selector:
     matchLabels:
-      cs-aalto/app: jupyterhub
+      cs-aalto/app: jupyterhub-test
   template:
     metadata:
       labels:
-        cs-aalto/app: jupyterhub
+        cs-aalto/app: jupyterhub-test
       name: jupyterhub
     spec:
-      hostname: jupyterhub-cs-aalto-fi
+      hostname: jupyterhub-test-cs-aalto-fi
       containers:
       - name: jupyterhub
         image: harbor.cs.aalto.fi/jupyter-internal/jupyterhub-cs:4.0.1-2023-07-20
@@ -91,7 +91,7 @@ spec:
       imagePullSecrets:
       - name: registry-secret-jupyter-internal
       tolerations:
-      - {key: cs-aalto/app, value: jupyterhub, operator: Equal, effect: NoSchedule}
+      - {key: cs-aalto/app, value: jupyterhub-test, operator: Equal, effect: NoSchedule}
       - {key: node.kubernetes.io/disk-pressure, operator: Exists}
       - {key: node.kubernetes.io/out-of-disk, operator: Exists}
       - {key: node.kubernetes.io/memory-pressure, operator: Exists}
@@ -99,11 +99,11 @@ spec:
       - name: jupyterhub-hubdata
         nfs:
           server: jhnas.org.aalto.fi
-          path: /vol/jupyter/admin/hubdata/
+          path: /vol/jupyter/jupyter-test/admin/hubdata/
       - name: nfs-keytab
         nfs:
           server: jhnas.org.aalto.fi
-          path: /vol/jupyter/admin/keytab/
+          path: /vol/jupyter/jupyter-test/admin/keytab/
       - name: jupyterhub-config
         configMap:
           name: jupyterhub-config
@@ -113,11 +113,11 @@ spec:
       - name: jupyterhub-course-list
         nfs:
           server: jhnas.org.aalto.fi
-          path: /vol/jupyter/course/
+          path: /vol/jupyter/jupyter-test/course/
       # - name: jupyterhub-coursedata
       #   nfs:
       #     server: jhnas.org.aalto.fi
-      #     path: /vol/jupyter/course/coursedata/
+      #     path: /vol/jupyter/jupyter-test/course/coursedata/
       - name: adpw
         secret:
           secretName: adpw.txt
@@ -156,5 +156,5 @@ spec:
         configMap:
           name: spawn-test
       nodeSelector:
-        cs-aalto/app: jupyterhub
+        cs-aalto/app: jupyterhub-test
       serviceAccountName: jupyter-notebook-spawner

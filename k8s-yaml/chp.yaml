@@ -5,7 +5,7 @@ metadata:
   labels:
     app: configurable-http-proxy
   name: configurable-http-proxy
-  namespace: jupyter
+  namespace: jupyter-test
 spec:
   selector:
     matchLabels:
@@ -42,7 +42,7 @@ spec:
         - name: TZ
           value: Europe/Helsinki
       tolerations:
-      - {key: cs-aalto/app, value: jupyterhub, operator: Equal, effect: NoSchedule}
+      - {key: cs-aalto/app, value: jupyterhub-test, operator: Equal, effect: NoSchedule}
       - {key: node.kubernetes.io/disk-pressure, operator: Exists}
       - {key: node.kubernetes.io/out-of-disk, operator: Exists}
       - {key: node.kubernetes.io/memory-pressure, operator: Exists}
@@ -51,4 +51,4 @@ spec:
         secret:
           secretName: chp-secret
       nodeSelector:
-        cs-aalto/app: jupyterhub
+        cs-aalto/app: jupyterhub-test
