@@ -2,6 +2,8 @@ SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 NAMESPACE=${1:-jupyter}
 echo "Namespace: $NAMESPACE"
 
+JMGR_HOSTNAME=root@jupyter-manager.cs.aalto.fi
+
 # Syntax check the hub config file first.
 if ! python3 -m py_compile $SCRIPTPATH/../jupyterhub_config.py ; then
     echo "jupyterhub_config.py has invalid syntax, aborting the hub restart."
@@ -15,8 +17,8 @@ if [ "$NAMESPACE" = "jupyter" ]; then
 elif [ "$NAMESPACE" = "jupyter-test" ]; then
     JUPYTER_PATH=/mnt/jupyter/jupyter-test
 fi
-rm -f $JUPYTER_PATH/admin/hubdata/jupyterhub-proxy.pid
-mkdir -p $JUPYTER_PATH/software
-mkdir -p $JUPYTER_PATH/shareddata
+timeout 2 ssh $JMGR_HOSTNAME "rm -f $JUPYTER_PATH/admin/hubdata/jupyterhub-proxy.pid"
+timeout 2 ssh $JMGR_HOSTNAME "mkdir -p $JUPYTER_PATH/software"
+timeout 2 ssh $JMGR_HOSTNAME "mkdir -p $JUPYTER_PATH/shareddata"
 
 $SCRIPTPATH/create-hub.sh $NAMESPACE
