@@ -22,7 +22,7 @@ RUN python3 -m pip install jupyterhub-kubespawner
 
 # Enable SSH stuff
 COPY secrets/known_hosts /root/.ssh/known_hosts
-COPY secrets/id_rsa_hub /root/.ssh/id_rsa
+COPY secrets/ssh_key /root/.ssh/ssh_key
 RUN chmod go-rwx /root/.ssh/*
 
 # Enable aalto domain join

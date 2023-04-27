@@ -66,12 +66,12 @@ spec:
         - name: spawn-test
           mountPath: /srv/jupyterhub/spawn_test.py
           subPath: spawn_test.py
-        - name: idrsa
-          mountPath: /root/.ssh/id_rsa
-          subPath: id_rsa_hub
-        - name: idrsapub
-          mountPath: /root/.ssh/id_rsa.pub
-          subPath: id_rsa_hub.pub
+        - name: ssh-privkey
+          mountPath: /root/.ssh/ssh_key
+          subPath: ssh_key
+        - name: ssh-pubkey
+          mountPath: /root/.ssh/ssh_key.pub
+          subPath: ssh_key.pub
         - name: knownhosts
           mountPath: /root/.ssh/known_hosts
           subPath: known_hosts
@@ -106,13 +106,13 @@ spec:
       - name: localusers
         secret:
           secretName: localusers
-      - name: idrsa
+      - name: ssh-privkey
         secret:
-          secretName: idrsa
+          secretName: ssh-privkey
           defaultMode: 0600
-      - name: idrsapub
+      - name: ssh-pubkey
         secret:
-          secretName: idrsapub
+          secretName: ssh-pubkey
           defaultMode: 0600
       - name: knownhosts
         secret:

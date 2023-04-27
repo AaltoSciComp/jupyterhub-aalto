@@ -457,7 +457,7 @@ def create_user_dir(username: str, uid: int, human_name="", log=None):
     # authorized_keys, the command here is most likely ignored
     ret = subprocess.run(
         [
-            'ssh', JMGR_HOSTNAME,
+            'ssh', '-i', '~/.ssh/ssh_key', JMGR_HOSTNAME,
             f"{JMGR_REPO_DIR}/scripts/create_user_dir.sh",
             shlex.quote(username), str(uid), shlex.quote(human_name)
         ],

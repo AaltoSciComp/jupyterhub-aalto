@@ -15,9 +15,9 @@ kubectl create secret -n $NAMESPACE generic localusers --from-file=$SCRIPTPATH/.
 kubectl delete secret -n $NAMESPACE chp-secret
 kubectl create secret -n $NAMESPACE generic chp-secret --from-file=$SCRIPTPATH/../secrets/chp-secret.txt
 
-kubectl delete secret -n $NAMESPACE idrsa
-kubectl create secret -n $NAMESPACE generic idrsa --from-file=$SCRIPTPATH/../secrets/id_rsa_hub
-kubectl delete secret -n $NAMESPACE idrsapub
-kubectl create secret -n $NAMESPACE generic idrsapub --from-file=$SCRIPTPATH/../secrets/id_rsa_hub.pub
+kubectl delete secret -n $NAMESPACE ssh-privkey
+kubectl create secret -n $NAMESPACE generic ssh-privkey --from-file=$SCRIPTPATH/../secrets/ssh_key
+kubectl delete secret -n $NAMESPACE ssh-pubkey
+kubectl create secret -n $NAMESPACE generic ssh-pubkey --from-file=$SCRIPTPATH/../secrets/ssh_key.pub
 kubectl delete secret -n $NAMESPACE knownhosts
 kubectl create secret -n $NAMESPACE generic knownhosts --from-file=$SCRIPTPATH/../secrets/known_hosts
