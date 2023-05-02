@@ -573,10 +573,6 @@ async def pre_spawn_hook(spawner: KubeSpawner):
 
     # Extra Aalto config
     environ['AALTO_EXTRA_HOME_LINKS'] = '.config/rstudio/'
-    # Hack to change validation timeout to 120
-    # Some images still have python3.6, some 3.7; let's deal with it
-    #cmds.append(r"PYTHON_DIR=$(ls -d /opt/conda/lib/python3.*)")
-    #cmds.append(r"sed -i -E 's#(timeout = Integer\()(30)(,)#\1240\3#' ${PYTHON_DIR}/site-packages/nbconvert/preprocessors/execute.py")
 
     if uid < 1000: raise ValueError("uid can not be less than 1000 (is {})"%uid)
     spawner.working_dir = '/'
