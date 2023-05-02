@@ -5,17 +5,14 @@ import json
 import os
 import pwd  # for resolving username --> uid
 import re
-import secrets
 import shlex
 import subprocess
 import sys
 import time
 import traceback
-from base64 import b64encode
 from datetime import date
 from typing import Dict, List, Tuple
 
-import kubernetes.client.rest
 import traitlets.config
 import yaml
 from jupyterhub.auth import PAMAuthenticator
