@@ -226,6 +226,7 @@ DEFAULT_VOLUMES = [
 ]
 DEFAULT_VOLUME_MOUNTS = [
   {"name": "jupyter-nfs", "mountPath": "/notebooks", "subPath": "u/{uid_last2digits}/{username}", "readOnly": False},
+  {"name": "jupyter-nfs", "mountPath": "/m/jhnas/jupyter/u/{uid_last2digits}/{username}", "subPath": "u/{uid_last2digits}/{username}", "readOnly": False},
   {"name": "jupyter-nfs", "mountPath": "/m/jhnas/jupyter/shareddata", "subPath": "shareddata/", "readOnly":False},
   {"name": "jupyter-nfs", "mountPath": "/m/jhnas/jupyter/software", "subPath": "software/", "readOnly":True},
 ]
@@ -515,16 +516,11 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     # is constantly reused.
     spawner.volumes = copy.deepcopy(DEFAULT_VOLUMES)
     spawner.volume_mounts = copy.deepcopy(DEFAULT_VOLUME_MOUNTS)
-    assert 'uid_last2digits' in spawner.volume_mounts[0]['subPath']
-    #print(spawner.volumes, file=sys.stderr)
-    spawner.volume_mounts[0]['subPath'] = spawner.volume_mounts[0]['subPath'].format(username=username, uid_last2digits=uid_last2digits)
+    for i, mount in enumerate(spawner.volume_mounts):
+        spawner.volume_mounts[i]['subPath'] = mount['subPath'].format(username=username, uid_last2digits=uid_last2digits)
+        spawner.volume_mounts[i]['mountPath'] = mount['mountPath'].format(username=username, uid_last2digits=uid_last2digits)
     notebook_path = "/m/jhnas/jupyter/u/{uid_last2digits}/{username}/".format(username=username, uid_last2digits=uid_last2digits)
-    spawner.volume_mounts.append({"mountPath": notebook_path,
-                                  "subPath": "u/{uid_last2digits}/{username}".format(username=username, uid_last2digits=uid_last2digits),
-                                  "name": "jupyter-nfs",
-                                  "readOnly": False})
     environ['NB_NOTEBOOK_PATH'] = notebook_path
-    #print(spawner.volumes, file=sys.stderr)
 
     spawner.log.info("pre_spawn_hook: spawner deepcopy done")
 
