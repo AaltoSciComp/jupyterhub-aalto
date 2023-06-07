@@ -674,6 +674,8 @@ async def pre_spawn_hook(spawner):
                         'c.Validator.validate_all = True',
                         'c.CollectApp.check_owner = False',
                         'c.ExportApp.plugin_class = "mycourses_exporter.MyCoursesExportPlugin"',
+                        'c.Application.log_format = "%(color)s%(asctime)s [%(name)s | %(levelname)s]%(end_color)s %(message)s"',
+                        'c.Application.log_datefmt = "%Y-%m-%dT%H:%M:%S%z"',
                         *course_data.get('nbgrader_config', '').split('\n'),
                         ]:
                 cmds.append(r"echo '{}' >> /etc/jupyter/nbgrader_config.py".format(line))
