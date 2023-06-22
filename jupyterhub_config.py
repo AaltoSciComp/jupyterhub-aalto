@@ -63,11 +63,12 @@ MOUNT_EXTRA_COURSES = True
 DEFAULT_INSTRUCTORS = {'darstr1'}
 
 NAMESPACE = 'jupyter'
+APP_NAME = 'jupyter'
 
 DEFAULT_NODE_SELECTOR = { }
 DEFAULT_TOLERATIONS = [
-    {'key': 'cs-aalto/app', 'value': NAMESPACE, 'operator': 'Equal', 'effect': 'NoSchedule'},
-    ]
+    {'key': 'cs-aalto/app', 'value': APP_NAME, 'operator': 'Equal', 'effect': 'NoSchedule'},
+]
 EMPTY_PROFILE = {'node_selector': DEFAULT_NODE_SELECTOR,
                  'tolerations': DEFAULT_TOLERATIONS,
                  'default_url': 'tree/notebooks',
