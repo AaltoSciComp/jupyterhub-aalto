@@ -40,9 +40,9 @@ IMAGES_OLD = [
 ]
 
 # Name of the manager node
-JMGR_HOSTNAME = "jupyter-manager.cs.aalto.fi"
+JMGR_HOSTNAME = "jupyter-manager-2.cs.aalto.fi"
 # Path to the cloned repo on the manager node.
-# NOTE: jupyter-manager.cs.aalto.fi defines a hardcoded command in
+# NOTE: $JMGR_HOSTNAME defines a hardcoded command in
 # authorized_keys, the path here is most likely ignored
 JMGR_REPO_DIR = "/root/jupyterhub-aalto"
 
@@ -453,7 +453,7 @@ def create_user_dir(username: str, uid: int, human_name="", log=None):
     #os.system('ssh jupyter-k8s-admin.cs.aalto.fi "/root/jupyterhub/scripts/create_user_dir.sh {0} {1}"'.format(username, uid))
     human_name = re.sub('[^\w -]*', '', human_name, flags=re.I)
     human_name = human_name.replace(' ', '++')
-    # NOTE: jupyter-manager.cs.aalto.fi defines a hardcoded command in
+    # NOTE: $JMGR_HOSTNAME defines a hardcoded command in
     # authorized_keys, the command here is most likely ignored
     ret = subprocess.run(
         [

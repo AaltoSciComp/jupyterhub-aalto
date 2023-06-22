@@ -2,7 +2,7 @@ SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 NAMESPACE=${1:-jupyter}
 echo "Namespace: $NAMESPACE"
 
-JMGR_HOSTNAME=root@jupyter-manager.cs.aalto.fi
+JMGR_HOSTNAME=root@jupyter-manager-2.cs.aalto.fi
 
 # Syntax check the hub config file first.
 if ! python3 -m py_compile $SCRIPTPATH/../jupyterhub_config.py ; then
