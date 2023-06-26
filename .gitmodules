@@ -1,3 +1,4 @@
 [submodule "secrets"]
 	path = secrets
 	url = git@version.aalto.fi:CS-IT/jupyterhub-aalto-secrets.git
+	branch = test-env
