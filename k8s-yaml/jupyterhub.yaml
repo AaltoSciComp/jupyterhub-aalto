@@ -20,7 +20,7 @@ spec:
       hostname: jupyterhub-cs-aalto-fi
       containers:
       - name: jupyterhub
-        image: jupyterhub-cs
+        image: harbor.cs.aalto.fi/jupyter-internal/jupyterhub-cs:1.4.2-2023-07-18
         ports:
 #        - containerPort: 8000
         - containerPort: 8081
@@ -75,7 +75,9 @@ spec:
         - name: knownhosts
           mountPath: /root/.ssh/known_hosts
           subPath: known_hosts
-        imagePullPolicy: Never
+        #imagePullPolicy: Never
+      imagePullSecrets:
+      - name: registry-secret
       tolerations:
       - {key: cs-aalto/app, value: jupyterhub,             operator: Equal, effect: NoSchedule}
       - {key: node.kubernetes.io/disk-pressure,   operator: Exists}
