@@ -4,7 +4,8 @@ This script starts
 """
 
 #API = 'http://10.104.184.130:8081/hub/api/'
-API = 'https://jupyter.cs.aalto.fi/hub/api/'
+# API = 'https://jupyter.cs.aalto.fi/hub/api/'
+API = 'http://localhost:8081/hub/api/'
 # This file needs two lines in it: 0th line is token, 1st line is
 # username to spawn servers of.  This can be made from the JH Token
 # page.
@@ -75,8 +76,8 @@ if 'server' in r.json() and r.json()['server'] is not None and 'FIX' not in os.e
     if r.status_code != 400 and r.status_code != 204:
         r.raise_for_status()
         r = poll_until_pending_done()
-            
-            
+
+
 # Start the server
 log.info('Starting server')
 r = requests.post(API+'users/%s/server'%username, json={}, auth=auth)

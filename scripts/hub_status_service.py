@@ -156,8 +156,8 @@ def get_stats(get):
 async def test_spawn():
     global LAST_SUCCESSFUL_SPAWN_TIME, LAST_SUCCESSFUL_SPAWN_ATTEMPT_TIME
     LAST_SUCCESSFUL_SPAWN_ATTEMPT_TIME = datetime.datetime.now().timestamp()
-    print("Testing spawn", file=sys.stdout)
-    log.debug("Testing spawn")
+    # print("Testing spawn", file=sys.stdout)
+    log.info("Testing spawn")
     try:
         os.environ['SPAWN_TEST_USERNAME'] = 'cistudent1'
         p = await asyncio.create_subprocess_exec('python3', '/srv/jupyterhub/spawn_test.py',
