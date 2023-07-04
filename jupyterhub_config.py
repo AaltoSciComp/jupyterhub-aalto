@@ -953,11 +953,11 @@ c.JupyterHub.services = [
     'command': 'python3 /cull_idle_servers.py --cull-users --timeout=2592000 --cull-every=7620 --concurrency=1'.split(),
   },
   # Service to show stats.
-  {
-    'name': 'stats',
-    'admin': True,
-    'url': 'http://%s:36541'%os.environ['JUPYTERHUB_SVC_SERVICE_HOST'],
-    'command': ['python3',
-                '/srv/jupyterhub/hub_status_service.py' if os.path.exists('/srv/jupyterhub/hub_status_service.py') else '/hub_status_service.py'],
-  },
+  #{
+  #  'name': 'stats',
+  #  'admin': True,
+  #  'url': 'http://%s:36541'%os.environ['JUPYTERHUB_SVC_SERVICE_HOST'],
+  #  'command': ['python3',
+  #              '/srv/jupyterhub/hub_status_service.py' if os.path.exists('/srv/jupyterhub/hub_status_service.py') else '/hub_status_service.py'],
+  #},
 ]
