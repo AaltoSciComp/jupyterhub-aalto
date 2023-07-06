@@ -20,7 +20,7 @@ spec:
       hostname: jupyterhub-cs-aalto-fi
       containers:
       - name: jupyterhub
-        image: harbor.cs.aalto.fi/jupyter-internal/jupyterhub-cs:1.4.2-2023-07-18
+        image: harbor.cs.aalto.fi/jupyter-internal/jupyterhub-cs:4.0.1-2023-07-19
         command:
           - bash
           - -c

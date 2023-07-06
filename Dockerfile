@@ -25,6 +25,8 @@ RUN python3 -m pip install jupyterhub-kubespawner jupyterhub==${JH_VERSION}
 # Enable aalto domain join
 RUN apt-get update && apt-get install -y adcli sssd sssd-krb5 krb5-config sssd-ldap sssd-ad libpam-sss
 COPY --chmod=644 secrets/krb5.conf /etc/krb5.conf
+# Ubuntu 22.04 has broken default flags for sssd
+RUN sed -i 's/DAEMON_OPTS="-D -f"/DAEMON_OPTS="-D --logger=files"/' /etc/default/sssd
 
 COPY secrets/join_ad.sh /usr/local/bin/join_ad.sh
 RUN chmod +x /usr/local/bin/join_ad.sh

@@ -1,5 +1,5 @@
-JH_VERSION=1.4.2
-VER=${JH_VERSION}-2023-07-18
+JH_VERSION=4.0.1
+VER=${JH_VERSION}-2023-07-19
 IMAGE=harbor.cs.aalto.fi/jupyter-internal/jupyterhub-cs:${VER}
 
 build:
