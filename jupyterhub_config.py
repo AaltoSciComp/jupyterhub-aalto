@@ -1280,6 +1280,17 @@ c.JupyterHub.services = [
             "--timeout=2592000 --cull-every=7620 --concurrency=1"
         ).split(),
     },
+    # Create the CI user
+    {
+        "name": "create-ci-user",
+        "admin": True,
+        "command": [
+            "python3",
+            "/create_ci_user.py",
+            "--username=cistudent1",
+            "--keep_alive",
+        ],
+    },
     # Service to show stats.
     {
         "name": "stats",

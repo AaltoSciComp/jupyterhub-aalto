@@ -15,8 +15,6 @@ if len(sys.argv) > 1:
 else:
     API = "http://localhost:8081/hub/api/"
 
-print(f"API = {API}")
-
 # This file needs two lines in it: 0th line is token, 1st line is
 # username to spawn servers of.  This can be made from the JH Token
 # page.
@@ -27,14 +25,18 @@ logging.getLogger("requests").setLevel(logging.WARN)
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+log.debug(f"API = {API}")
+
 if "JUPYTERHUB_API_TOKEN" in os.environ:
     # Running as a subservice
     token = os.environ["JUPYTERHUB_API_TOKEN"]
     username = os.environ["SPAWN_TEST_USERNAME"]
+    log.debug("using token from env")
 else:
     auth_data = open(AUTH_DATA_FILE).readlines()
     token = auth_data[0].strip()
     username = auth_data[1].strip()
+    log.debug("using token from file")
 
 
 # Automatic authentication class
@@ -76,6 +78,7 @@ if r.status_code == 404:
     # r = requests.post(API+'users/%s'%username, auth=auth)
     # r.raise_for_status()
 
+# log.debug(f"{r.text=}")
 log.debug(r.json())
 if "server" in r.json() and r.json()["server"] is not None and "FIX" not in os.environ:
     # server running
