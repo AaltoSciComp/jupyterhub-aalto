@@ -67,6 +67,9 @@ spec:
         - name: cull-idle-servers
           mountPath: /cull_idle_servers.py
           subPath: cull_idle_servers.py
+        - name: create-ci-user
+          mountPath: /create_ci_user.py
+          subPath: create_ci_user.py
         - name: spawn-test
           mountPath: /srv/jupyterhub/spawn_test.py
           subPath: spawn_test.py
@@ -152,6 +155,9 @@ spec:
       - name: cull-idle-servers
         configMap:
           name: cull-idle-servers
+      - name: create-ci-user
+        configMap:
+          name: create-ci-user
       - name: spawn-test
         configMap:
           name: spawn-test

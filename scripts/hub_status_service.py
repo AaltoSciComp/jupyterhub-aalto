@@ -291,6 +291,9 @@ if __name__ == "__main__":
         auth_data = open(AUTH_DATA_FILE).readlines()
         token = auth_data[0].strip()
         auth = TokenAuth(token)
+        API = os.environ.get("JUPYTERHUB_API_URL", API)
+        if not API.endswith("/"):
+            API += "/"
 
         STATUS = get_stats(get_requests)
 
