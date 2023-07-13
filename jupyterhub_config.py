@@ -523,7 +523,6 @@ async def pre_spawn_hook(spawner):
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.profile")
     #cmds.append("pip install --upgrade --no-deps https://github.com/AaltoSciComp/nbgrader/archive/live.zip")
     if getattr(spawner, 'x_jupyter_enable_lab', False):
-        environ['JUPYTER_ENABLE_LAB'] = 'true'
         spawner.default_url = "lab/tree/notebooks/"
     #cmds.append('jupyter labextension enable @jupyterlab/google-drive')
     # Install gpuplug in the GPU images
@@ -615,7 +614,6 @@ async def pre_spawn_hook(spawner):
     else:
         course_data = GET_COURSES()[course_slug]
         if course_data.get('jupyterlab', False):
-            environ['JUPYTER_ENABLE_LAB'] = 'true'
             spawner.default_url = "lab/tree/notebooks/"
         spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
         spawner.log.debug("pre_spawn_hook: course %s", course_slug)
