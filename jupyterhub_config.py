@@ -877,7 +877,8 @@ async def pre_spawn_hook(spawner):
     environ['NB_SUPPLEMENTARY_GROUPS'] = ','.join(str(x) for x in spawner.supplemental_gids)
 
     # Generate actual run commands and start
-    cmds.append("source start-notebook.sh")   # args added later in KubeSpawner
+    cmds.append("source start-singleuser.sh")
+    # Setting this replaces the container's default entrypoint (CMD)
     spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
 
 
