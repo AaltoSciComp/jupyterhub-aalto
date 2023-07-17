@@ -24,23 +24,13 @@ RUN python3 -m pip install jupyterhub-kubespawner jupyterhub==${JH_VERSION}
 # been a new release in a long time
 #RUN python3 -m pip install https://github.com/jupyterhub/kubespawner/archive/a6c3ea8.tar.gz
 
-# Enable SSH stuff
-COPY secrets/known_hosts /root/.ssh/known_hosts
-COPY secrets/ssh_key /root/.ssh/ssh_key
-RUN chmod go-rwx /root/.ssh/*
-
 # Enable aalto domain join
 RUN apt-get update && apt-get install -y adcli sssd sssd-krb5 krb5-config sssd-ldap sssd-ad libpam-sss
-COPY secrets/krb5.conf /etc/krb5.conf
+COPY --chmod=644 secrets/krb5.conf /etc/krb5.conf
 COPY secrets/krb5.keytab.withkeys /etc/krb5.keytab
-COPY secrets/sssd.conf /etc/sssd/sssd.conf
-RUN chmod 600 /etc/sssd/sssd.conf /etc/krb5.keytab
 
 COPY secrets/join_ad.sh /usr/local/bin/join_ad.sh
 RUN chmod +x /usr/local/bin/join_ad.sh
-
-# OAuth secrets
-COPY secrets/azuread_oauth.json /etc/azuread_oauth.json
 
 COPY scripts/run.sh /run.sh
 RUN chmod +x /run.sh

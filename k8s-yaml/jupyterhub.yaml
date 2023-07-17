@@ -75,6 +75,12 @@ spec:
         - name: knownhosts
           mountPath: /root/.ssh/known_hosts
           subPath: known_hosts
+        - name: azuread-oauth
+          mountPath: /etc/azuread_oauth.json
+          subPath: azuread_oauth.json
+        - name: sssd-conf
+          mountPath: /etc/sssd/sssd.conf
+          subPath: sssd.conf
         #imagePullPolicy: Never
       imagePullSecrets:
       - name: registry-secret
@@ -105,9 +111,11 @@ spec:
       - name: adpw
         secret:
           secretName: adpw.txt
+          defaultMode: 0600
       - name: localusers
         secret:
           secretName: localusers
+          defaultMode: 0600
       - name: ssh-privkey
         secret:
           secretName: ssh-privkey
@@ -119,6 +127,15 @@ spec:
       - name: knownhosts
         secret:
           secretName: knownhosts
+          defaultMode: 0600
+      - name: azuread-oauth
+        secret:
+          secretName: azuread-oauth
+          defaultMode: 0600
+      - name: sssd-conf
+        secret:
+          secretName: sssd-conf
+          defaultMode: 0600
       - name: hub-status-service
         configMap:
           name: hub-status-service

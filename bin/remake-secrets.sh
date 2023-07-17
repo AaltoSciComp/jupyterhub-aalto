@@ -22,6 +22,10 @@ kubectl delete secret -n $NAMESPACE ssh-pubkey
 kubectl create secret -n $NAMESPACE generic ssh-pubkey --from-file=$SCRIPTPATH/../secrets/ssh_key.pub
 kubectl delete secret -n $NAMESPACE knownhosts
 kubectl create secret -n $NAMESPACE generic knownhosts --from-file=$SCRIPTPATH/../secrets/known_hosts
+kubectl delete secret -n $NAMESPACE azuread-oauth
+kubectl create secret -n $NAMESPACE generic azuread-oauth --from-file=$SCRIPTPATH/../secrets/azuread_oauth.json
+kubectl delete secret -n $NAMESPACE sssd-conf
+kubectl create secret -n $NAMESPACE generic sssd-conf --from-file=$SCRIPTPATH/../secrets/sssd.conf
 
 kubectl delete secret -n $NAMESPACE registry-secret
 kubectl create secret generic -n $NAMESPACE registry-secret --from-file=.dockerconfigjson=$SCRIPTPATH/../secrets/dockerconfig --type=kubernetes.io/dockerconfigjson
