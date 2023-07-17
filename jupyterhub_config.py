@@ -514,6 +514,8 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     environ['NB_NOTEBOOK_PATH'] = notebook_path
     #print(spawner.volumes, file=sys.stderr)
 
+    spawner.log.info("pre_spawn_hook: spawner deepcopy done")
+
     # Set basic spawner properties
     #storage_capacity = ???
     environ['AALTO_JUPYTERHUB'] = '1'
@@ -568,6 +570,8 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     # Default setup of /etc/passwd: jovyan:x:1000:0
     # Default setup of /etc/group: users:x:100
 
+    spawner.log.info("pre_spawn_hook: before ROOT_THEN_SU")
+
     if not ROOT_THEN_SU:
         assert False  # This must be tested before using, not in regular use
         # Manually run as uid from outside the container
@@ -598,6 +602,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
         #cmds.append("adduser jovyan users")
 
     create_user_dir(username, uid, human_name=human_name, log=spawner.log)
+    spawner.log.info("pre_spawn_hook: user dir created")
     #cmds.append(r'echo "if [ \"\$SHLVL\" = 1 -a \"\$PWD\" = \"\$HOME\" ] ; then cd /notebooks ; fi" >> /home/jovyan/.profile')
     cmds.append(r'echo "if [ \"\$SHLVL\" = 1 -a \( \"\$PWD\" = \"\$HOME\" -o \"\$PWD\" = / \)  ] ; then cd /notebooks ; fi" >> /home/jovyan/.bashrc')
     cmds.append(r'echo "nbgrader-instructor-exchange() { nbgrader \$1 --Exchange.root=/course/test-instructor-exchange/ \${@:2} ; }" >> /home/jovyan/.bashrc')
@@ -615,6 +620,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     enable_formgrader = False
 
     if not course_slug:
+        spawner.log.info("pre_spawn_hook: not a course")
         # We are not part of a course, so do only generic stuff
         # if gid is None, we have a course definition but no course data (only setting image)
         # The pod_name must always be set, otherwise it uses the last pod name.
@@ -622,6 +628,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
         # extra_labels are only on pods and the like (not PVCs)
         spawner.extra_labels['cs-aalto/jupyter-course'] = 'generic'
     else:
+        spawner.log.info("pre_spawn_hook: is a course")
         course_data = GET_COURSES()[course_slug]
         if course_data.get('jupyterlab', False):
             spawner.default_url = "lab/tree/notebooks/"
@@ -797,11 +804,13 @@ async def pre_spawn_hook(spawner: KubeSpawner):
             spawner.log.info("pre_spawn_hook: User %s is blocked spawning %s", username, course_slug)
             raise RuntimeError("You ({}) are not allowed to use the {} environment.  Please contact the course instructors".format(username, course_slug))
 
+    spawner.log.info("pre_spawn_hook: course setup done")
     if enable_formgrader:
         cmds.append("enable_formgrader.sh")
     else:
         cmds.append("disable_formgrader.sh")
 
+    spawner.log.info("pre_spawn_hook: formgrader done")
     ## Generate job token used for submitting remote node jobs
     #token_string = secrets.token_hex(32)
     #token_encoded = b64encode(bytes(token_string, "utf-8")).decode('utf-8')
@@ -844,6 +853,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
         if os.path.exists(hook_file):
             spawner.log.info("pre_spawn_hook: Running %s", hook_file)
             exec(open(hook_file).read())
+    spawner.log.info("pre_spawn_hook: hooks done")
 
     # import pprint
     # spawner.log.info("After hooks: spawner.node_selector: %s", spawner.node_selector)
@@ -859,6 +869,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 'JULIA_NUM_THREADS', ]:
         environ[var] = str(int(spawner.cpu_limit))
     # Aux groups for instructors (other mounts)
+    spawner.log.info("pre_spawn_hook: env done")
 
     # The course data from other courses the instructor has access to should
     # always be added so instructors can refer to older material.  Except: if
@@ -880,6 +891,8 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 spawner.log.critical("ERROR: setting up mount %s for %s", name, username)
                 spawner.log.critical("".join(traceback.format_exception(*exc_info)).decode())
 
+    spawner.log.info("pre_spawn_hook: create_groups done")
+
     # If we add the user to other groups, set variables to handle it in the spawner
     if spawner.create_groups:
         environ['NB_CREATE_GROUPS'] = ','.join(f"{name}:{gid}" for name,gid in spawner.create_groups)
@@ -889,6 +902,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     cmds.append("source start-singleuser.sh")
     # Setting this replaces the container's default entrypoint (CMD)
     spawner.cmd = ["bash", "-x", "-c", ] + [" && ".join(cmds)]
+    spawner.log.info("pre_spawn_hook: done")
 
 
 def post_stop_hook(spawner: KubeSpawner):
