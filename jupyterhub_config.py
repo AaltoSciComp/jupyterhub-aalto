@@ -77,10 +77,16 @@ EMPTY_PROFILE = {'node_selector': DEFAULT_NODE_SELECTOR,
 
 def unique_suffix(base: str, other: str):
     """Return the unique suffix of other, relative to base."""
-    if 'registry.cs.aalto.fi' in other:
-        base = base.replace('aaltoscienceit', 'registry.cs.aalto.fi/jupyter')
+    for known_prefix in [
+        "aaltoscienceit/",
+        "registry.cs.aalto.fi/jupyter/",
+        "harbor.cs.aalto.fi/jupyter/"
+    ]:
+        base = base.removeprefix(known_prefix)
+        other = other.removeprefix(known_prefix)
+
     prefix = os.path.commonprefix([base, other])
-    suffix = other[len(prefix):]
+    suffix = other.removeprefix(prefix)
     if suffix == '':
         return ''
     if ':' not in suffix:
