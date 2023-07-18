@@ -35,8 +35,7 @@ IMAGE_DEFAULT_JULIA = 'aaltoscienceit/notebook-server-julia:4.1.0'
 IMAGE_DEFAULT_CUDA = 'aaltoscienceit/notebook-server-cuda:1.8.8'
 IMAGE_TESTING = 'registry.cs.aalto.fi/jupyter/notebook-server:5.0.4'
 IMAGES_OLD = [
-    #'aaltoscienceit/notebook-server:1.8.8',
-    'aaltoscienceit/notebook-server:5.0.4',
+    "aaltoscienceit/notebook-server:5.0.26",
 ]
 
 # Name of the manager node
