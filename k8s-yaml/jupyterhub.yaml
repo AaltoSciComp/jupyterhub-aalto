@@ -24,7 +24,7 @@ spec:
         command:
           - bash
           - -c
-          - ln -s /mnt/keytab/krb5.keytab /etc/krb5.keytab && jupyterhub upgrade-db && /run.sh
+          - ln -s /mnt/keytab/krb5.keytab /etc/krb5.keytab && /run.sh
         ports:
         # - containerPort: 8000
         - containerPort: 8081
