@@ -21,15 +21,19 @@ spec:
       containers:
       - name: jupyterhub
         image: harbor.cs.aalto.fi/jupyter-internal/jupyterhub-cs:1.4.2-2023-07-18
+        command:
+          - bash
+          - -c
+          - ln -s /mnt/keytab/krb5.keytab /etc/krb5.keytab && /run.sh
         ports:
-#        - containerPort: 8000
+        # - containerPort: 8000
         - containerPort: 8081
         - containerPort: 36541
         env:
         - name: TZ
           value: Europe/Helsinki
-#        - name: NO_AD_JOIN
-#          value: "true"
+        # - name: NO_AD_JOIN
+        #   value: "true"
         - name: CONFIGPROXY_AUTH_TOKEN
           valueFrom:
             secretKeyRef:
@@ -81,6 +85,8 @@ spec:
         - name: sssd-conf
           mountPath: /etc/sssd/sssd.conf
           subPath: sssd.conf
+        - name: nfs-keytab
+          mountPath: /mnt/keytab
         #imagePullPolicy: Never
       imagePullSecrets:
       - name: registry-secret
@@ -94,6 +100,10 @@ spec:
         nfs:
           server: jhnas.org.aalto.fi
           path: /vol/jupyter/admin/hubdata/
+      - name: nfs-keytab
+        nfs:
+          server: jhnas.org.aalto.fi
+          path: /vol/jupyter/admin/keytab/
       - name: jupyterhub-config
         configMap:
           name: jupyterhub-config
