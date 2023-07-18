@@ -897,6 +897,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     if spawner.create_groups:
         environ['NB_CREATE_GROUPS'] = ','.join(f"{name}:{gid}" for name,gid in spawner.create_groups)
     environ['NB_SUPPLEMENTARY_GROUPS'] = ','.join(str(x) for x in spawner.supplemental_gids)
+    environ["JUPYTERHUB_SINGLEUSER_APP"] = "notebook.notebookapp.NotebookApp"
 
     # Generate actual run commands and start
     cmds.append("source start-singleuser.sh")
