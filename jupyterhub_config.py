@@ -40,7 +40,7 @@ IMAGES_OLD = [
 ]
 
 # Name of the manager node
-JMGR_HOSTNAME = "jupyter-manager-2.cs.aalto.fi"
+JMGR_HOSTNAME = "jupyter-manager.cs.aalto.fi"
 # Path to the cloned repo on the manager node.
 # NOTE: $JMGR_HOSTNAME defines a hardcoded command in
 # authorized_keys, the path here is most likely ignored
