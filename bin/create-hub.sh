@@ -1,6 +1,8 @@
+#!/bin/bash
+set -euo pipefail
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 NAMESPACE=${1:-jupyter}
-echo "Namespace: $NAMESPACE"
+source "$SCRIPTPATH/_check_namespace.sh"
 
 kubectl create configmap jupyterhub-config -n $NAMESPACE --from-file=$SCRIPTPATH/../jupyterhub_config.py
 kubectl create configmap hub-status-service -n $NAMESPACE --from-file=$SCRIPTPATH/../scripts/hub_status_service.py

@@ -1,7 +1,8 @@
+#!/bin/bash
+set -uo pipefail
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
-cd $SCRIPTPATH/../
 NAMESPACE=${1:-jupyter}
-echo "Namespace: $NAMESPACE"
+source "$SCRIPTPATH/_check_namespace.sh"
 
 kubectl delete secret -n $NAMESPACE tls
 kubectl create secret -n $NAMESPACE tls tls --cert=$SCRIPTPATH/../secrets/jupyter_cs_aalto_fi.crt --key=$SCRIPTPATH/../secrets/jupyter.cs.aalto.fi.key
