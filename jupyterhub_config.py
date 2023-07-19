@@ -191,7 +191,10 @@ c.KubeSpawner.start_timeout = 60 * 5
 c.KubeSpawner.hub_connect_port = 8081
 c.KubeSpawner.http_timeout = 60
 c.KubeSpawner.disable_user_config = True
-c.KubeSpawner.common_labels = { "cs-aalto/app": "notebook-server" }
+c.KubeSpawner.common_labels = { "cs-aalto/app": "notebook-server"}
+c.KubeSpawner.extra_labels = { "cs-aalto/app": "notebook-server",
+                                "cs-aalto/dont-resource-warn": "true",
+                             }
 c.KubeSpawner.poll_interval = 150  # default 30, check each pod for aliveness this often
 
 # User environment config
