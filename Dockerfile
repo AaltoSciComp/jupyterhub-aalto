@@ -17,10 +17,7 @@ RUN python3 -m pip install jupyter python-dateutil pytz pyyaml oauthenticator Py
 
 # kubespawner
 # List jupyterhub as a dependency to prevent pip from upgrading the package
-RUN python3 -m pip install jupyterhub-kubespawner jupyterhub==${JH_VERSION}
-# using a commit from Dec 27, 2019 instead of a release because there hasn't
-# been a new release in a long time
-#RUN python3 -m pip install https://github.com/jupyterhub/kubespawner/archive/a6c3ea8.tar.gz
+RUN python3 -m pip install jupyterhub-kubespawner==4.3.0 jupyterhub==${JH_VERSION}
 
 # Enable aalto domain join
 RUN apt-get update && apt-get install -y adcli sssd sssd-krb5 krb5-config sssd-ldap sssd-ad libpam-sss
