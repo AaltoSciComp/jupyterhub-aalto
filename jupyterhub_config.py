@@ -23,7 +23,7 @@ from oauthenticator.azuread import AzureAdOAuthenticator
 # Not really necessary, just to make linters happy
 c: traitlets.config.Config
 
-# c.JupyterHub.log_level = "DEBUG"
+c.JupyterHub.log_level = "DEBUG"
 c.Authenticator.admin_users = {"darstr1", "laines5", "bordong1"}
 
 USE_OAUTHENTICATOR = True
