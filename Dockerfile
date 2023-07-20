@@ -11,7 +11,7 @@ RUN apt-get update && \
 
 # Jupyterhub & co
 #  PyJWT is for oauthenticator
-RUN python3 -m pip install jupyter python-dateutil pytz pyyaml kubernetes oauthenticator PyJWT
+RUN python3 -m pip install jupyter python-dateutil pytz pyyaml oauthenticator PyJWT
 # Install latest to get newer features:
 #RUN python3 -m pip install https://github.com/jupyterhub/jupyterhub/archive/f3c3225.tar.gz
 

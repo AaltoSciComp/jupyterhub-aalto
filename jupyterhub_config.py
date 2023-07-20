@@ -16,7 +16,6 @@ from typing import Dict, List, Tuple
 import traitlets.config
 import yaml
 from jupyterhub.auth import PAMAuthenticator
-from kubernetes import client, config
 from kubespawner.spawner import KubeSpawner
 from oauthenticator.azuread import AzureAdOAuthenticator
 
@@ -223,10 +222,6 @@ DEFAULT_VOLUME_MOUNTS = [
 ]
 c.KubeSpawner.volumes = DEFAULT_VOLUMES
 c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
-
-# Kubernetes client config for job token management
-config.load_incluster_config()
-k8s_api = client.CoreV1Api()
 
 # Find all of our courses and profiles
 COURSES = { }
@@ -819,36 +814,6 @@ async def pre_spawn_hook(spawner: KubeSpawner):
         cmds.append("disable_formgrader.sh")
 
     spawner.log.info("pre_spawn_hook: formgrader done")
-    ## Generate job token used for submitting remote node jobs
-    #token_string = secrets.token_hex(32)
-    #token_encoded = b64encode(bytes(token_string, "utf-8")).decode('utf-8')
-    #environ["JOB_TOKEN"] = token_string
-    #
-    ## Token name is like jobtoken-username-courseslug
-    #token_name_parts = ["jobtoken", username]
-    #if course_slug != '':
-    #    token_name_parts.append(course_slug)
-    #token_name = '-'.join(token_name_parts)
-    #
-    ## Delete token, if it exists
-    #try:
-    #    spawner.log.debug('pre_spawn_hook: %s: token: trying to delete %s', username, token_name)
-    #    k8s_api.delete_namespaced_secret(token_name, NAMESPACE)
-    #except kubernetes.client.rest.ApiException:
-    #    exc_info = sys.exc_info()
-    #    spawner.log.info('pre_spawn_hook: %s: caught exception while deleting token: %s', username, token_name)
-    #    #print("".join(traceback.format_exception(*exc_info)))
-    ## Create the actual token
-    #spawner.log.debug('pre_spawn_hook: %s: creating job token %s', username, token_name)
-    #k8s_api.create_namespaced_secret(NAMESPACE, {
-    #"metadata": {
-    #    "name": token_name,
-    #    "namespace": NAMESPACE
-    #},
-    #    "data": {
-    #        "job-token": token_encoded
-    #    }
-    #})
 
     # spawner.log.info("Before hooks: spawner.node_selector: %s", spawner.node_selector)
 
@@ -918,18 +883,6 @@ def post_stop_hook(spawner: KubeSpawner):
     username = spawner.user.name
     spawner.log.info("post_stop_hook: %s stopping %s", username, getattr(spawner, 'course_slug', 'None'))
     course_slug = getattr(spawner, 'course_slug', '')
-
-    # Note that the below doesn't work somehow!  debug before using it.
-    ## Delete the remote job token
-    #token_name_parts = ["jobtoken", username]
-    #if course_slug != '':
-    #    token_name_parts.append(course_slug)
-    #token_name = '-'.join(token_name_parts)
-    #spawner.log.info('post_stop_hook: %s: trying to delete token_name=%s', username, token_name)
-    #try:
-    #    k8s_api.delete_namespaced_secret(token_name, NAMESPACE)
-    #except kubernetes.client.rest.ApiException:
-    #    spawner.log.info('post_stop_hook: %s: caught exception while deleting token: %s', username, token_name)
 
     spawner.log.info("post_stop_hook: %s stopped %s", username, course_slug or 'None')
 
