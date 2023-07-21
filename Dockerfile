@@ -11,13 +11,27 @@ RUN apt-get update && \
 
 # Jupyterhub & co
 #  PyJWT is for oauthenticator
-RUN python3 -m pip install jupyter python-dateutil pytz pyyaml oauthenticator PyJWT
-# Install latest to get newer features:
-#RUN python3 -m pip install https://github.com/jupyterhub/jupyterhub/archive/f3c3225.tar.gz
+RUN python3 -m pip install \
+    # TODO: Is this actually required? Most jupyter stuff should come from
+    # upstream
+    jupyter \
+    # Used by cull_idle_servers and hub_status_service
+    python-dateutil \
+    pytz \
+    # Added 2018-07-27, unknown use
+    pyyaml \
+    # https://oauthenticator.readthedocs.io/en/latest/reference/changelog.html
+    'oauthenticator<7' \
+    # Used by oauthenticator
+    PyJWT
 
 # kubespawner
-# List jupyterhub as a dependency to prevent pip from upgrading the package
-RUN python3 -m pip install jupyterhub-kubespawner==4.3.0 jupyterhub==${JH_VERSION}
+# Listing jupyterhub here separately to prevent it from being unintentionally
+# upgraded as a dependency
+# https://jupyterhub-kubespawner.readthedocs.io/en/latest/changelog.html
+RUN python3 -m pip install \
+    jupyterhub-kubespawner==4.3.0 \
+    jupyterhub==${JH_VERSION}
 
 # Enable aalto domain join
 RUN apt-get update && apt-get install -y adcli sssd sssd-krb5 krb5-config sssd-ldap sssd-ad libpam-sss
