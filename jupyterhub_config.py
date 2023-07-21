@@ -171,6 +171,7 @@ if use_oauthenticator and os.path.exists('/etc/azuread_oauth.json'):
     c.AzureAdOAuthenticator.scope = ['openid', 'user.read']
     c.AzureAdOAuthenticator.username_claim = 'samAccountName' # 'email' with /v2.0/
     c.AzureAdOAuthenticator.login_service = "Aalto account" # text label only
+    c.OAuthenticator.allow_all = True
 else:
     class NormalizingPAMAuthenticator(PAMAuthenticator):
         def normalize_username(self, username: str):
