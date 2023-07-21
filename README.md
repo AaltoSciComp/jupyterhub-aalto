@@ -51,10 +51,7 @@ needed.
   is a very long, hackish function but does the job quite effectively
   and gives us a lot of flexibility.
 
-
-
-
-## Using this repository.
+## Using this repository
 
 * `k8s-yaml/*.yaml` is all the Kubernetes configuration.  Use `kubectl
   create -f` to set up things.
@@ -85,17 +82,13 @@ probably a lot more magic in there....  There is also plenty of
 Aalto-specific configuration embedded in here.  We would be happy to
 help factor this out.
 
-
-
 ## See also
 
 * "Zero to JupyterHub" is another JH, but despite the name it's
   Kubernetes-only.  It uses Helm charts to automate everything.  It
   operates as a stand-alone service (what we do here is far more
   integrated to university
-  systems). https://zero-to-jupyterhub.readthedocs.io/en/latest/
-
-
+  systems). <https://zero-to-jupyterhub.readthedocs.io/en/latest/>
 
 ## Contact
 
