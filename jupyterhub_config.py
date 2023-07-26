@@ -810,9 +810,9 @@ async def pre_spawn_hook(spawner: KubeSpawner):
 
     spawner.log.info("pre_spawn_hook: course setup done")
     if enable_formgrader:
-        cmds.append("enable_formgrader.sh")
+        environ['AALTO_NB_ENABLE_FORMGRADER'] = '1'
     else:
-        cmds.append("disable_formgrader.sh")
+        environ['AALTO_NB_DISABLE_FORMGRADER'] = '1'
 
     spawner.log.info("pre_spawn_hook: formgrader done")
 
