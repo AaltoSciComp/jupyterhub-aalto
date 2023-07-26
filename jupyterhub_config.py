@@ -102,7 +102,7 @@ PROFILE_LIST_DEFAULT = [
     },
     {'slug': 'general-python-notebook',
      'display_name': 'Python: General use (classic notebook) ',
-     'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': ''},
+     'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': False, },
     },
     {'slug': 'general-r',
      'display_name': 'R: General use (JupyterLab) ',
@@ -406,7 +406,7 @@ def get_profile_list(spawner: KubeSpawner):
                 'image': IMAGE_COURSE_DEFAULT,
                 **course_data.get('kubespawner_override', {}),
                 },
-            'x_jupyter_enable_lab': False,
+            'x_jupyter_enable_lab': True,
             })
         if 'image' in course_data:
             course_image = select_image(course_data['image'])
@@ -538,7 +538,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.bashrc")
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.profile")
     #cmds.append("pip install --upgrade --no-deps https://github.com/AaltoSciComp/nbgrader/archive/live.zip")
-    if getattr(spawner, 'x_jupyter_enable_lab', False):
+    if getattr(spawner, 'x_jupyter_enable_lab', True):
         spawner.default_url = "lab/tree/notebooks/"
     #cmds.append('jupyter labextension enable @jupyterlab/google-drive')
     # Install gpuplug in the GPU images
@@ -634,7 +634,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     else:
         spawner.log.info("pre_spawn_hook: is a course")
         course_data = GET_COURSES()[course_slug]
-        if course_data.get('jupyterlab', False):
+        if course_data.get('jupyterlab', True):
             spawner.default_url = "lab/tree/notebooks/"
         spawner.pod_name = 'jupyter-{}-{}{}'.format(username, course_slug, '-'+spawner.name if spawner.name else '')
         spawner.log.debug("pre_spawn_hook: course %s", course_slug)
