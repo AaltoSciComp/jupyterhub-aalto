@@ -196,6 +196,14 @@ c.KubeSpawner.extra_labels = { "cs-aalto/app": "notebook-server",
                                 "cs-aalto/dont-resource-warn": "true",
                              }
 c.KubeSpawner.poll_interval = 150  # default 30, check each pod for aliveness this often
+# These extra permissions are needed in order to read about the current user
+# and access server['last_activity'] for client-side notifications of how much
+# time is left.
+c.KubeSpawner.server_token_scopes = [
+    'users:activity!user',
+    'access:servers!server',
+    'read:servers!server'
+]
 
 # User environment config
 c.KubeSpawner.image = IMAGE_DEFAULT
@@ -538,6 +546,10 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.bashrc")
     #cmds.append("echo 'umask 0007' >> /home/jovyan/.profile")
     #cmds.append("pip install --upgrade --no-deps https://github.com/AaltoSciComp/nbgrader/archive/live.zip")
+    # Inactive time and age limits.  These are used for client-side
+    # notifications about how much time is remaining before culling.
+    environ['JUPYTERHUB_CULL_TIMEOUT'] = str(getattr(spawner, 'cull_inactive_time', DEFAULT_TIMEOUT))
+    environ['JUPYTERHUB_CULL_MAX_AGE'] = str(getattr(spawner, 'cull_max_age', DEFAULT_TIMELIMIT))
     if getattr(spawner, 'x_jupyter_enable_lab', True):
         spawner.default_url = "lab/tree/notebooks/"
     #cmds.append('jupyter labextension enable @jupyterlab/google-drive')
