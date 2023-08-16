@@ -5,10 +5,15 @@ ENV JH_VERSION=${JH_VERSION}
 
 # Install dependencies
 RUN apt-get update && \
+    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
         openssh-client vim && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m pip install -U --no-cache-dir \
+        pip && \
+    rm -rf /root/.cache/pip/*
 
 # Jupyterhub & co
 #  PyJWT is for oauthenticator
@@ -25,6 +30,8 @@ RUN python3 -m pip install --no-cache-dir \
         'oauthenticator<7' \
         # Used by oauthenticator
         PyJWT \
+        # Fix CVE-2023-37920
+        'certifi>=2023.7.22' \
     && \
     rm -rf /root/.cache/pip/*
 
