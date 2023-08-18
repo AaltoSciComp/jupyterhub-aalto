@@ -552,6 +552,8 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     environ['JUPYTERHUB_CULL_MAX_AGE'] = str(getattr(spawner, 'cull_max_age', DEFAULT_TIMELIMIT))
     if getattr(spawner, 'x_jupyter_enable_lab', True):
         spawner.default_url = "lab/tree/notebooks/"
+    else:
+        environ["JUPYTERHUB_SINGLEUSER_APP"] = "notebook.notebookapp.NotebookApp"
     #cmds.append('jupyter labextension enable @jupyterlab/google-drive')
     # Install gpuplug in the GPU images
     if spawner.node_selector and 'cs-aalto/gpu' in spawner.node_selector:
@@ -883,7 +885,6 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     if spawner.create_groups:
         environ['NB_CREATE_GROUPS'] = ','.join(f"{name}:{gid}" for name,gid in spawner.create_groups)
     environ['NB_SUPPLEMENTARY_GROUPS'] = ','.join(str(x) for x in spawner.supplemental_gids)
-    environ["JUPYTERHUB_SINGLEUSER_APP"] = "notebook.notebookapp.NotebookApp"
 
     # Generate actual run commands and start
     cmds.append("source start-singleuser.sh")
