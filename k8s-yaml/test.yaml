@@ -1,0 +1,57 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jh-test
+  # namespace: jupyter-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      cs-aalto/app: jh-test-2
+  template:
+    metadata:
+      name: jh-test
+      labels:
+        cs-aalto/app: jh-test-2
+    spec:
+      hostname: jh-test-cs-aalto-fi
+      containers:
+      - name: jh-test
+        image: gehock/ubuntu-net
+        command:
+          - "bash"
+        args:
+          - "-c"
+          - "while true; do sleep 1; done"
+        volumeMounts:
+        # - name: spawn-test
+        #   mountPath: /mnt/spawn_test.py
+        #   subPath: spawn_test.py
+        - name: ssh-privkey
+          mountPath: /root/.ssh/id_rsa
+          subPath: ssh_key
+        - name: ssh-pubkey
+          mountPath: /root/.ssh/id_rsa.pub
+          subPath: ssh_key.pub
+        - name: knownhosts
+          mountPath: /root/.ssh/known_hosts
+          subPath: known_hosts
+      volumes:
+      # - name: spawn-test
+      #   configMap:
+      #     name: spawn-test
+      - name: ssh-privkey
+        secret:
+          secretName: ssh-privkey
+          defaultMode: 0600
+      - name: ssh-pubkey
+        secret:
+          secretName: ssh-pubkey
+      - name: knownhosts
+        secret:
+          secretName: knownhosts
+      nodeSelector:
+        cs-aalto/app: jupyterhub-test
+      tolerations:
+      - {key: cs-aalto/app, value: jupyterhub-test, operator: Equal, effect: NoSchedule}
