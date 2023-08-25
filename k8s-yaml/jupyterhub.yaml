@@ -32,8 +32,8 @@ spec:
         env:
         - name: TZ
           value: Europe/Helsinki
-        # - name: NO_AD_JOIN
-        #   value: "true"
+        - name: NO_AD_JOIN
+          value: "true"
         - name: CONFIGPROXY_AUTH_TOKEN
           valueFrom:
             secretKeyRef:
