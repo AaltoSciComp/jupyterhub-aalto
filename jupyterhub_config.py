@@ -448,6 +448,8 @@ def get_profile_list(spawner: KubeSpawner):
             suffix = profile["kubespawner_override"]["image"].split(":")[-1]
         else:
             suffix = unique_suffix(IMAGE_DEFAULT, profile["kubespawner_override"]["image"])
+        if suffix and suffix[0].isdigit():
+            suffix = "v" + suffix
         return suffix
 
     profile_list.sort(key=lambda x: x['display_name'])
