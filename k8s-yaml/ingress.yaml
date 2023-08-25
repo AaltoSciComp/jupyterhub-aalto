@@ -9,11 +9,14 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: 50m
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    # Uncomment this to use LE certificates
+    # cert-manager.io/issuer: "letsencrypt-prod"
 
 spec:
   tls:
   - hosts:
     - jupyter.cs.aalto.fi
+    # Change name to tls-le when using LE certificates
     secretName: tls
   rules:
   - host: jupyter.cs.aalto.fi
