@@ -125,7 +125,7 @@ if 'IMAGE_TESTING' in globals():
     })
 for image in IMAGES_OLD:
     PROFILE_LIST_DEFAULT.append(
-    {'display_name': '<font color="#AAAAAA">Old version (JupyterLab)</font> ',
+    {'display_name': '<span style="color: #AAAAAA">Old version (JupyterLab)</span> ',
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
                                'image': image, }
     })
@@ -405,7 +405,7 @@ def get_profile_list(spawner: KubeSpawner):
             if not (is_instructor or is_student or is_teststudent or is_admin):
                 continue
             if not is_student:
-                course_notes = ' <font color="brown">(not public)</font>'
+                course_notes = ' <span style="color: brown">(not public)</span>'
         display_name = course_data.get('name', course_slug)
         profile_list.append({
             'slug': course_slug,
@@ -428,7 +428,7 @@ def get_profile_list(spawner: KubeSpawner):
             # instructors, the instructor version won't be shown in the course
             # list
             profile = copy.deepcopy(profile_list[-1])  # COPY AND RE-APPEND
-            profile['display_name'] = display_name + ' <font color="blue">(instructor)</font>'
+            profile['display_name'] = display_name + ' <span style="color: blue">(instructor)</span>'
             profile['slug'] = profile['slug'] + '-instructor'
             if 'image_instructor' in course_data:
                 course_image_instructor = select_image(course_data['image_instructor'])
