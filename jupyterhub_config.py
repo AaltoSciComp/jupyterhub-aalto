@@ -11,7 +11,7 @@ import sys
 import time
 import traceback
 from datetime import date
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import traitlets.config
 import yaml
@@ -442,15 +442,27 @@ def get_profile_list(spawner: KubeSpawner):
     #pprint(spawner.user.name, stream=sys.stderr)
     #pprint(profile_list, stream=sys.stderr)
 
+
+    def _get_profile_suffix(profile: dict[str, Any]) -> str:
+        if profile.get("slug", "").startswith("general"):
+            suffix = profile["kubespawner_override"]["image"].split(":")[-1]
+        else:
+            suffix = unique_suffix(IMAGE_DEFAULT, profile["kubespawner_override"]["image"])
+        return suffix
+
     profile_list.sort(key=lambda x: x['display_name'])
     profile_list = copy.deepcopy(PROFILE_LIST_DEFAULT) + profile_list + copy.deepcopy(PROFILE_LIST_DEFAULT_BOTTOM)
+
     # Update all of the default images
     for profile in profile_list:
         profile['kubespawner_override']['image'] = select_image(profile['kubespawner_override']['image'])
-        if profile.get('slug', '').startswith('general'):
-            profile['display_name'] += '<font color="#999999">%s</font>'%(profile['kubespawner_override']['image'].split(':')[-1])
+        suffix = _get_profile_suffix(profile)
+        slug = profile.get("slug", "").removesuffix("-instructor")
+        if slug and not slug.startswith("general"):
+            course_notes = f"{suffix} ({slug})"
         else:
-            profile['display_name'] += ' <font color="#999999">' + unique_suffix(IMAGE_DEFAULT, profile['kubespawner_override']['image']) + '</font>'
+            course_notes = f"{suffix}"
+        profile['display_name'] += f' <small style="color: #999999">{course_notes}</small>'
 
     return profile_list
 # In next version of kubespawner, leave as callable to regen every
