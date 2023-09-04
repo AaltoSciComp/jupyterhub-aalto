@@ -175,13 +175,10 @@ if USE_OAUTHENTICATOR and os.path.exists('/etc/azuread_oauth.json'):
     c.AzureAdOAuthenticator.login_service = "Aalto account" # text label only
     c.OAuthenticator.allow_all = True
 else:
-    class NormalizingPAMAuthenticator(PAMAuthenticator):
-        def normalize_username(self, username: str):
-            # pass through uid to ensure that all names that
-            # correspond to one uid map to the same jupyterhub user
-            uid = pwd.getpwnam(username).pw_uid
-            return super().normalize_username(pwd.getpwuid(uid).pw_name)
-    c.JupyterHub.authenticator_class = NormalizingPAMAuthenticator
+    c.JupyterHub.authenticator_class = PAMAuthenticator
+    # Ensure that all names that correspond to one UID map to the same
+    # JupyterHub user
+    c.PAMAuthenticator.pam_normalize_username = True
 #c.Authenticator.delete_invalid_users = True  # delete users once no longer in Aalto AD
 # FIXME: does '.' here match all characters?
 USER_RE = re.compile('^[a-z0-9.]+$')
