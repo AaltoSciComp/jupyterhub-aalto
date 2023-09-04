@@ -25,6 +25,8 @@ c: traitlets.config.Config
 # c.JupyterHub.log_level = 'DEBUG'
 c.Authenticator.admin_users = {'darstr1', 'laines5', 'koset1'}
 
+USE_OAUTHENTICATOR = True
+
 # These values are used as defaults if meta/IMAGES.py doesn't exist. Otherwise
 # overridden automatically.
 IMAGE_DEFAULT = 'aaltoscienceit/notebook-server:5.0.4'         # for generic images
@@ -158,8 +160,7 @@ c.ConfigurableHTTPProxy.should_start = False
 
 
 # Authentication
-use_oauthenticator = True
-if use_oauthenticator and os.path.exists('/etc/azuread_oauth.json'):
+if USE_OAUTHENTICATOR and os.path.exists('/etc/azuread_oauth.json'):
     oauth_info = json.load(open('/etc/azuread_oauth.json'))
     c.JupyterHub.authenticator_class = AzureAdOAuthenticator
     c.AzureAdOAuthenticator.tenant_id = oauth_info['tenantId']
