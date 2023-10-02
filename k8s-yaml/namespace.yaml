@@ -2,4 +2,4 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: jupyter-jh-v4-test
+  name: jupyter
