@@ -89,7 +89,7 @@ spec:
           mountPath: /mnt/keytab
         #imagePullPolicy: Never
       imagePullSecrets:
-      - name: registry-secret
+      - name: registry-secret-jupyter-internal
       tolerations:
       - {key: cs-aalto/app, value: jupyterhub,             operator: Equal, effect: NoSchedule}
       - {key: node.kubernetes.io/disk-pressure,   operator: Exists}
