@@ -216,6 +216,7 @@ c.KubeSpawner.cpu_limit = DEFAULT_CPU_LIMIT
 c.KubeSpawner.mem_limit = DEFAULT_MEM_LIMIT
 c.KubeSpawner.cpu_guarantee = DEFAULT_CPU_GUARANTEE
 c.KubeSpawner.mem_guarantee = DEFAULT_MEM_GUARANTEE
+c.KubeSpawner.singleuser_image_pull_secrets = "registry-secret-jupyter"
 
 
 # Volume mounts

@@ -29,3 +29,5 @@ kubectl create secret -n $NAMESPACE generic sssd-conf --from-file=$SCRIPTPATH/..
 
 kubectl delete secret -n $NAMESPACE registry-secret
 kubectl create secret generic -n $NAMESPACE registry-secret --from-file=.dockerconfigjson=$SCRIPTPATH/../secrets/dockerconfig --type=kubernetes.io/dockerconfigjson
+kubectl delete secret -n $NAMESPACE registry-secret-jupyter
+kubectl create secret generic -n $NAMESPACE registry-secret-jupyter --from-file=.dockerconfigjson=$SCRIPTPATH/../secrets/dockerconfig-jupyter --type=kubernetes.io/dockerconfigjson
