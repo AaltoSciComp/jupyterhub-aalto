@@ -39,7 +39,7 @@
 from nbgrader.plugins import ExportPlugin, BasePlugin
 from nbgrader.api import MissingEntry
 from datetime import datetime
-from traitlets import Type, Unicode
+from traitlets import Type, Unicode, Bool
 
 class MyCoursesExportPlugin(ExportPlugin):
     """CSV exporter plugin for Aalto MyCourses."""
@@ -54,6 +54,11 @@ class MyCoursesExportPlugin(ExportPlugin):
         allow_none=True,
         klass=BasePlugin,
         help="The plugin class for assigning the late penalty for each notebook. Defining this, user can change the penalty points assigned within the database."
+    ).tag(config=True)
+
+    scale_to_100 = Bool(
+        True,
+        help="Scale points to a scale of 100 (default True)."
     ).tag(config=True)
 
     def export(self, gradebook):
@@ -97,9 +102,15 @@ class MyCoursesExportPlugin(ExportPlugin):
                         if submission.total_seconds_late > 0:
                             penalty = self.penalty_plugin.late_submission_penalty(student.id, submission.score, submission.total_seconds_late)
 
-                    # Set the score between 0 and 100 which is the most common scoring schema used in Aalto MyCourses
-                    student_row[assignment.name] = max(0.0, (submission.score - penalty) / assignment.max_score * 100)
-
+                    score = max(0.0, (submission.score - penalty))
+                    # Set the score between 0 and 100 which is the most common
+                    # scoring schema used in Aalto MyCourses
+                    if self.scale_to_100:
+                        try:
+                            score =  (score / assignment.max_score * 100)
+                        except ZeroDivisionError:
+                            score = 0
+                    student_row[assignment.name] = score
                 for key in student_row:
                     if student_row[key] is None:
                         student_row[key] = ''
