@@ -75,7 +75,6 @@ class MyCoursesExportPlugin(ExportPlugin):
         keys = ['username']
         keys.extend(list(map(lambda a : a.name, gradebook.assignments)))
         fh.write(",".join(keys) + "\n")
-        fmt = ",".join(["{" + x + "}" for x in keys]) + "\n"
 
         # Loop over each student in the database
         for student in gradebook.students:
@@ -117,6 +116,6 @@ class MyCoursesExportPlugin(ExportPlugin):
                     if not isinstance(student_row[key], str):
                         student_row[key] = str(student_row[key])
 
-            fh.write(fmt.format(**student_row))
+            fh.write(",".join(student_row.values()) + "\n")
 
         fh.close()
