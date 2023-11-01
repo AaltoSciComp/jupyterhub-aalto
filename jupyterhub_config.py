@@ -685,10 +685,14 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 spawner.volume_mounts.append({"mountPath": "/coursedata",
                                             "subPath": "course/{}/data/".format(course_slug),
                                             "name": "jupyter-nfs",
-                                            "readOnly": ((not is_instructor)
-                                                        and not course_data.get('datadir_readwrite', False)
-                                                        and not getattr(spawner, 'as_instructor', False)
-                                                        ),
+                                            "readOnly": not ( # condition for read-write
+                                                              ( # condition for 'as an instructor'
+                                                                is_instructor
+                                                                and getattr(spawner, 'as_instructor', False)
+                                                              )
+                                                              # datadir_rw makes it always read-write
+                                                              or course_data.get('datadir_readwrite', False)
+                                                            )
                                             })
                 environ['COURSEDATA'] = '/coursedata/'
 
