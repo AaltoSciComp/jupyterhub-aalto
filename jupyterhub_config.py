@@ -125,12 +125,6 @@ if 'IMAGE_TESTING' in globals():
                                #'node_selector':{'kubernetes.io/hostname': 'k8s-node3.cs.aalto.fi'},
                                'image': 'IMAGE_TESTING', }
     })
-for image in IMAGES_OLD:
-    PROFILE_LIST_DEFAULT.append(
-    {'display_name': '<span style="color: #AAAAAA">Old version (JupyterLab)</span> ',
-     'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
-                               'image': image, }
-    })
 PROFILE_LIST_DEFAULT_BOTTOM = [
     {'display_name': 'GPU testing ',
      'kubespawner_override': {**EMPTY_PROFILE, 'course_slug': '', 'x_jupyter_enable_lab': True,
@@ -452,7 +446,22 @@ def get_profile_list(spawner: KubeSpawner):
         return suffix
 
     profile_list.sort(key=lambda x: x['display_name'])
-    profile_list = copy.deepcopy(PROFILE_LIST_DEFAULT) + profile_list + copy.deepcopy(PROFILE_LIST_DEFAULT_BOTTOM)
+
+    old_images = []
+    for name, image in IMAGES_OLD:
+        old_images.append(
+            {
+                "display_name": f"<span style=\"color: #AAAAAA\">{name or 'Old version (JupyterLab)'}</span> ",
+                "kubespawner_override": {
+                    **EMPTY_PROFILE,
+                    "course_slug": "",
+                    "x_jupyter_enable_lab": True,
+                    "image": image,
+                },
+            }
+        )
+
+    profile_list = copy.deepcopy(PROFILE_LIST_DEFAULT) + old_images + profile_list + copy.deepcopy(PROFILE_LIST_DEFAULT_BOTTOM)
 
     # Update all of the default images
     for profile in profile_list:
