@@ -746,6 +746,14 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 # must be STRING
                 environ['NB_UMASK'] = student_umask
 
+            create_userdata = course_data.get("create_userdata", False)
+            if create_userdata:
+                spawner.log.info(
+                    "pre_spawn_hook: setting a flag to create userdata directories"
+                )
+                # must be STRING
+                environ["CREATE_USERDATA"] = "true"
+
             # RStudio config
             cmds.append(r'( test -d /etc/rstudio '
                         r'&& echo session-default-working-dir=~/notebooks/ >> /etc/rstudio/rsession.conf '
