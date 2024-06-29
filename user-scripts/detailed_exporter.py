@@ -87,14 +87,14 @@ class DetailedExportPlugin(ExportPlugin):
                             score = 0
                     final_score = score
 
-                # Detailed cell grades
-                grades = gradebook.find_all_grades(assignment.name, student.id)
-                for grade in grades:
-                    nb_prefix = "" if len(assignment.notebooks) == 1 else f"{grade.notebook.name}{delimiter}"
-                    grade_name = f"{prefix}{nb_prefix}{grade.name}"
-                    report.loc[student, grade_name] = grade.score
-
                 report.loc[student, assignment.name] = final_score
+
+            # Detailed task grades
+            grades = gradebook.find_all_grades(assignment.name)
+            for grade in grades:
+                nb_prefix = "" if len(assignment.notebooks) == 1 else f"{grade.notebook.name}{delimiter}"
+                grade_name = f"{prefix}{nb_prefix}{grade.name}"
+                report.loc[grade.student, grade_name] = grade.score
 
         report \
             .fillna("") \
