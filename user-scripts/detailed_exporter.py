@@ -9,12 +9,6 @@ from traitlets import Type, Unicode, Bool
 
 import pandas as pd
 
-DEBUG = True
-
-
-def dprint(msg):
-    if DEBUG: print()
-
 
 class DetailedExportPlugin(ExportPlugin):
     """CSV exporter plugin with detailed task grades for assignment."""
@@ -37,11 +31,14 @@ class DetailedExportPlugin(ExportPlugin):
     ).tag(config=True)
 
     def export(self, gradebook):
-        if not self.assignment:
-            raise ValueError("You must specify at least one assignment name to export.")
+        all_assignments = list(map(lambda a: a.name, gradebook.assignments))
+        if not set(self.assignment).issubset(all_assignments):
+            raise ValueError("At least one assignment name specified does not exist in the database.")
 
-        if not set(self.assignment).issubset(map(lambda a: a.name, gradebook.assignments)):
-            raise ValueError("The assignment name specified does not exist in the database.")
+        if not self.assignment:
+            self.assignment = all_assignments
+        
+        self.log.info("Exporting assignments: %s", self.assignment)
 
         if self.to == "":
             timestamp = datetime.now().replace(microsecond=0).isoformat()
