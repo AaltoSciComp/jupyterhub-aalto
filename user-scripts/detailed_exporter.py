@@ -37,7 +37,7 @@ class DetailedExportPlugin(ExportPlugin):
 
         if not self.assignment:
             self.assignment = all_assignments
-        
+
         self.log.info("Exporting assignments: %s", self.assignment)
 
         if self.to == "":
@@ -54,14 +54,7 @@ class DetailedExportPlugin(ExportPlugin):
 
         for assignment_name in self.assignment:
             assignment = gradebook.find_assignment(assignment_name)
-            grade_cells = gradebook.find_assignment_gradecells(assignment.name)
-
-            grade_names = list()
             prefix = "" if len(self.assignment) == 1 else f"{assignment.name}{delimiter}"
-            for grade_cell in grade_cells:
-                nb_prefix = "" if len(assignment.notebooks) == 1 else f"{grade_cell.notebook.name}{delimiter}"
-                grade_names.append(f"{prefix}{nb_prefix}{grade_cell.name}")
-            report.loc[:, grade_names + [assignment.name]] = np.nan
 
             for student in gradebook.students:
                 # Assignment total grade
@@ -84,14 +77,16 @@ class DetailedExportPlugin(ExportPlugin):
                             score = 0
                     final_score = score
 
-                report.loc[student, assignment.name] = final_score
+                    # Detailed task grades
+                    notebooks = submission.notebooks
+                    print(notebooks)
+                    for notebook in notebooks:
+                        for grade in notebook.grades:
+                            nb_prefix = "" if len(notebooks) == 1 else f"{grade.notebook.name}{delimiter}"
+                            grade_name = f"{prefix}{nb_prefix}{grade.name}"
+                            report.loc[grade.student, grade_name] = grade.score
 
-            # Detailed task grades
-            grades = gradebook.find_all_grades(assignment.name)
-            for grade in grades:
-                nb_prefix = "" if len(assignment.notebooks) == 1 else f"{grade.notebook.name}{delimiter}"
-                grade_name = f"{prefix}{nb_prefix}{grade.name}"
-                report.loc[grade.student, grade_name] = grade.score
+                report.loc[student, assignment.name] = final_score
 
         report \
             .fillna("") \
