@@ -1,13 +1,9 @@
-import sys
-
-import numpy as np
-
 from nbgrader.plugins import ExportPlugin, BasePlugin
 from nbgrader.api import MissingEntry
 from datetime import datetime
 from traitlets import Type, Unicode, Bool
 
-import pandas as pd
+from collections import defaultdict, OrderedDict
 
 
 class DetailedExportPlugin(ExportPlugin):
@@ -48,8 +44,10 @@ class DetailedExportPlugin(ExportPlugin):
 
         self.log.info("Exporting grades to %s", dest)
 
-        report = pd.DataFrame({"username": list(map(lambda std: std.id + self.username_suffix, gradebook.students))},
-                              index=gradebook.students)
+        # report = pd.DataFrame({"username": list(map(lambda std: std.id + self.username_suffix, gradebook.students))},
+        #                    index=gradebook.students)
+        report = defaultdict(OrderedDict)
+        columns = list()
         delimiter = "/"
 
         for assignment_name in self.assignment:
@@ -79,15 +77,21 @@ class DetailedExportPlugin(ExportPlugin):
 
                     # Detailed task grades
                     notebooks = submission.notebooks
-                    print(notebooks)
                     for notebook in notebooks:
                         for grade in notebook.grades:
                             nb_prefix = "" if len(notebooks) == 1 else f"{grade.notebook.name}{delimiter}"
                             grade_name = f"{prefix}{nb_prefix}{grade.name}"
-                            report.loc[grade.student, grade_name] = grade.score
 
-                report.loc[student, assignment.name] = final_score
+                            if grade_name not in columns:
+                                columns.append(grade_name)
+                            report[grade.student][grade_name] = grade.score
 
-        report \
-            .fillna("") \
-            .to_csv(dest, index=False)
+                report[student][assignment.name] = final_score
+            columns.append(assignment.name)
+
+        with open(dest, "w") as f:
+            f.write("username," + ",".join(columns) + "\n")
+            for student in report.keys():
+                f.write(f"{student.id + self.username_suffix},")
+                f.write(",".join(str(report[student][assignment]) if assignment in report[student] else ""
+                                 for assignment in columns) + "\n")
