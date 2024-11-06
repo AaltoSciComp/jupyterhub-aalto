@@ -1,10 +1,8 @@
-from __future__ import division
-from nbgrader.plugins import BasePlugin
-
-from textwrap import dedent
-from traitlets import List, Float
-
 from math import ceil
+from textwrap import dedent
+
+from nbgrader.plugins import BasePlugin
+from traitlets import Float, List
 
 
 class AaltoBasePlugin(BasePlugin):
@@ -15,18 +13,18 @@ class AaltoBasePlugin(BasePlugin):
             Allows specified students to be exempted
             from the late submission penalty
             """
-        )
+        ),
     ).tag(config=True)
 
     penalty_unit = Float(
         default_value=0.0,
         help=dedent(
             """
-            The penalty unit for each plugin. For instance, the value 0.2 for `SubRatio`
-            means that submission will receive 20% penalty; whereas the value 1 for `SubMarks`
-            means 1 mark penalty per each hour late
+            The penalty unit for each plugin. For instance, the value 0.2 for
+            `SubRatio` means that submission will receive 20% penalty; whereas
+            the value 1 for `SubMarks` means 1 mark penalty per each hour late
             """
-        )
+        ),
     ).tag(config=True)
 
     def late_submission_penalty(self, student_id, score, total_seconds_late):
