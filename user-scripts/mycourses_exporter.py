@@ -62,6 +62,12 @@ class MyCoursesExportPlugin(ExportPlugin):
     ).tag(config=True)
 
     def export(self, gradebook):
+        all_assignments = list(map(lambda a: a.name, gradebook.assignments))
+        if not set(self.assignment).issubset(all_assignments):
+            raise ValueError("At least one assignment name specified does not exist in the database.")
+
+        if not self.assignment:
+            self.assignment = all_assignments
         if self.to == "":
             dest = f"grades_export_mycourses_{datetime.now().replace(microsecond=0).isoformat()}.csv"
         else:
@@ -73,7 +79,7 @@ class MyCoursesExportPlugin(ExportPlugin):
 
         # Generete a format string for each row entry
         keys = ['username']
-        keys.extend(list(map(lambda a : a.name, gradebook.assignments)))
+        keys.extend(self.assignment)
         fh.write(",".join(keys) + "\n")
 
         # Loop over each student in the database
@@ -83,8 +89,9 @@ class MyCoursesExportPlugin(ExportPlugin):
             # student's scores for all assignments
             student_row = {}
 
-            # Loop over each assignment in the database
-            for assignment in gradebook.assignments:
+            # Loop over each specified assignment
+            for assignment_name in self.assignment:
+                assignment = gradebook.find_assignment(assignment_name)
 
                 student_row['username'] = student.id + self.username_suffix
                 # Try to find the submission in the database. If it doesn't
