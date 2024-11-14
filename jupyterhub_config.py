@@ -550,7 +550,8 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     # Set basic spawner properties
     #storage_capacity = ???
     environ['AALTO_JUPYTERHUB'] = '1'
-    environ['PYTHONPATH'] = '/m/jhnas/jupyter/software/pymod/'  # Remove once all notebooks have the newer hooks.
+    # /course/pymod is used by the autograder, can be used to create custom late submission plugins
+    environ['PYTHONPATH'] = '/course/pymod:/m/jhnas/jupyter/software/pymod/'  # Remove once all notebooks have the newer hooks.
     environ['TZ'] = os.environ.get('TZ', 'Europe/Helsinki')
     cmds = [ ]
     # This is needed for sudo security vulnerability: remove sudo from image,
