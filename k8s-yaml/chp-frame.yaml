@@ -7,7 +7,6 @@ metadata:
 spec:
   selector:
     app: configurable-http-proxy
-  clusterIP: "10.104.184.140"
   ports:
   - protocol: TCP
     port: 80

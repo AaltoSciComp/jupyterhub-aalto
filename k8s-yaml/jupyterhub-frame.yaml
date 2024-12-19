@@ -7,7 +7,6 @@ metadata:
 spec:
   selector:
     cs-aalto/app: jupyterhub
-  clusterIP: "10.104.184.130"
   ports:
 #  - protocol: TCP
 #    port: 80
