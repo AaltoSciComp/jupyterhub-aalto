@@ -29,7 +29,7 @@ c.Authenticator.admin_users = {"darstr1", "laines5", "bordong1"}
 
 USE_OAUTHENTICATOR = True
 
-# These values are used as defaults if meta/IMAGES.py doesn"t exist. Otherwise
+# These values are used as defaults if meta/IMAGES.py doesn't exist. Otherwise
 # overridden automatically.
 IMAGE_DEFAULT = "aaltoscienceit/notebook-server:5.0.4"  # for generic images
 IMAGE_COURSE_DEFAULT = "aaltoscienceit/notebook-server:5.0.4"  # for courses
@@ -256,7 +256,7 @@ c.KubeSpawner.server_token_scopes = [
 c.KubeSpawner.image = IMAGE_DEFAULT
 c.KubeSpawner.default_url = "tree/notebooks"
 c.KubeSpawner.notebook_dir = "/"
-# doesn"t work, because we start as root, this happens as root but we
+# doesn't work, because we start as root, this happens as root but we
 # have root_squash.
 # c.KubeSpawner.singleuser_working_dir = "/notebooks"
 # Note: instructors get different limits, see below.
@@ -318,7 +318,7 @@ def GET_COURSES() -> dict:
     global COURSES, COURSES_TS
     global GROUPS
 
-    # Cache, don"t unconditionally reload every time.
+    # Cache, don't unconditionally reload every time.
     # Always return cached if we have last loaded courses less than 60 seconds ago
     if COURSES_TS and COURSES_TS > time.time() - 60:
         return COURSES
@@ -416,10 +416,10 @@ def UPDATE_IMAGES():
     """Update the default images based on a timeout"""
     global UPDATE_IMAGES_TS
 
-    # If the definition file doesn"t exist, do nothing
+    # If the definition file doesn't exist, do nothing
     if not os.path.exists(IMAGES_UPDATEFILE):
         return
-    # Cache, don"t unconditionally reload every time.
+    # Cache, don't unconditionally reload every time.
     # Always return cached if we have last loaded courses less than 60 seconds ago
     if UPDATE_IMAGES_TS and UPDATE_IMAGES_TS > time.time() - 60:
         return
@@ -460,8 +460,8 @@ def select_image(image_name: tuple[str, date] | date | str, log: logging.Logger)
         image_list = IMAGES_BYDATE[image_name[0]]
         image_date = image_name[1]
         assert isinstance(image_date, date)
-        # Naive algorithm, we can"t use bisect.bisect because we don"t have a
-        # pure key-based lookup and it doesn"t have a key= function.
+        # Naive algorithm, we can't use bisect.bisect because we don't have a
+        # pure key-based lookup and it doesn't have a key= function.
         # Search backwards, look for first (actually last in the list) image
         # equal to or less the date we give.
         for i in range(len(image_list) - 1, -1, -1):
@@ -526,8 +526,8 @@ def get_profile_list(spawner: KubeSpawner):
             profile["display_name"] = display_name + course_notes
             profile["kubespawner_override"]["image"] = course_image
         if (is_instructor or is_admin) and (course_data["gid"] or instructors):
-            # If the course doesn"t have a group or manually defined
-            # instructors, the instructor version won"t be shown in the course
+            # If the course doesn't have a group or manually defined
+            # instructors, the instructor version won't be shown in the course
             # list
             profile = copy.deepcopy(profile_list[-1])  # COPY AND RE-APPEND
             profile["display_name"] = (
@@ -637,7 +637,7 @@ def create_user_dir(username: str, uid: int, human_name="", log=None):
 
 
 async def pre_spawn_hook(spawner: KubeSpawner):
-    # Note: spawners Python objects are persistent, and if you don"t
+    # Note: spawners Python objects are persistent, and if you don't
     # clear certain attributes, they will persist across restarts!
     # spawner.node_selector = { }
     # spawner.tolerations = [ ]
@@ -1049,7 +1049,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 enable_formgrader = False
 
                 # Print a warning if a student tried to start with
-                # as_instructor (shouldn"t be possible but making sure there
+                # as_instructor (shouldn't be possible but making sure there
                 # are no logic mistakes above).  The previous block is denied
                 # and goes here, print a warning to assist in debugging.
                 if getattr(spawner, "as_instructor", False):
