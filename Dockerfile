@@ -24,7 +24,7 @@ RUN python3 -m pip install --no-cache-dir \
         # Used by cull_idle_servers and hub_status_service
         python-dateutil \
         pytz \
-        # Added 2018-07-27, unknown use
+        # For loading course YAMLs in GET_COURSES()
         pyyaml \
         # https://oauthenticator.readthedocs.io/en/latest/reference/changelog.html
         'oauthenticator<7' \
