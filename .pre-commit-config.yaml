@@ -1,0 +1,59 @@
+---
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: trailing-whitespace
+  - id: end-of-file-fixer
+  - id: check-added-large-files
+  - id: check-executables-have-shebangs
+  - id: check-case-conflict
+  - id: check-vcs-permalinks
+  - id: forbid-new-submodules
+  - id: mixed-line-ending
+  - id: check-merge-conflict
+  - id: check-toml
+  - id: check-yaml
+  - id: check-json
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.10.0.1
+  hooks:
+  - id: shellcheck
+    name: Shellcheck
+    args: ["-f", "gcc"]  # output filename:linenum:colnum (clickable)
+# IMAGES.py inherently has long lines because of the image names
+- repo: https://github.com/psf/black
+  rev: 24.10.0
+  hooks:
+  - id: black
+    name: Black (All other Python files)
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.8.5
+  hooks:
+  - id: ruff
+    args:
+    - "--fix"
+    - "--exit-non-zero-on-fix"
+    - --config=.ruff.toml
+- repo: https://github.com/pycqa/isort
+  rev: 5.13.2
+  hooks:
+  - id: isort
+    name: isort (python)
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.14.1
+  hooks:
+  - id: mypy
+    name: Mypy (Python type-checker)
+    # Edit below if mypy requires extra type stub packages
+    additional_dependencies: [types-PyYAML==6.0.1]
+- repo: https://github.com/adrienverge/yamllint.git
+  rev: v1.35.1
+  hooks:
+  - id: yamllint
+    args: [
+      "-d",
+      # Allows both indented and unindented list, as long as the whole document
+      # uses consistent indentation
+      "{extends: default, rules: {indentation: {indent-sequences: consistent}, line-length: disable}}"
+    ]
