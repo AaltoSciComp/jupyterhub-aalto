@@ -68,6 +68,9 @@ DEFAULT_INSTRUCTORS = {"darstr1"}
 NAMESPACE = "jupyter"
 APP_NAME = "jupyter"
 
+# Currently empty (uses all nodes), but can be edited to limit to specific
+# nodes.
+DEFAULT_NODE_SELECTOR: dict[str, str] = {}
 DEFAULT_TOLERATIONS = [
     {
         "key": "cs-aalto/app",
@@ -77,7 +80,7 @@ DEFAULT_TOLERATIONS = [
     },
 ]
 EMPTY_PROFILE = {
-    "node_selector": {},
+    "node_selector": DEFAULT_NODE_SELECTOR,
     "tolerations": DEFAULT_TOLERATIONS,
     "default_url": "tree/notebooks",
     "image": "IMAGE_DEFAULT",
@@ -604,7 +607,7 @@ c.KubeSpawner.profile_list = get_profile_list  # (None)
 
 
 def create_user_dir(username: str, uid: int, human_name="", log=None):
-    human_name = re.sub("[^\w -]*", "", human_name, flags=re.I)
+    human_name = re.sub(r"[^\w -]*", "", human_name, flags=re.I)
     human_name = human_name.replace(" ", "++")
     # NOTE: $JMGR_HOSTNAME defines a hardcoded command in
     # authorized_keys, the command here is most likely ignored
