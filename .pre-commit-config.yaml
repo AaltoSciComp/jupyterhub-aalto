@@ -20,7 +20,7 @@ repos:
   hooks:
   - id: shellcheck
     name: Shellcheck
-    args: ["-f", "gcc"]  # output filename:linenum:colnum (clickable)
+    args: ["-f", "gcc", "-x"]  # output filename:linenum:colnum (clickable)
 # IMAGES.py inherently has long lines because of the image names
 - repo: https://github.com/psf/black
   rev: 24.10.0
