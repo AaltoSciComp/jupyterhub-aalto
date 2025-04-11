@@ -18,8 +18,8 @@ echo "Stopping hub"
 # sometimes this proxy pid needs deletion... eventually find a better solution.
 if [ "$NAMESPACE" = "jupyter" ]; then
     JUPYTER_PATH=/mnt/jupyter
-elif [ "$NAMESPACE" = "jupyter-test" ]; then
-    JUPYTER_PATH=/mnt/jupyter/jupyter-test
+else
+    JUPYTER_PATH="/mnt/jupyter/$NAMESPACE"
 fi
 echo "Running ssh"
 timeout 2 ssh $JMGR_HOSTNAME "rm -f $JUPYTER_PATH/admin/hubdata/jupyterhub-proxy.pid"
