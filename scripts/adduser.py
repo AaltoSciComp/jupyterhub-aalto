@@ -4,12 +4,12 @@ import os
 import re
 import sys
 
-USERHOME='/srv/jupyter-tw/user/'
+USERHOME = "/srv/jupyter-tw/user/"
 
 user = sys.argv[1]
 print("Creating user dirs:", user)
 
-if not re.match('^[a-z0-9]+$', user):
+if not re.match("^[a-z0-9]+$", user):
     raise ValueError("Invalid username: {}".format(user))
 
 home = user

@@ -1,4 +1,4 @@
-#MyCoursesExporter.py
+# MyCoursesExporter.py
 #
 # nbgrader exporter in MyCourses format.  Originally written by Joakim
 # Järvinen.
@@ -36,29 +36,30 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from nbgrader.plugins import ExportPlugin, BasePlugin
-from nbgrader.api import MissingEntry
 from datetime import datetime
-from traitlets import Type, Unicode, Bool
+
+from nbgrader.api import MissingEntry
+from nbgrader.plugins import BasePlugin, ExportPlugin
+from traitlets import Bool, Type, Unicode
+
 
 class MyCoursesExportPlugin(ExportPlugin):
     """CSV exporter plugin for Aalto MyCourses."""
 
     username_suffix = Unicode(
-        '@aalto.fi',
+        "@aalto.fi",
         help="Suffix for usernames, e.g. to add the domain.",
-        ).tag(config=True)
+    ).tag(config=True)
 
     penalty_plugin = Type(
         None,
         allow_none=True,
         klass=BasePlugin,
-        help="The plugin class for assigning the late penalty for each notebook. Defining this, user can change the penalty points assigned within the database."
+        help="The plugin class for assigning the late penalty for each notebook. Defining this, user can change the penalty points assigned within the database.",
     ).tag(config=True)
 
     scale_to_100 = Bool(
-        True,
-        help="Scale points to a scale of 100 (default True)."
+        True, help="Scale points to a scale of 100 (default True)."
     ).tag(config=True)
 
     def export(self, gradebook):
@@ -72,21 +73,19 @@ class MyCoursesExportPlugin(ExportPlugin):
         fh = open(dest, "w")
 
         # Generete a format string for each row entry
-        keys = ['username']
-        keys.extend(list(map(lambda a : a.name, gradebook.assignments)))
+        keys = ["username"]
+        keys.extend(list(map(lambda a: a.name, gradebook.assignments)))
         fh.write(",".join(keys) + "\n")
 
         # Loop over each student in the database
         for student in gradebook.students:
-
             # Create a dictionary that will store information about this
             # student's scores for all assignments
             student_row = {}
 
             # Loop over each assignment in the database
             for assignment in gradebook.assignments:
-
-                student_row['username'] = student.id + self.username_suffix
+                student_row["username"] = student.id + self.username_suffix
                 # Try to find the submission in the database. If it doesn't
                 # exist, the `MissingEntry` exception will be raised, which
                 # means the student didn't submit anything, so we assign them a
@@ -99,20 +98,24 @@ class MyCoursesExportPlugin(ExportPlugin):
                     penalty = submission.late_submission_penalty
                     if self.penalty_plugin:
                         if submission.total_seconds_late > 0:
-                            penalty = self.penalty_plugin.late_submission_penalty(student.id, submission.score, submission.total_seconds_late)
+                            penalty = self.penalty_plugin.late_submission_penalty(
+                                student.id,
+                                submission.score,
+                                submission.total_seconds_late,
+                            )
 
                     score = max(0.0, (submission.score - penalty))
                     # Set the score between 0 and 100 which is the most common
                     # scoring schema used in Aalto MyCourses
                     if self.scale_to_100:
                         try:
-                            score =  (score / assignment.max_score * 100)
+                            score = score / assignment.max_score * 100
                         except ZeroDivisionError:
                             score = 0
                     student_row[assignment.name] = score
                 for key in student_row:
                     if student_row[key] is None:
-                        student_row[key] = ''
+                        student_row[key] = ""
                     if not isinstance(student_row[key], str):
                         student_row[key] = str(student_row[key])
 

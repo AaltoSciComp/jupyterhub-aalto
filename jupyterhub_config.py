@@ -592,9 +592,9 @@ def get_profile_list(spawner: KubeSpawner):
             course_notes = f"{suffix} ({slug})"
         else:
             course_notes = f"{suffix}"
-        profile[
-            "display_name"
-        ] += f' <small style="color: #999999">{course_notes}</small>'
+        profile["display_name"] += (
+            f' <small style="color: #999999">{course_notes}</small>'
+        )
 
     return profile_list
 

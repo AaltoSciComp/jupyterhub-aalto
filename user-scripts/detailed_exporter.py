@@ -1,16 +1,16 @@
-from nbgrader.plugins import ExportPlugin, BasePlugin
-from nbgrader.api import MissingEntry
+from collections import OrderedDict, defaultdict
 from datetime import datetime
-from traitlets import Type, Unicode, Bool
 
-from collections import defaultdict, OrderedDict
+from nbgrader.api import MissingEntry
+from nbgrader.plugins import BasePlugin, ExportPlugin
+from traitlets import Bool, Type, Unicode
 
 
 class DetailedExportPlugin(ExportPlugin):
     """CSV exporter plugin with detailed task grades for assignment."""
 
     username_suffix = Unicode(
-        '@aalto.fi',
+        "@aalto.fi",
         help="Suffix for usernames, e.g. to add the domain.",
     ).tag(config=True)
 
@@ -18,18 +18,19 @@ class DetailedExportPlugin(ExportPlugin):
         None,
         allow_none=True,
         klass=BasePlugin,
-        help="The plugin class for assigning the late penalty for each notebook. Defining this, user can change the penalty points assigned within the database."
+        help="The plugin class for assigning the late penalty for each notebook. Defining this, user can change the penalty points assigned within the database.",
     ).tag(config=True)
 
     scale_to_100 = Bool(
-        True,
-        help="Scale points to a scale of 100 (default True)."
+        True, help="Scale points to a scale of 100 (default True)."
     ).tag(config=True)
 
     def export(self, gradebook):
         all_assignments = list(map(lambda a: a.name, gradebook.assignments))
         if not set(self.assignment).issubset(all_assignments):
-            raise ValueError("At least one assignment name specified does not exist in the database.")
+            raise ValueError(
+                "At least one assignment name specified does not exist in the database."
+            )
 
         if not self.assignment:
             self.assignment = all_assignments
@@ -52,7 +53,9 @@ class DetailedExportPlugin(ExportPlugin):
 
         for assignment_name in self.assignment:
             assignment = gradebook.find_assignment(assignment_name)
-            prefix = "" if len(self.assignment) == 1 else f"{assignment.name}{delimiter}"
+            prefix = (
+                "" if len(self.assignment) == 1 else f"{assignment.name}{delimiter}"
+            )
 
             for student in gradebook.students:
                 # Assignment total grade
@@ -64,13 +67,16 @@ class DetailedExportPlugin(ExportPlugin):
                     penalty = submission.late_submission_penalty
                     if self.penalty_plugin:
                         if submission.total_seconds_late > 0:
-                            penalty = self.penalty_plugin.late_submission_penalty(student.id, submission.score,
-                                                                                  submission.total_seconds_late)
+                            penalty = self.penalty_plugin.late_submission_penalty(
+                                student.id,
+                                submission.score,
+                                submission.total_seconds_late,
+                            )
 
                     score = max(0.0, (submission.score - penalty))
                     if self.scale_to_100:
                         try:
-                            score = (score / assignment.max_score * 100)
+                            score = score / assignment.max_score * 100
                         except ZeroDivisionError:
                             score = 0
                     final_score = score
@@ -79,7 +85,11 @@ class DetailedExportPlugin(ExportPlugin):
                     notebooks = submission.notebooks
                     for notebook in notebooks:
                         for grade in notebook.grades:
-                            nb_prefix = "" if len(notebooks) == 1 else f"{grade.notebook.name}{delimiter}"
+                            nb_prefix = (
+                                ""
+                                if len(notebooks) == 1
+                                else f"{grade.notebook.name}{delimiter}"
+                            )
                             grade_name = f"{prefix}{nb_prefix}{grade.name}"
 
                             if grade_name not in columns:
@@ -93,5 +103,12 @@ class DetailedExportPlugin(ExportPlugin):
             f.write("username," + ",".join(columns) + "\n")
             for student in report.keys():
                 f.write(f"{student.id + self.username_suffix},")
-                f.write(",".join(str(report[student][assignment]) if assignment in report[student] else ""
-                                 for assignment in columns) + "\n")
+                f.write(
+                    ",".join(
+                        str(report[student][assignment])
+                        if assignment in report[student]
+                        else ""
+                        for assignment in columns
+                    )
+                    + "\n"
+                )

@@ -16,7 +16,7 @@ Important
   - total CPU usage
   - failure of hub
   X script ot test inability to spawn new server (RD)
-    python3 scripts/spawn_test.py 
+    python3 scripts/spawn_test.py
   - high failure rate of hubs.
   - approaching full capicity.
 - Backup connection to blade server (JK)
