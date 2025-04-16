@@ -21,25 +21,16 @@ repos:
   - id: shellcheck
     name: Shellcheck
     args: ["-f", "gcc", "-x"]  # output filename:linenum:colnum (clickable)
-# IMAGES.py inherently has long lines because of the image names
-- repo: https://github.com/psf/black
-  rev: 24.10.0
-  hooks:
-  - id: black
-    name: Black (All other Python files)
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.8.5
   hooks:
+  - id: ruff-format
   - id: ruff
     args:
-    - "--fix"
-    - "--exit-non-zero-on-fix"
+    - --fix
+    - --select=I
+    - --exit-non-zero-on-fix
     - --config=.ruff.toml
-- repo: https://github.com/pycqa/isort
-  rev: 5.13.2
-  hooks:
-  - id: isort
-    name: isort (python)
 - repo: https://github.com/pre-commit/mirrors-mypy
   rev: v1.14.1
   hooks:
