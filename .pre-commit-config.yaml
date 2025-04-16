@@ -46,7 +46,10 @@ repos:
   - id: mypy
     name: Mypy (Python type-checker)
     # Edit below if mypy requires extra type stub packages
-    additional_dependencies: [types-PyYAML==6.0.1]
+    additional_dependencies:
+    - types-PyYAML==6.0.1
+    - types-python-dateutil
+    - types-requests
 - repo: https://github.com/adrienverge/yamllint.git
   rev: v1.35.1
   hooks:
