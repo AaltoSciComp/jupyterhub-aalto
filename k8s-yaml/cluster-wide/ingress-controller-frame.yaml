@@ -15,8 +15,8 @@ metadata:
     app: default-http-backend
 spec:
   ports:
-  - port: 80
-    targetPort: 8080
+    - port: 80
+      targetPort: 8080
   selector:
     app: default-http-backend
 ---
@@ -96,10 +96,10 @@ rules:
   - apiGroups:
       - ""
     resources:
-        - events
+      - events
     verbs:
-        - create
-        - patch
+      - create
+      - patch
   - apiGroups:
       - "extensions"
     resources:
@@ -189,13 +189,13 @@ metadata:
 spec:
   type: NodePort
   ports:
-  - name: http
-    port: 80
-    targetPort: 80
-    protocol: TCP
-  - name: https
-    port: 443
-    targetPort: 443
-    protocol: TCP
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: https
+      port: 443
+      targetPort: 443
+      protocol: TCP
   selector:
     app: ingress-nginx

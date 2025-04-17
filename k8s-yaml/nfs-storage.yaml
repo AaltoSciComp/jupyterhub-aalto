@@ -13,7 +13,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: "jupyter-nfs-class"
   mountOptions:
-    #- hard
+    # - hard
     - nfsvers=3
   nfs:
     server: jhnas.org.aalto.fi

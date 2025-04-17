@@ -8,10 +8,10 @@ spec:
   selector:
     cs-aalto/app: jupyterhub
   ports:
-#  - protocol: TCP
-#    port: 80
-#    targetPort: 8000
-#    name: jupyter-public
+  # - protocol: TCP
+  #   port: 80
+  #   targetPort: 8000
+  #   name: jupyter-public
   - protocol: TCP
     port: 8081
     targetPort: 8081

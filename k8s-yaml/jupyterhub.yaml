@@ -22,9 +22,9 @@ spec:
       - name: jupyterhub
         image: harbor.cs.aalto.fi/jupyter-internal/jupyterhub-cs:4.0.1-2023-07-20
         command:
-          - bash
-          - -c
-          - ln -s /mnt/keytab/krb5.keytab /etc/krb5.keytab && /run.sh
+        - bash
+        - -c
+        - ln -s /mnt/keytab/krb5.keytab /etc/krb5.keytab && /run.sh
         ports:
         # - containerPort: 8000
         - containerPort: 8081
@@ -51,8 +51,8 @@ spec:
           mountPath: /srv/jupyterhub/chp-secret.txt
           subPath: chp-secret.txt
           readOnly: true
-        #- name: jupyterhub-coursedata
-        #  mountPath: /coursedata/
+        # - name: jupyterhub-coursedata
+        #   mountPath: /coursedata/
         - name: adpw
           mountPath: /etc/adpw.txt
           subPath: adpw.txt
@@ -87,13 +87,13 @@ spec:
           subPath: sssd.conf
         - name: nfs-keytab
           mountPath: /mnt/keytab
-        #imagePullPolicy: Never
+          # imagePullPolicy: Never
       imagePullSecrets:
       - name: registry-secret-jupyter-internal
       tolerations:
-      - {key: cs-aalto/app, value: jupyterhub,             operator: Equal, effect: NoSchedule}
-      - {key: node.kubernetes.io/disk-pressure,   operator: Exists}
-      - {key: node.kubernetes.io/out-of-disk,     operator: Exists}
+      - {key: cs-aalto/app, value: jupyterhub, operator: Equal, effect: NoSchedule}
+      - {key: node.kubernetes.io/disk-pressure, operator: Exists}
+      - {key: node.kubernetes.io/out-of-disk, operator: Exists}
       - {key: node.kubernetes.io/memory-pressure, operator: Exists}
       volumes:
       - name: jupyterhub-hubdata
@@ -114,10 +114,10 @@ spec:
         nfs:
           server: jhnas.org.aalto.fi
           path: /vol/jupyter/course/
-      #- name: jupyterhub-coursedata
-      #  nfs:
-      #    server: jhnas.org.aalto.fi
-      #    path: /vol/jupyter/course/coursedata/
+      # - name: jupyterhub-coursedata
+      #   nfs:
+      #     server: jhnas.org.aalto.fi
+      #     path: /vol/jupyter/course/coursedata/
       - name: adpw
         secret:
           secretName: adpw.txt
