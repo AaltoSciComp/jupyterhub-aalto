@@ -1,4 +1,6 @@
+#!/usr/bin/bash
 NAMESPACE=${1:-jupyter}
 echo "Namespace: $NAMESPACE"
 
-kubectl exec -it -n $NAMESPACE $(kubectl get pods -n $NAMESPACE | grep jupyterhub | grep Running | tail -1 | cut -d' ' -f1) -- ${@:-bash}
+last_pod="$(kubectl get pods -n "$NAMESPACE" | grep jupyterhub | grep Running | cut -f1 -d' ' | tail -1)"
+kubectl exec -it -n "$NAMESPACE" "$last_pod" -- "${@:-bash}"
