@@ -42,7 +42,6 @@ spec:
         - name: TZ
           value: Europe/Helsinki
       tolerations:
-      - {key: cs-aalto/app, value: jupyterhub, operator: Equal, effect: NoSchedule}
       - {key: node.kubernetes.io/disk-pressure, operator: Exists}
       - {key: node.kubernetes.io/out-of-disk, operator: Exists}
       - {key: node.kubernetes.io/memory-pressure, operator: Exists}
@@ -50,5 +49,3 @@ spec:
       - name: chp-secret
         secret:
           secretName: chp-secret
-      nodeSelector:
-        cs-aalto/app: jupyterhub

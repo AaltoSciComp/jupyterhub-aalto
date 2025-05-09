@@ -91,7 +91,6 @@ spec:
       imagePullSecrets:
       - name: registry-secret-jupyter-internal
       tolerations:
-      - {key: cs-aalto/app, value: jupyterhub, operator: Equal, effect: NoSchedule}
       - {key: node.kubernetes.io/disk-pressure, operator: Exists}
       - {key: node.kubernetes.io/out-of-disk, operator: Exists}
       - {key: node.kubernetes.io/memory-pressure, operator: Exists}
@@ -155,6 +154,4 @@ spec:
       - name: spawn-test
         configMap:
           name: spawn-test
-      nodeSelector:
-        cs-aalto/app: jupyterhub
       serviceAccountName: jupyter-notebook-spawner
