@@ -438,7 +438,7 @@ def UPDATE_IMAGES():
         exec(open(IMAGES_UPDATEFILE).read(), globals())
     except Exception:
         exc_info = sys.exc_info()
-        print("ERROR: error loading file {}".format(IMAGES_UPDATEFILE), file=sys.stderr)
+        print(f"ERROR: error loading file {IMAGES_UPDATEFILE}", file=sys.stderr)
         print("".join(traceback.format_exception(*exc_info)), file=sys.stderr)
 
 
@@ -805,10 +805,10 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     )
 
     # for line in ["[user]",
-    #             "    name = {}".format(fullname),
-    #             "    email = {}".format(email),
+    #             f"    name = {fullname}",
+    #             f"    email = {email}",
     #             ]:
-    #    cmds.append(r"echo "{}" >> /home/jovyan/.gitconfig".format(line))
+    #    cmds.append(f"echo "{line}" >> /home/jovyan/.gitconfig")
     #    cmds.append("fix-permissions /home/jovyan/.gitconfig")
 
     course_slug = getattr(spawner, "course_slug", "")
@@ -860,7 +860,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 {
                     "mountPath": "/srv/nbgrader/exchange",
                     "name": "jupyter-nfs",
-                    "subPath": "exchange/{}".format(course_slug),
+                    "subPath": f"exchange/{course_slug}",
                     "readOnly": exchange_readonly,
                 }
             )
@@ -869,7 +869,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 spawner.volume_mounts.append(
                     {
                         "mountPath": "/coursedata",
-                        "subPath": "course/{}/data/".format(course_slug),
+                        "subPath": f"course/{course_slug}/data/",
                         "name": "jupyter-nfs",
                         "readOnly": not (  # condition for read-write
                             (  # condition for "as an instructor"
@@ -889,8 +889,8 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 "c = get_config()",
                 'c.CourseDirectory.root = "/course"',
                 "c.CourseDirectory.groupshared = True",
-                'c.CourseDirectory.course_id = "{}"'.format(course_slug),
-                'c.Exchange.course_id = "{}"'.format(course_slug),
+                f'c.CourseDirectory.course_id = "{course_slug}"',
+                f'c.Exchange.course_id = "{course_slug}"',
                 (
                     'c.CourseDirectory.ignore = [".ipynb_checkpoints", '
                     '"*.pyc*", "__pycache__", "feedback", ".*"]'
@@ -915,18 +915,14 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 'c.Application.log_datefmt = "%Y-%m-%dT%H:%M:%S%z"',
                 *course_data.get("nbgrader_config", "").split("\n"),
             ]:
-                cmds.append(
-                    r'echo "{}" >> /etc/jupyter/nbgrader_config.py'.format(line)
-                )
+                cmds.append(f'echo "{line}" >> /etc/jupyter/nbgrader_config.py')
             for line in [
                 "",
                 'c.AssignmentList.assignment_dir = "/notebooks/"',
                 "c.ExecutePreprocessor.timeout = 240",
                 "c.Execute.timeout = 240",
             ]:
-                cmds.append(
-                    r'echo "{}" >> /etc/jupyter/jupyter_notebook_config.py'.format(line)
-                )
+                cmds.append(f'echo "{line}" >> /etc/jupyter/jupyter_notebook_config.py')
             student_umask = course_data.get("student_umask", None)
             if student_umask:
                 spawner.log.info(
@@ -980,23 +976,21 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 spawner.cpu_guarantee = INSTRUCTOR_CPU_GUARANTEE
                 spawner.mem_guarantee = INSTRUCTOR_MEM_GUARANTEE
                 for line in [
-                    'c.NbGrader.logfile = "/course/.nbgrader.log"',
+                    "c.NbGrader.logfile = '/course/.nbgrader.log'",
                 ]:
-                    cmds.append(
-                        r'echo "{}" >> /etc/jupyter/nbgrader_config.py'.format(line)
-                    )
+                    cmds.append(f'echo "{line}" >> /etc/jupyter/nbgrader_config.py')
                 spawner.volume_mounts.append(
                     {
                         "mountPath": "/course",
                         "name": "jupyter-nfs",
-                        "subPath": "course/{}/files".format(course_slug),
+                        "subPath": f"course/{course_slug}/files",
                     }
                 )
                 spawner.volume_mounts.append(
                     {
-                        "mountPath": "/m/jhnas/jupyter/course/{}".format(course_slug),
+                        "mountPath": f"/m/jhnas/jupyter/course/{course_slug}",
                         "name": "jupyter-nfs",
-                        "subPath": "course/{}".format(course_slug),
+                        "subPath": f"course/{course_slug}",
                     }
                 )
                 course_gid = int(course_data["gid"])
@@ -1012,7 +1006,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
 
                     # The start.sh script renumbers the default group 100 to
                     # $NB_GID. We rename it first.
-                    # cmds.append("groupmod -n {} users".format("jupyter-"+course_slug))
+                    # cmds.append(f"groupmod -n jupyter-{course_slug} users")
                     # We *need* to be in group 100, because a lot of the
                     # default files (conda, etc) are group=rw=100. We add
                     # a *duplicate* group 100, and only the first one is
