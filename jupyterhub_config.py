@@ -793,19 +793,15 @@ async def pre_spawn_hook(spawner: KubeSpawner):
 
     create_user_dir(username, uid, human_name=human_name, log=spawner.log)
     spawner.log.info("pre_spawn_hook: user dir created")
-    # cmds.append(
-    #     r'echo "if [ \"\$SHLVL\" = 1 -a \"\$PWD\" = \"\$HOME\" ] ; '
-    #     r'then cd /notebooks ; fi" >> /home/jovyan/.profile'
-    # )
     cmds.append(
-        r'echo "if [ \"\$SHLVL\" = 1 -a \( \"\$PWD\" = \"\$HOME\" '
-        r'-o \"\$PWD\" = / \)  ] ; then cd /notebooks ; fi" '
-        r">> /home/jovyan/.bashrc"
+        'echo \'if [ "$SHLVL" -eq 1 ] && [ "$PWD" = "$HOME" ] '
+        '|| [ "$PWD" = / ] ; then cd /notebooks ; fi\''
+        " >> /home/jovyan/.bashrc"
     )
     cmds.append(
-        r'echo "nbgrader-instructor-exchange() { nbgrader \$1 '
-        r"--Exchange.root=/course/test-instructor-exchange/ \${@:2} ; } "
-        r">> /home/jovyan/.bashrc"
+        "echo 'nbgrader-instructor-exchange() { nbgrader $1 "
+        "--Exchange.root=/course/test-instructor-exchange/ ${@:2} ; "
+        "}' >> /home/jovyan/.bashrc"
     )
 
     # for line in ["[user]",
