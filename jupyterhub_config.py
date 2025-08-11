@@ -1146,7 +1146,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 spawner.volume_mounts.append(
                     {
                         "mountPath": f"/m/jhnas/jupyter/course/{name}/",
-                        "subPath": "course/{name}/",
+                        "subPath": f"course/{name}/",
                         "name": "jupyter-nfs",
                         "readOnly": COURSES[name].get("archived", False),
                     }
