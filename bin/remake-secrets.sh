@@ -6,7 +6,7 @@ NAMESPACE=${1:-jupyter}
 source "$SCRIPTPATH/_check_namespace.sh"
 
 kubectl delete secret -n "$NAMESPACE" tls
-kubectl create secret -n "$NAMESPACE" tls tls --cert="$SCRIPTPATH/../secrets/jupyter.cs.aalto.fi.crt" --key="$SCRIPTPATH/../secrets/jupyter.cs.aalto.fi.key"
+kubectl create secret -n "$NAMESPACE" tls tls --cert="$SCRIPTPATH/../secrets/fullchain.pem" --key="$SCRIPTPATH/../secrets/privkey.pem"
 
 kubectl delete secret -n "$NAMESPACE" adpw.txt
 kubectl create secret -n "$NAMESPACE" generic adpw.txt --from-file="$SCRIPTPATH/../secrets/adpw.txt"
