@@ -24,7 +24,9 @@ spec:
         command:
         - bash
         - -c
-        - ln -s /mnt/keytab/krb5.keytab /etc/krb5.keytab && /run.sh
+        # if keytab doesn't exist (on the first run), skip linking it. Needs
+        # to be manually copied to the nfs after first connection.
+        - "[ -e /mnt/keytab/krb5.keytab ] && ln -s /mnt/keytab/krb5.keytab /etc/krb5.keytab; /run.sh"
         ports:
         # - containerPort: 8000
         - containerPort: 8081
