@@ -6,17 +6,19 @@ set -x  # debugging
 JUPYTER_DIR=/mnt/jupyter
 LASTLOGIN_DIR="$JUPYTER_DIR/admin/lastlogin"
 
-# NOTE: The value doesn't seem to have actually ever been used
-# # Place this in ssh/authorised_keys with this key:
-# #   restrict,command="bash path/to/this.sh" ssh-rsa ...
-# if [ -n "$SSH_ORIGINAL_COMMAND" ] ; then
-#     set -- "$SSH_ORIGINAL_COMMAND"
-#     original_cmd="$1"
-#     shift
-# else
-#     # Change to false to *require* command=.
-#     true
-# fi
+# Place this in ssh/authorised_keys with this key:
+#   restrict,command="bash path/to/this.sh" ssh-rsa ...
+if [ -n "$SSH_ORIGINAL_COMMAND" ] ; then
+    # We deliberately want to split on spaces, since the original arguments
+    # are separated by spaces in the env variable
+    # shellcheck disable=SC2086
+    set -- $SSH_ORIGINAL_COMMAND
+    # original_cmd="$1"
+    shift
+else
+    # Change to false to *require* command=.
+    false
+fi
 
 
 echo "$@"
