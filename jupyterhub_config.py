@@ -897,32 +897,34 @@ async def pre_spawn_hook(spawner: KubeSpawner):
             for line in [
                 "",
                 "c = get_config()",
-                'c.CourseDirectory.root = "/course"',
+                # NOTE: The strings cannot contain unescaped double quotes
+                # because they are wrapped in 'echo "{line}" ...' later
+                "c.CourseDirectory.root = '/course'",
                 "c.CourseDirectory.groupshared = True",
-                f'c.CourseDirectory.course_id = "{course_slug}"',
-                f'c.Exchange.course_id = "{course_slug}"',
+                f"c.CourseDirectory.course_id = '{course_slug}'",
+                f"c.Exchange.course_id = '{course_slug}'",
                 (
-                    'c.CourseDirectory.ignore = [".ipynb_checkpoints", '
-                    '"*.pyc*", "__pycache__", "feedback", ".*"]'
+                    "c.CourseDirectory.ignore = ['.ipynb_checkpoints', "
+                    "'*.pyc*', '__pycache__', 'feedback', '.*']"
                 ),
                 # KB, translate to KiB
                 "c.CourseDirectory.max_file_size = int(30*1024*(1024/1000.))+1",
-                'c.Exchange.assignment_dir = "/notebooks/"',
-                'c.Exchange.timezone = "Europe/Helsinki"',
-                'c.NbGraderAPI.timezone = "Europe/Helsinki"',
-                'c.AssignmentList.assignment_dir = "/notebooks/"',
+                "c.Exchange.assignment_dir = '/notebooks/'",
+                "c.Exchange.timezone = 'Europe/Helsinki'",
+                "c.NbGraderAPI.timezone = 'Europe/Helsinki'",
+                "c.AssignmentList.assignment_dir = '/notebooks/'",
                 "c.ExecutePreprocessor.timeout = 240",
                 "c.Execute.timeout = 240",
                 "c.Exchange.path_includes_course = True",
-                'c.Exchange.root = "/srv/nbgrader/exchange"',
+                "c.Exchange.root = '/srv/nbgrader/exchange'",
                 "c.Validator.validate_all = True",
                 "c.CollectApp.check_owner = False",
-                'c.ExportApp.plugin_class = "mycourses_exporter.MyCoursesExportPlugin"',
+                "c.ExportApp.plugin_class = 'mycourses_exporter.MyCoursesExportPlugin'",
                 (
-                    'c.Application.log_format = "%(color)s%(asctime)s '
-                    '[%(name)s | %(levelname)s]%(end_color)s %(message)s"'
+                    "c.Application.log_format = '%(color)s%(asctime)s "
+                    "[%(name)s | %(levelname)s]%(end_color)s %(message)s'"
                 ),
-                'c.Application.log_datefmt = "%Y-%m-%dT%H:%M:%S%z"',
+                "c.Application.log_datefmt = '%Y-%m-%dT%H:%M:%S%z'",
                 *course_data.get("nbgrader_config", "").split("\n"),
             ]:
                 cmds.append(f'echo "{line}" >> /etc/jupyter/nbgrader_config.py')
