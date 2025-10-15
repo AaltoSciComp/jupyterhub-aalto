@@ -20,6 +20,7 @@ import yaml
 from jupyterhub.auth import PAMAuthenticator
 from kubespawner.spawner import KubeSpawner
 from oauthenticator.azuread import AzureAdOAuthenticator
+from tornado import web
 
 ## NOTE: This is import is not safe to enable, it would cause traitlets to
 ## silently ignore the config.
@@ -658,8 +659,9 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     username = spawner.user.name
     is_admin = spawner.user.admin
     if not USER_RE.match(username):
-        raise RuntimeError(
-            f"Invalid username: {username}, logout and use lowercase Aalto username."
+        raise web.HTTPError(
+            400,
+            f"Invalid username: {username}, logout and use lowercase Aalto username.",
         )
     userinfo = pwd.getpwnam(username)
     homedir = userinfo.pw_dir
@@ -755,7 +757,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     environ["AALTO_EXTRA_HOME_LINKS"] = ".config/rstudio/"
 
     if uid < 1000:
-        raise ValueError(f"uid can not be less than 1000 (is {uid})")
+        raise web.HTTPError(400, f"uid can not be less than 1000 (is {uid})")
     spawner.working_dir = "/"
 
     # Note: current (summer 2018) conda version of kubespawner does
@@ -1078,9 +1080,12 @@ async def pre_spawn_hook(spawner: KubeSpawner):
             spawner.log.info(
                 "pre_spawn_hook: User %s is blocked spawning %s", username, course_slug
             )
-            raise RuntimeError(
-                f"You ({username}) are not allowed to use the {course_slug} "
-                "environment. Please contact the course instructors"
+            raise web.HTTPError(
+                status_code=403,
+                log_message=(
+                    f"You ({username}) are not allowed to use the {course_slug} "
+                    "environment. Please contact the course instructors"
+                ),
             )
 
     spawner.log.info("pre_spawn_hook: course setup done")
