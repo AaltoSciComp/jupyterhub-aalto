@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: jupyter-exam-network-policy
+  namespace: jupyter-exam2
+spec:
+  podSelector:
+    matchLabels:
+      restrictNetwork: "true"
+  policyTypes:
+  - Egress
+  egress:
+  # A+ grader allows DNS, don't think we want even that?
+  # - ports:
+  #   - port: 53
+  #     protocol: UDP
+  #   - port: 53
+  #     protocol: TCP
+  - to:
+    - podSelector:
+        matchLabels:
+          allowAccessFromGrading: "true"
+    # Allowing specific IPs
+    # example.cs.aalto.fi
+    # - ipBlock:
+    #     cidr: 1.2.3.4/32
