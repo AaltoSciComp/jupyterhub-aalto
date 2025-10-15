@@ -800,6 +800,8 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     create_user_dir(username, uid, human_name=human_name, log=spawner.log)
     spawner.log.info("pre_spawn_hook: user dir created")
     cmds.append(
+        # NOTE: This is wrapped in \' to prevent the shell from expanding the
+        # variables when running `echo`
         'echo \'if [ "$SHLVL" -eq 1 ] && [ "$PWD" = "$HOME" ] '
         '|| [ "$PWD" = / ] ; then cd /notebooks ; fi\''
         " >> /home/jovyan/.bashrc"
@@ -924,7 +926,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 cmds.append(f'echo "{line}" >> /etc/jupyter/nbgrader_config.py')
             for line in [
                 "",
-                'c.AssignmentList.assignment_dir = "/notebooks/"',
+                "c.AssignmentList.assignment_dir = '/notebooks/'",
                 "c.ExecutePreprocessor.timeout = 240",
                 "c.Execute.timeout = 240",
             ]:
