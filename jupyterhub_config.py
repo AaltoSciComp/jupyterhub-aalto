@@ -261,6 +261,7 @@ c.KubeSpawner.common_labels = {"cs-aalto/app": "notebook-server"}
 c.KubeSpawner.extra_labels = {
     "cs-aalto/app": "notebook-server",
     "cs-aalto/dont-resource-warn": "true",
+    "restrictNetwork": "true",
 }
 c.KubeSpawner.poll_interval = 150  # default 30, check each pod for aliveness this often
 # These extra permissions are needed in order to read about the current user

@@ -15,6 +15,7 @@ spec:
     metadata:
       labels:
         cs-aalto/app: jupyterhub-exam1
+        allowAccessFromGrading: "true"
       name: jupyterhub
     spec:
       hostname: jupyterhub-exam1-cs-aalto-fi
