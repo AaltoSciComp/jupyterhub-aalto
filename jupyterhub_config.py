@@ -1195,6 +1195,8 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     cmds.append("source start-singleuser.sh")
     # Setting this replaces the container's default entrypoint (CMD)
     spawner.cmd = ["bash", "-x", "-c"] + [" && ".join(cmds)]
+    # spawner.cmd = cmds
+    spawner.log.info(f"cmd: {spawner.cmd}")
     spawner.log.info("pre_spawn_hook: done")
 
 
