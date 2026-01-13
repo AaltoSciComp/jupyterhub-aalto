@@ -736,22 +736,22 @@ async def pre_spawn_hook(spawner: KubeSpawner):
         environ["JUPYTERHUB_SINGLEUSER_APP"] = "notebook.notebookapp.NotebookApp"
     # cmds.append("jupyter labextension enable @jupyterlab/google-drive")
     # Install gpuplug in the GPU images
-    if spawner.node_selector and "cs-aalto/gpu" in spawner.node_selector:
-        cmds.append(
-            "pip install --upgrade https://github.com/AaltoSciComp/gpuplug/archive/master.zip"
-        )
-        spawner.volumes.append(
-            {
-                "name": "gpuplug-sock",
-                "hostPath": {
-                    "path": "/run/gpuplug.sock",
-                    "type": "Socket",
-                },
-            }
-        )
-        spawner.volume_mounts.append(
-            {"mountPath": "/run/gpuplug.sock", "name": "gpuplug-sock"}
-        )
+    # if spawner.node_selector and "cs-aalto/gpu" in spawner.node_selector:
+    #     cmds.append(
+    #         "pip install --upgrade https://github.com/AaltoSciComp/gpuplug/archive/master.zip"
+    #     )
+    #     spawner.volumes.append(
+    #         {
+    #             "name": "gpuplug-sock",
+    #             "hostPath": {
+    #                 "path": "/run/gpuplug.sock",
+    #                 "type": "Socket",
+    #             },
+    #         }
+    #     )
+    #     spawner.volume_mounts.append(
+    #         {"mountPath": "/run/gpuplug.sock", "name": "gpuplug-sock"}
+    #     )
 
     # Extra Aalto config
     environ["AALTO_EXTRA_HOME_LINKS"] = ".config/rstudio/"
