@@ -183,6 +183,8 @@ PROFILE_LIST_DEFAULT_BOTTOM = [
                 {"key": "cs-aalto/gpu", "operator": "Exists", "effect": "NoSchedule"},
                 *DEFAULT_TOLERATIONS,
             ],
+            "extra_resource_guarantees": {"nvidia.com/gpu": "1"},
+            "extra_resource_limits": {"nvidia.com/gpu": "1"},
         },
     },
 ]
