@@ -178,9 +178,18 @@ PROFILE_LIST_DEFAULT_BOTTOM = [
             "x_jupyter_enable_lab": True,
             "image": "IMAGE_DEFAULT_CUDA",
             "xx_name": "gpu_testing",
-            "node_selector": {"cs-aalto/gpu": "true"},
+            "node_selector": {"cs-aalto/gpu-v100": "true"},
             "tolerations": [
-                {"key": "cs-aalto/gpu", "operator": "Exists", "effect": "NoSchedule"},
+                {
+                    "key": "cs-aalto/gpu",
+                    "operator": "Exists",
+                    "effect": "NoSchedule",
+                },
+                {
+                    "key": "cs-aalto/gpu-v100",
+                    "operator": "Exists",
+                    "effect": "NoSchedule",
+                },
                 *DEFAULT_TOLERATIONS,
             ],
             "extra_resource_guarantees": {"nvidia.com/gpu": "1"},
