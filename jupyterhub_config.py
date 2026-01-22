@@ -2,6 +2,7 @@ import copy
 import glob
 import grp
 import json
+import logging
 import os
 import pwd  # for resolving username --> uid
 import re
@@ -441,7 +442,7 @@ def UPDATE_IMAGES():
         print("".join(traceback.format_exception(*exc_info)), file=sys.stderr)
 
 
-def select_image(image_name):
+def select_image(image_name: tuple[str, date] | date | str, log: logging.Logger) -> str:
     """Get an image name from the name in the argument
 
     Usually, it will be the same.  But, if an all-uppercase name such as
@@ -478,7 +479,7 @@ def select_image(image_name):
             return globals()[image_name]
     # Otherwise: just use the name as-is.
     if not isinstance(image_name, str):
-        print("Unknown image type:", file=sys.stderr)
+        log.warning(f"Unknown image type: {image_name=} {type(image_name)=}")
         return IMAGE_COURSE_DEFAULT
     return image_name
 
@@ -520,7 +521,7 @@ def get_profile_list(spawner: KubeSpawner):
             }
         )
         if "image" in course_data:
-            course_image = select_image(course_data["image"])
+            course_image = select_image(course_data["image"], spawner.log)
             profile = profile_list[-1]  # REFERENCE
             profile["display_name"] = display_name + course_notes
             profile["kubespawner_override"]["image"] = course_image
@@ -534,7 +535,9 @@ def get_profile_list(spawner: KubeSpawner):
             )
             profile["slug"] = profile["slug"] + "-instructor"
             if "image_instructor" in course_data:
-                course_image_instructor = select_image(course_data["image_instructor"])
+                course_image_instructor = select_image(
+                    course_data["image_instructor"], spawner.log
+                )
                 profile["display_name"] = profile["display_name"]
                 profile["kubespawner_override"]["image"] = course_image_instructor
             profile["kubespawner_override"]["as_instructor"] = True
@@ -584,7 +587,7 @@ def get_profile_list(spawner: KubeSpawner):
     # Update all of the default images
     for profile in profile_list:
         profile["kubespawner_override"]["image"] = select_image(
-            profile["kubespawner_override"]["image"]
+            profile["kubespawner_override"]["image"], spawner.log
         )
         suffix = _get_profile_suffix(profile)
         slug = profile.get("slug", "").removesuffix("-instructor")
