@@ -21,8 +21,14 @@ from jupyterhub.auth import PAMAuthenticator
 from kubespawner.spawner import KubeSpawner
 from oauthenticator.azuread import AzureAdOAuthenticator
 
-# Not really necessary, just to make linters happy
-c: traitlets.config.Config
+## NOTE: This is import is not safe to enable, it would cause traitlets to
+## silently ignore the config.
+# from traitlets.config import get_config
+## The assignment here is not really necessary, just to make linters happy. The
+## `get_config` is dynamically injected by traitlets when it loads this file,
+## and the `c` variable is injected as well. But linters don't know that, so we
+## assign it here to make them happy.
+c: traitlets.config.Config = get_config()  # type: ignore # noqa: F821
 
 # c.JupyterHub.log_level = "DEBUG"
 c.Authenticator.admin_users = {"darstr1", "laines5", "bordong1"}
@@ -609,7 +615,7 @@ c.KubeSpawner.profile_list = get_profile_list  # (None)
 #    raise RuntimeError("Startup error: no course profiles found")
 
 
-def create_user_dir(username: str, uid: int, human_name="", log=None):
+def create_user_dir(username: str, uid: int, human_name: str, log: logging.Logger):
     human_name = re.sub(r"[^\w -]*", "", human_name, flags=re.I)
     human_name = human_name.replace(" ", "++")
     # NOTE: $JMGR_HOSTNAME defines a hardcoded command in
