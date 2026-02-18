@@ -3,7 +3,7 @@
 set -e  # exit immediately on any command failing
 set -x  # debugging
 
-JUPYTER_DIR=/mnt/jupyter
+JUPYTER_DIR=/mnt/jupyter/jupyter-exam1
 LASTLOGIN_DIR="$JUPYTER_DIR/admin/lastlogin"
 
 # Place this in ssh/authorised_keys with this key:

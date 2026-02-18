@@ -3,21 +3,21 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    cs-aalto/app: jupyterhub
+    cs-aalto/app: jupyterhub-exam1
   name: jupyterhub
-  namespace: jupyter
+  namespace: jupyter-exam1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      cs-aalto/app: jupyterhub
+      cs-aalto/app: jupyterhub-exam1
   template:
     metadata:
       labels:
-        cs-aalto/app: jupyterhub
+        cs-aalto/app: jupyterhub-exam1
       name: jupyterhub
     spec:
-      hostname: jupyterhub-cs-aalto-fi
+      hostname: jupyterhub-exam1-cs-aalto-fi
       containers:
       - name: jupyterhub
         image: harbor.cs.aalto.fi/jupyter-internal/jupyterhub-cs:4.0.1-2023-07-20
@@ -100,11 +100,11 @@ spec:
       - name: jupyterhub-hubdata
         nfs:
           server: jhnas.org.aalto.fi
-          path: /vol/jupyter/admin/hubdata/
+          path: /vol/jupyter/jupyter-exam1/admin/hubdata/
       - name: nfs-keytab
         nfs:
           server: jhnas.org.aalto.fi
-          path: /vol/jupyter/admin/keytab/
+          path: /vol/jupyter/jupyter-exam1/admin/keytab/
       - name: jupyterhub-config
         configMap:
           name: jupyterhub-config
@@ -114,7 +114,7 @@ spec:
       - name: jupyterhub-course-list
         nfs:
           server: jhnas.org.aalto.fi
-          path: /vol/jupyter/course/
+          path: /vol/jupyter/jupyter-exam1/course/
       # - name: jupyterhub-coursedata
       #   nfs:
       #     server: jhnas.org.aalto.fi
