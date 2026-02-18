@@ -5,7 +5,7 @@ metadata:
   labels:
     app: configurable-http-proxy
   name: configurable-http-proxy
-  namespace: jupyter
+  namespace: jupyter-exam2
 spec:
   selector:
     matchLabels:

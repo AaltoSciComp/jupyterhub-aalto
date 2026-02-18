@@ -55,7 +55,7 @@ JMGR_HOSTNAME = "jupyter-manager-2.cs.aalto.fi"
 # Path to the cloned repo on the manager node.
 # NOTE: $JMGR_HOSTNAME defines a hardcoded command in
 # authorized_keys, the path here is most likely ignored
-JMGR_REPO_DIR = "/root/jupyterhub-aalto"
+JMGR_REPO_DIR = "/root/jupyterhub-aalto-test"
 
 # NOTE: Image definitions have been moved to jupyterhub-aalto-course-meta/IMAGES.py
 #       Do not define images here
@@ -75,8 +75,8 @@ ROOT_THEN_SU = True
 MOUNT_EXTRA_COURSES = True
 DEFAULT_INSTRUCTORS = {"darstr1"}
 
-NAMESPACE = "jupyter"
-APP_NAME = "jupyter"
+NAMESPACE = "jupyter-exam2"
+APP_NAME = "jupyter-exam2"
 
 # Currently empty (uses all nodes), but can be edited to limit to specific
 # nodes.
@@ -235,7 +235,7 @@ if USE_OAUTHENTICATOR and os.path.exists("/etc/azuread_oauth.json"):
         f"https://login.microsoftonline.com/{oauth_info['tenantId']}/oauth2/v2.0/token"
     )
     c.AzureAdOAuthenticator.oauth_callback_url = (
-        "https://jupyter.cs.aalto.fi/hub/oauth_callback"
+        "https://jupyter-exam2.cs.aalto.fi/hub/oauth_callback"
     )
     c.AzureAdOAuthenticator.scope = ["openid", "user.read"]
     c.AzureAdOAuthenticator.username_claim = "samAccountName"  # "email" with /v2.0/
