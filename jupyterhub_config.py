@@ -47,6 +47,8 @@ IMAGE_TESTING = "registry.cs.aalto.fi/jupyter/notebook-server:5.0.4"
 IMAGES_OLD = [
     (None, "aaltoscienceit/notebook-server:5.0.26"),
 ]
+SHOW_GENERAL_PROFILES = True
+SHOW_GPU_PROFILE = True
 
 # Name of the manager node
 JMGR_HOSTNAME = "jupyter-manager-2.cs.aalto.fi"
@@ -169,7 +171,7 @@ if "IMAGE_TESTING" in globals():
             },
         }
     )
-PROFILE_LIST_DEFAULT_BOTTOM = [
+PROFILE_LIST_DEFAULT_BOTTOM: list[dict[str, Any]] = [
     {
         "display_name": "GPU testing ",
         "kubespawner_override": {
@@ -595,11 +597,14 @@ def get_profile_list(spawner: KubeSpawner):
                 },
             }
         )
+    profile_list_default = (
+        copy.deepcopy(PROFILE_LIST_DEFAULT) if SHOW_GENERAL_PROFILES else []
+    )
+    profile_list_bottom = (
+        copy.deepcopy(PROFILE_LIST_DEFAULT_BOTTOM) if SHOW_GPU_PROFILE else []
+    )
     profile_list = (
-        copy.deepcopy(PROFILE_LIST_DEFAULT)
-        + old_images
-        + profile_list
-        + copy.deepcopy(PROFILE_LIST_DEFAULT_BOTTOM)
+        profile_list_default + old_images + profile_list + profile_list_bottom
     )
 
     # Update all of the default images
