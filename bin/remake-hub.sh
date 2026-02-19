@@ -23,17 +23,7 @@ else
 fi
 echo "Running ssh"
 timeout 2 ssh $JMGR_HOSTNAME "rm -f $JUPYTER_PATH/admin/hubdata/jupyterhub-proxy.pid"
-timeout 2 ssh $JMGR_HOSTNAME "mkdir -p \
-    $JUPYTER_PATH/admin/hubdata \
-    $JUPYTER_PATH/admin/keytab \
-    $JUPYTER_PATH/admin/lastlogin \
-    $JUPYTER_PATH/course \
-    $JUPYTER_PATH/exchange \
-    $JUPYTER_PATH/shareddata \
-    $JUPYTER_PATH/software \
-    $JUPYTER_PATH/u \
-    && chmod o-rwx $JUPYTER_PATH/admin \
-    && chmod 777 $JUPYTER_PATH/admin/{hubdata,keytab}"
+"$SCRIPTPATH/create-directories.sh" "$JUPYTER_PATH" "$JMGR_HOSTNAME"
 
 echo "Starting hub"
 "$SCRIPTPATH/create-hub.sh" "$NAMESPACE"
