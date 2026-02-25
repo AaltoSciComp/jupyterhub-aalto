@@ -863,6 +863,12 @@ async def pre_spawn_hook(spawner: KubeSpawner):
         environ["NB_COURSE"] = course_slug
         spawner.extra_labels["cs-aalto/jupyter-course"] = course_slug
 
+        # Course instances can override the slug for mounting volumes to access
+        # /course, /coursedata, and exchange from the "main" instance of the
+        # course, e.g. mounting data from "course2026" when running a GPU-only
+        # instance with the slug "course2026-gpu".
+        coursedir_slug = course_data.get("coursedir_slug", course_slug)
+
         # Indicates whether the user has an explicit permission to launch
         # private courses (by being admin, instructor, explicitly listed student etc)
         allow_spawn = False
@@ -886,7 +892,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 {
                     "mountPath": "/srv/nbgrader/exchange",
                     "name": "jupyter-nfs",
-                    "subPath": f"exchange/{course_slug}",
+                    "subPath": f"exchange/{coursedir_slug}",
                     "readOnly": exchange_readonly,
                 }
             )
@@ -895,7 +901,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 spawner.volume_mounts.append(
                     {
                         "mountPath": "/coursedata",
-                        "subPath": f"course/{course_slug}/data/",
+                        "subPath": f"course/{coursedir_slug}/data/",
                         "name": "jupyter-nfs",
                         "readOnly": not (  # condition for read-write
                             (  # condition for "as an instructor"
@@ -917,8 +923,8 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 # because they are wrapped in 'echo "{line}" ...' later
                 "c.CourseDirectory.root = '/course'",
                 "c.CourseDirectory.groupshared = True",
-                f"c.CourseDirectory.course_id = '{course_slug}'",
-                f"c.Exchange.course_id = '{course_slug}'",
+                f"c.CourseDirectory.course_id = '{coursedir_slug}'",
+                f"c.Exchange.course_id = '{coursedir_slug}'",
                 (
                     "c.CourseDirectory.ignore = ['.ipynb_checkpoints', "
                     "'*.pyc*', '__pycache__', 'feedback', '.*']"
@@ -1011,14 +1017,14 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                     {
                         "mountPath": "/course",
                         "name": "jupyter-nfs",
-                        "subPath": f"course/{course_slug}/files",
+                        "subPath": f"course/{coursedir_slug}/files",
                     }
                 )
                 spawner.volume_mounts.append(
                     {
-                        "mountPath": f"/m/jhnas/jupyter/course/{course_slug}",
+                        "mountPath": f"/m/jhnas/jupyter/course/{coursedir_slug}",
                         "name": "jupyter-nfs",
-                        "subPath": f"course/{course_slug}",
+                        "subPath": f"course/{coursedir_slug}",
                     }
                 )
                 course_gid = int(course_data["gid"])
