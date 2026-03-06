@@ -1029,7 +1029,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 )
                 course_gid = int(course_data["gid"])
                 spawner.log.debug(
-                    "pre_spawn_hook: Course gid for {} is {}", course_slug, course_gid
+                    "pre_spawn_hook: Course gid for %s is %d", course_slug, course_gid
                 )
                 cmds.append(r"umask 0007")  # also used through sudo
                 environ["NB_UMASK"] = "0007"
