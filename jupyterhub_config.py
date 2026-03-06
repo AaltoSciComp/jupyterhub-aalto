@@ -868,6 +868,10 @@ async def pre_spawn_hook(spawner: KubeSpawner):
         # course, e.g. mounting data from "course2026" when running a GPU-only
         # instance with the slug "course2026-gpu".
         coursedir_slug = course_data.get("coursedir_slug", course_slug)
+        if coursedir_slug != course_slug:
+            spawner.log.info(
+                f"pre_spawn_hook: course {course_slug} has coursedir_slug {coursedir_slug}"
+            )
 
         # Indicates whether the user has an explicit permission to launch
         # private courses (by being admin, instructor, explicitly listed student etc)
