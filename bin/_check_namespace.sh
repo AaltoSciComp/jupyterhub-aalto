@@ -2,7 +2,7 @@
 
 if [[ ${SKIP_PROMPT:-no} != yes ]]; then
   if [[ $NAMESPACE == jupyter ]]; then
-    echo "Do you want to run $(basename "$0") in the PRODUCTION ENVIRONMENT? [y/n]: "
+    echo -n "Do you want to run $(basename "$0") in the PRODUCTION ENVIRONMENT? [y/N]: "
     read -r agree
     if [[ $agree != y ]]; then
       echo "Exiting"
