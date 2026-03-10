@@ -10,7 +10,6 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: 50m
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
-    nginx.ingress.kubernetes.io/limit-rps: "50"
     # Uncomment this to use LE certificates
     # cert-manager.io/issuer: "letsencrypt-prod"
 
@@ -25,6 +24,34 @@ spec:
     http:
       paths:
       - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: jupyterhub-chp-svc
+            port:
+              number: 80
+---
+# Rate limit /hub
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jupyterhub-ingress-hub
+  namespace: jupyter
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 50m
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/limit-rps: "20"
+spec:
+  tls:
+  - hosts:
+    - jupyter.cs.aalto.fi
+    secretName: tls
+  rules:
+  - host: jupyter.cs.aalto.fi
+    http:
+      paths:
+      - path: /hub
         pathType: Prefix
         backend:
           service:
