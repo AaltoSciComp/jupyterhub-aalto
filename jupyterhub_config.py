@@ -1281,15 +1281,15 @@ c.JupyterHub.services = [
         ).split(),
     },
     # Service to show stats.
-    # {
-    #     "name": "stats",
-    #     "admin": True,
-    #     "url": "http://%s:36541" % os.environ["JUPYTERHUB_SVC_SERVICE_HOST"],
-    #     "command": [
-    #         "python3",
-    #         "/srv/jupyterhub/hub_status_service.py"
-    #         if os.path.exists("/srv/jupyterhub/hub_status_service.py")
-    #         else "/hub_status_service.py",
-    #     ],
-    # },
+    {
+        "name": "stats",
+        "admin": True,
+        "url": "http://%s:36541" % os.environ["JUPYTERHUB_SVC_SERVICE_HOST"],
+        "command": [
+            "python3",
+            "/srv/jupyterhub/hub_status_service.py"
+            if os.path.exists("/srv/jupyterhub/hub_status_service.py")
+            else "/hub_status_service.py",
+        ],
+    },
 ]
