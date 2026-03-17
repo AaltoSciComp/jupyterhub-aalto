@@ -36,6 +36,11 @@ logging.getLogger("requests").setLevel(logging.WARN)
 log = logging.getLogger("test_spawn")
 log.setLevel(logging.WARN)
 
+if "--no-spawn-test" in sys.argv:
+    DISABLE_SPAWN_TEST = True
+else:
+    DISABLE_SPAWN_TEST = False
+
 
 # Automatic authentication class for requests
 class TokenAuth(requests.auth.AuthBase):
@@ -279,11 +284,14 @@ if __name__ == "__main__":
         url = urlparse("http://0.0.0.0:36541")
         http_server.listen(url.port, url.hostname)
 
-        # Background thread that tests spawning.
-        pc = PeriodicCallback(test_spawn, 1e3 * INTERVAL_SPAWN_ATTEMPT)
-        pc.start()
-        # But do it right now, too...
-        IOLoop.current().add_callback(test_spawn)
+        if DISABLE_SPAWN_TEST:
+            log.info("Spawn test disabled.")
+        else:
+            # Background thread that tests spawning.
+            pc = PeriodicCallback(test_spawn, 1e3 * INTERVAL_SPAWN_ATTEMPT)
+            pc.start()
+            # But do it right now, too...
+            IOLoop.current().add_callback(test_spawn)
 
         IOLoop.current().start()
 
