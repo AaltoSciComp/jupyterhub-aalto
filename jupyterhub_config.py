@@ -12,6 +12,7 @@ import sys
 import time
 import traceback
 from datetime import date
+from ipaddress import IPv4Address, IPv6Address, ip_address, ip_network
 from typing import Any, Dict, List, Tuple, cast
 
 import jupyterhub.spawner
@@ -200,6 +201,19 @@ PROFILE_LIST_DEFAULT_BOTTOM: list[dict[str, Any]] = [
     },
 ]
 
+ALLOWED_IPS = [
+    # EXAM classroom
+    ip_network("130.233.137.192/26"),
+    # manager.cs
+    ip_network("130.233.192.3/32"),
+]
+
+ACCESS_DENIED_MESSAGE = (
+    "Access denied. As a student, you can only connect from the EXAM"
+    " classroom. As a teacher, make sure you have the course instructor"
+    " status. If you think this is an error, contact guru. You are connecting"
+    " from IP address {ip}."
+)
 
 c.Application.log_level = "INFO"
 
@@ -507,6 +521,9 @@ def select_image(image_name: tuple[str, date] | date | str, log: logging.Logger)
 
 def get_profile_list(spawner: KubeSpawner):
     """generate the k8s profile_list."""
+
+    is_allowed_ip, ip = _allowed_ip(spawner)
+
     UPDATE_IMAGES()
     # c.JupyterHub.log.debug("Recreating profile list")
     # All courses
@@ -535,6 +552,10 @@ def get_profile_list(spawner: KubeSpawner):
             if not is_student:
                 course_notes = ' <span style="color: brown">(not public)</span>'
         display_name = course_data.get("name", course_slug)
+        if not (is_allowed_ip or is_instructor or is_admin):
+            # Only allow students to see the course if they are on an allowed
+            # IP (EXAM classroom), or if they are instructors/admins.
+            continue
         profile_list.append(
             {
                 "slug": course_slug,
@@ -631,6 +652,19 @@ def get_profile_list(spawner: KubeSpawner):
             f' <small style="color: #999999">{course_notes}</small>'
         )
 
+    if not is_allowed_ip and len(profile_list) == 0:
+        spawner.log.warning(ACCESS_DENIED_MESSAGE.format(ip=ip))
+        return [
+            {
+                "default": True,
+                "display_name": ACCESS_DENIED_MESSAGE.format(ip=ip),
+                "kubespawner_override": {
+                    "slug": "access-denied",
+                    **EMPTY_PROFILE,
+                },
+            }
+        ]
+
     return profile_list
 
 
@@ -668,6 +702,18 @@ def create_user_dir(username: str, uid: int, human_name: str, log: logging.Logge
         log.debug(ret.stdout.decode())
 
 
+def _allowed_ip(spawner: KubeSpawner) -> tuple[bool, IPv4Address | IPv6Address | None]:
+    handler = spawner.handler
+    if not handler:
+        return False, None
+    ip = ip_address(handler.request.remote_ip)
+    # Allow localhost and Aalto network, block others.
+    for allowed in ALLOWED_IPS:
+        if ip in allowed:
+            return True, ip
+    return False, ip
+
+
 async def pre_spawn_hook(spawner: KubeSpawner):
     # Note: spawners Python objects are persistent, and if you don't
     # clear certain attributes, they will persist across restarts!
@@ -675,6 +721,9 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     # spawner.tolerations = [ ]
     # spawner.default_url = c.KubeSpawner.default_url
     await spawner.load_user_options()
+    is_allowed, ip = _allowed_ip(spawner)
+    if not is_allowed:
+        raise web.HTTPError(403, ACCESS_DENIED_MESSAGE.format(ip=ip))
     spawner._profile_list = []
     spawner.create_groups = []
     spawner.environment = environ = {}  # override env
