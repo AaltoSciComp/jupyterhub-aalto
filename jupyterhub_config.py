@@ -510,6 +510,12 @@ def get_profile_list(spawner: KubeSpawner):
     # c.JupyterHub.log.debug("Recreating profile list")
     # All courses
     profile_list: list[dict[str, Any]] = []
+    all_courses = GET_COURSES().items()
+    # If there is only one course, make it the default. Otherwise, the default
+    # course(s) will be determined by the "default" flag in the yaml files.
+    # TODO: Should only apply if the generic profile is not shown.
+    single_default_course = len(all_courses) == 1
+
     for course_slug, course_data in GET_COURSES().items():
         is_student = spawner.user.name in course_data.get("students", [])
         instructors = course_data.get("instructors", [])
@@ -518,6 +524,7 @@ def get_profile_list(spawner: KubeSpawner):
         is_admin = spawner.user.admin
         is_archive = course_data.get("archive", False)
         is_private = course_data.get("private", False)
+        is_default = course_data.get("default", False)
         course_notes = ""
         if is_archive:
             continue
@@ -530,6 +537,7 @@ def get_profile_list(spawner: KubeSpawner):
         profile_list.append(
             {
                 "slug": course_slug,
+                "default": single_default_course or is_default,
                 "display_name": display_name + course_notes,
                 "kubespawner_override": {
                     **EMPTY_PROFILE,
