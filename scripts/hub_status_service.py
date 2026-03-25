@@ -113,7 +113,7 @@ def get_stats(get):
                 data[key] += 1
 
     for user in r:
-        log.debug(user["servers"])
+        # log.debug("user %s servers: %s", user["name"], user["servers"])
         # Track user activity
         if user["last_activity"]:
             last_ts = dateutil.parser.parse(user["last_activity"]).timestamp()
@@ -217,8 +217,11 @@ def make_prom_line(key, val, labels={}):
 
 
 if __name__ == "__main__":
+    log.info("Starting hub status service")
+
     if "JUPYTERHUB_API_TOKEN" in os.environ:
         # Running as a service
+        log.info("Running in service mode")
         api_token = os.environ["JUPYTERHUB_API_TOKEN"]
         auth_header = {"Authorization": "token %s" % api_token}
 
@@ -286,6 +289,10 @@ if __name__ == "__main__":
         if DISABLE_SPAWN_TEST:
             log.info("Spawn test disabled.")
         else:
+            log.info(
+                "Spawn test enabled. Testing spawn every %d seconds."
+                % INTERVAL_SPAWN_ATTEMPT
+            )
             # Background thread that tests spawning.
             pc = PeriodicCallback(test_spawn, 1e3 * INTERVAL_SPAWN_ATTEMPT)
             pc.start()
@@ -295,6 +302,7 @@ if __name__ == "__main__":
         IOLoop.current().start()
 
     else:
+        log.info("Running in standalone mode")
         auth_data = open(AUTH_DATA_FILE).readlines()
         token = auth_data[0].strip()
         auth = TokenAuth(token)
