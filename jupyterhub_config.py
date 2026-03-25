@@ -1310,6 +1310,7 @@ c.JupyterHub.services = [
             "/srv/jupyterhub/hub_status_service.py"
             if os.path.exists("/srv/jupyterhub/hub_status_service.py")
             else "/hub_status_service.py",
+            "--no-spawn-test",
         ],
     },
 ]
