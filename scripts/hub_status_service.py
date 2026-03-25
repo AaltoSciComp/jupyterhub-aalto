@@ -34,7 +34,6 @@ else:
     logging.basicConfig(level=logging.WARN)
 logging.getLogger("requests").setLevel(logging.WARN)
 log = logging.getLogger("test_spawn")
-log.setLevel(logging.WARN)
 
 if "--no-spawn-test" in sys.argv:
     DISABLE_SPAWN_TEST = True
