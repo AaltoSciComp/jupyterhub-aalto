@@ -421,10 +421,10 @@ def GET_COURSES() -> dict:
                 courses["testcourse"]["instructors"] |= set(
                     grp.getgrnam("jupyter-" + course_slug).gr_mem
                 )
-            except KeyError:
+            except KeyError as e:
                 # TODO: convert to logger calls?
                 print(
-                    f"ERROR: group {course_slug} can not look up group info",
+                    f"ERROR: group {course_slug} can not look up group info: {traceback.format_exc()}",
                     file=sys.stderr,
                 )
             # Add a group directory mapping (instructor) -> {group, gid} of
