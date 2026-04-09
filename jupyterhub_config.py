@@ -418,9 +418,10 @@ def GET_COURSES() -> dict:
                 )
                 course_data["instructors"] |= DEFAULT_INSTRUCTORS
                 # Testcourse gets all instructors
-                courses["testcourse"]["instructors"] |= set(
-                    grp.getgrnam("jupyter-" + course_slug).gr_mem
-                )
+                if "testcourse" in course_slug:
+                    courses["testcourse"]["instructors"] |= set(
+                        grp.getgrnam("jupyter-" + course_slug).gr_mem
+                    )
             except KeyError as e:
                 # TODO: convert to logger calls?
                 print(
