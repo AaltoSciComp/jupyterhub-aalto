@@ -654,6 +654,9 @@ def get_profile_list(spawner: KubeSpawner):
         )
 
     if not is_allowed_ip and len(profile_list) == 0:
+        spawner.log.info(
+            "No allowed profiles found for user %s from %s.", spawner.user.name, ip
+        )
         spawner.log.warning(
             ACCESS_DENIED_MESSAGE.format(ip=ip, error_from="get_profile_list")
         )
@@ -726,11 +729,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     # spawner.tolerations = [ ]
     # spawner.default_url = c.KubeSpawner.default_url
     await spawner.load_user_options()
-    is_allowed, ip = _allowed_ip(spawner)
-    if not is_allowed:
-        raise web.HTTPError(
-            403, ACCESS_DENIED_MESSAGE.format(ip=ip, error_from="pre_spawn_hook")
-        )
+
     spawner._profile_list = []
     spawner.create_groups = []
     spawner.environment = environ = {}  # override env
@@ -739,6 +738,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     # Get basic info
     username = spawner.user.name
     is_admin = spawner.user.admin
+    is_instructor = False
     if not USER_RE.match(username):
         raise web.HTTPError(
             400,
@@ -1180,6 +1180,21 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                     "environment. Please contact the course instructors"
                 ),
             )
+
+    is_allowed, ip = _allowed_ip(spawner)
+    if not is_allowed and not (is_instructor or is_admin):
+        spawner.log.warning(
+            "pre_spawn_hook: User %s is not allowed to spawn %s. is_allowed: %s, is_instructor: %s, is_admin: %s, ip: %s",
+            username,
+            course_slug,
+            is_allowed,
+            is_instructor,
+            is_admin,
+            ip,
+        )
+        raise web.HTTPError(
+            403, ACCESS_DENIED_MESSAGE.format(ip=ip, error_from="pre_spawn_hook")
+        )
 
     spawner.log.info("pre_spawn_hook: course setup done")
     if enable_formgrader:
