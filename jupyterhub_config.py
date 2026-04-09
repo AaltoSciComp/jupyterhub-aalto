@@ -212,7 +212,7 @@ ACCESS_DENIED_MESSAGE = (
     "Access denied. As a student, you can only connect from the EXAM"
     " classroom. As a teacher, make sure you have the course instructor"
     " status. If you think this is an error, contact guru. You are connecting"
-    " from IP address {ip}."
+    " from IP address {ip}. <small>Denied by {error_from}</small>"
 )
 
 c.Application.log_level = "INFO"
@@ -654,11 +654,15 @@ def get_profile_list(spawner: KubeSpawner):
         )
 
     if not is_allowed_ip and len(profile_list) == 0:
-        spawner.log.warning(ACCESS_DENIED_MESSAGE.format(ip=ip))
+        spawner.log.warning(
+            ACCESS_DENIED_MESSAGE.format(ip=ip, error_from="get_profile_list")
+        )
         return [
             {
                 "default": True,
-                "display_name": ACCESS_DENIED_MESSAGE.format(ip=ip),
+                "display_name": ACCESS_DENIED_MESSAGE.format(
+                    ip=ip, error_from="get_profile_list"
+                ),
                 "kubespawner_override": {
                     "slug": "access-denied",
                     **EMPTY_PROFILE,
@@ -724,7 +728,9 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     await spawner.load_user_options()
     is_allowed, ip = _allowed_ip(spawner)
     if not is_allowed:
-        raise web.HTTPError(403, ACCESS_DENIED_MESSAGE.format(ip=ip))
+        raise web.HTTPError(
+            403, ACCESS_DENIED_MESSAGE.format(ip=ip, error_from="pre_spawn_hook")
+        )
     spawner._profile_list = []
     spawner.create_groups = []
     spawner.environment = environ = {}  # override env
