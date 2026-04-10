@@ -35,7 +35,7 @@ c: traitlets.config.Config = get_config()  # type: ignore # noqa: F821
 c.JupyterHub.log_level = "DEBUG"
 c.Authenticator.admin_users = {"darstr1", "laines5", "bordong1", "murhum1", "jhadmin"}
 
-USE_OAUTHENTICATOR = True
+USE_OAUTHENTICATOR = False
 
 # These values are used as defaults if meta/IMAGES.py doesn't exist. Otherwise
 # overridden automatically.
