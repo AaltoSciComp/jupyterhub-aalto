@@ -1022,7 +1022,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 spawner.cpu_guarantee = INSTRUCTOR_CPU_GUARANTEE
                 spawner.mem_guarantee = INSTRUCTOR_MEM_GUARANTEE
                 for line in [
-                    "c.NbGrader.logfile = '/course/.nbgrader.log'",
+                    f"c.NbGrader.logfile = '/course/.nbgrader-{username}.log'",
                 ]:
                     cmds.append(f'echo "{line}" >> /etc/jupyter/nbgrader_config.py')
                 spawner.volume_mounts.append(
