@@ -76,6 +76,9 @@ spec:
         - name: nbgrader-randomize-release
           mountPath: /srv/jupyterhub/nbgrader_randomize_release.py
           subPath: nbgrader_randomize_release.py
+        - name: nbgrader-randomized-fetch
+          mountPath: /srv/jupyterhub/nbgrader_randomized_fetch.py
+          subPath: nbgrader_randomized_fetch.py
         - name: spawn-test
           mountPath: /srv/jupyterhub/spawn_test.py
           subPath: spawn_test.py
@@ -166,6 +169,9 @@ spec:
       - name: nbgrader-randomize-release
         configMap:
           name: nbgrader-randomize-release
+      - name: nbgrader-randomized-fetch
+        configMap:
+          name: nbgrader-randomized-fetch
       - name: spawn-test
         configMap:
           name: spawn-test
