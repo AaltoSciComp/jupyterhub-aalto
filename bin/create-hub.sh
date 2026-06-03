@@ -10,5 +10,6 @@ kubectl create configmap hub-status-service -n "$NAMESPACE" --from-file="$SCRIPT
 kubectl create configmap cull-idle-servers -n "$NAMESPACE" --from-file="$SCRIPTPATH/../scripts/cull_idle_servers.py"
 kubectl create configmap create-ci-user -n "$NAMESPACE" --from-file="$SCRIPTPATH/../scripts/create_ci_user.py"
 kubectl create configmap nbgrader-randomize-release -n "$NAMESPACE" --from-file="$SCRIPTPATH/../scripts/nbgrader_randomize_release.py"
+kubectl create configmap nbgrader-randomized-fetch -n "$NAMESPACE" --from-file="$SCRIPTPATH/../scripts/nbgrader_randomized_fetch.py"
 kubectl create configmap spawn-test -n "$NAMESPACE" --from-file="$SCRIPTPATH/../bin/spawn_test.py"
 kubectl create -f "$SCRIPTPATH/../k8s-yaml/jupyterhub.yaml"

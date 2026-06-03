@@ -110,6 +110,12 @@ an instructor spawns a course where randomization is enabled and writes
 deterministic per-student notebooks and a manifest under the configured
 output directory.
 
+Fetching is integrated through a custom exchange plugin
+`scripts/nbgrader_randomized_fetch.py` that is set as
+`ExchangeFactory.fetch_assignment` for randomized courses. Students still
+run standard `nbgrader fetch` / `nbgrader fetch_assignment`, but the fetched
+notebook is replaced with that student's deterministic randomized variant.
+
 * `course-mgmt/` are course management scripts used by admins.
 
 * `user-scripts/` are scripts which users/instructors need to use
