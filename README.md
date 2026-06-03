@@ -70,6 +70,46 @@ needed.
 * `scripts/` are generally scripts that are placed on the hub and not
   used directly.
 
+## nbgrader question randomization
+
+This deployment supports deterministic per-student randomization for
+nbgrader assignments by using a question bank in a source notebook.
+
+Enable in course YAML (`meta/*.yaml`) with:
+
+```yaml
+nbgrader_randomization:
+  enabled: true
+  assignment: assign1
+  pick_count: 3
+  # Optional overrides:
+  # source_notebook: /courses/{coursedir_slug}/files/source/assign1/assign1.ipynb
+  # output_dir: /courses/{coursedir_slug}/files/randomized
+  # question_metadata_key: aalto_nbgrader_bank
+  # weight_key: weight
+  # seed_salt: gausproc2026
+```
+
+Question-bank cells are identified by per-cell metadata. Cells without
+the bank metadata are included for everyone; tagged question cells are
+sampled with weighted sampling without replacement.
+
+Example cell metadata:
+
+```json
+{
+  "aalto_nbgrader_bank": {
+    "question_id": "q05",
+    "weight": 1.0
+  }
+}
+```
+
+The generator is `scripts/nbgrader_randomize_release.py`. It runs when
+an instructor spawns a course where randomization is enabled and writes
+deterministic per-student notebooks and a manifest under the configured
+output directory.
+
 * `course-mgmt/` are course management scripts used by admins.
 
 * `user-scripts/` are scripts which users/instructors need to use

@@ -341,6 +341,34 @@ COURSES = {}
 COURSES_TS = None
 METADIR = "/courses/meta"
 GROUPS = {}  # map username->{group:name, gid:number} for all allowed courses.
+NBGRADER_RANDOMIZE_SCRIPT = "/srv/jupyterhub/nbgrader_randomize_release.py"
+
+
+def _validate_nbgrader_randomization_cfg(course_slug: str, course_data: Dict) -> None:
+    cfg = course_data.get("nbgrader_randomization")
+    if cfg is None:
+        return
+    if not isinstance(cfg, dict):
+        raise ValueError(f"{course_slug}: nbgrader_randomization must be a dict")
+
+    required = ["assignment", "pick_count"]
+    if cfg.get("enabled", False):
+        for key in required:
+            if key not in cfg:
+                raise ValueError(
+                    f"{course_slug}: nbgrader_randomization.{key} is required"
+                )
+
+    if "assignment" in cfg and not isinstance(cfg["assignment"], str):
+        raise ValueError(
+            f"{course_slug}: nbgrader_randomization.assignment must be str"
+        )
+    if "pick_count" in cfg and (
+        not isinstance(cfg["pick_count"], int) or cfg["pick_count"] <= 0
+    ):
+        raise ValueError(
+            f"{course_slug}: nbgrader_randomization.pick_count must be a positive int"
+        )
 
 
 def GET_COURSES() -> dict:
@@ -435,6 +463,8 @@ def GET_COURSES() -> dict:
                 groups.setdefault(instructor, set()).add(
                     (course_slug, course_data["gid"])
                 )
+
+        _validate_nbgrader_randomization_cfg(course_slug, course_data)
 
     # Set global variable from new local variable.
     COURSES = courses
@@ -721,6 +751,103 @@ def _allowed_ip(spawner: KubeSpawner) -> tuple[bool, IPv4Address | IPv6Address |
         if ip in allowed:
             return True, ip
     return False, ip
+
+
+def _run_nbgrader_randomization(
+    spawner: KubeSpawner,
+    *,
+    course_slug: str,
+    coursedir_slug: str,
+    course_data: dict,
+) -> None:
+    cfg = course_data.get("nbgrader_randomization")
+    if not isinstance(cfg, dict) or not cfg.get("enabled", False):
+        return
+
+    if not os.path.exists(NBGRADER_RANDOMIZE_SCRIPT):
+        raise RuntimeError(f"Randomization script missing: {NBGRADER_RANDOMIZE_SCRIPT}")
+
+    assignment = cfg.get("assignment")
+    if not isinstance(assignment, str) or not assignment:
+        raise ValueError(
+            f"Course {course_slug}: nbgrader_randomization.assignment is required"
+        )
+    pick_count = cfg.get("pick_count")
+    if not isinstance(pick_count, int) or pick_count <= 0:
+        raise ValueError(
+            f"Course {course_slug}: nbgrader_randomization.pick_count must be > 0"
+        )
+
+    fmt = {
+        "course_slug": course_slug,
+        "coursedir_slug": coursedir_slug,
+        "assignment": assignment,
+    }
+
+    source_notebook = cfg.get(
+        "source_notebook",
+        f"/courses/{coursedir_slug}/files/source/{assignment}/{assignment}.ipynb",
+    ).format(**fmt)
+    output_dir = cfg.get(
+        "output_dir", f"/courses/{coursedir_slug}/files/randomized"
+    ).format(**fmt)
+    question_metadata_key = cfg.get(
+        "question_metadata_key", "aalto_nbgrader_bank"
+    ).format(**fmt)
+    weight_key = cfg.get("weight_key", "weight").format(**fmt)
+    seed_salt = cfg.get("seed_salt", "").format(**fmt)
+
+    students = sorted(course_data.get("students") or [])
+    if not students:
+        spawner.log.info(
+            "pre_spawn_hook: nbgrader randomization enabled for %s, but no students listed",
+            course_slug,
+        )
+        return
+
+    cmd = [
+        "python3",
+        NBGRADER_RANDOMIZE_SCRIPT,
+        "--course-slug",
+        course_slug,
+        "--assignment",
+        assignment,
+        "--source-notebook",
+        source_notebook,
+        "--output-dir",
+        output_dir,
+        "--pick-count",
+        str(pick_count),
+        "--students",
+        ",".join(students),
+        "--seed-salt",
+        seed_salt,
+        "--question-metadata-key",
+        question_metadata_key,
+        "--weight-key",
+        weight_key,
+    ]
+    if cfg.get("force", False):
+        cmd.append("--force")
+
+    spawner.log.info(
+        "pre_spawn_hook: generating randomized nbgrader notebooks for %s (%s)",
+        course_slug,
+        assignment,
+    )
+    ret = subprocess.run(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        timeout=300,
+    )
+    if ret.returncode != 0:
+        raise RuntimeError(
+            "nbgrader randomization failed for "
+            f"{course_slug}/{assignment}:\n{ret.stdout}"
+        )
+    spawner.log.info("pre_spawn_hook: nbgrader randomization output: %s", ret.stdout)
 
 
 async def pre_spawn_hook(spawner: KubeSpawner):
@@ -1136,6 +1263,13 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                     for name, gid in course_data["extra_instructor_groups"]:
                         spawner.create_groups.append((name, gid))
                         spawner.supplemental_gids.append(gid)
+
+                _run_nbgrader_randomization(
+                    spawner,
+                    course_slug=course_slug,
+                    coursedir_slug=coursedir_slug,
+                    course_data=course_data,
+                )
 
             # Student attempting spawning a course (or instructor with
             # as_instructor=False to test the student mode)
