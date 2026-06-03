@@ -305,6 +305,10 @@ c.KubeSpawner.singleuser_image_pull_secrets = "registry-secret-jupyter"
 # Volume mounts
 DEFAULT_VOLUMES = [
     {"name": "jupyter-nfs", "persistentVolumeClaim": {"claimName": "jupyter-nfs"}},
+    {
+        "name": "nbgrader-randomized-fetch",
+        "configMap": {"name": "nbgrader-randomized-fetch"},
+    },
 ]
 DEFAULT_VOLUME_MOUNTS = [
     {
@@ -331,6 +335,12 @@ DEFAULT_VOLUME_MOUNTS = [
         "subPath": "software/",
         "readOnly": True,
     },
+    {
+        "name": "nbgrader-randomized-fetch",
+        "mountPath": "/srv/nbgrader-plugins/nbgrader_randomized_fetch.py",
+        "subPath": "nbgrader_randomized_fetch.py",
+        "readOnly": True,
+    },
 ]
 c.KubeSpawner.volumes = DEFAULT_VOLUMES
 c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
@@ -341,6 +351,7 @@ COURSES_TS = None
 METADIR = "/courses/meta"
 GROUPS = {}  # map username->{group:name, gid:number} for all allowed courses.
 NBGRADER_RANDOMIZE_SCRIPT = "/srv/jupyterhub/nbgrader_randomize_release.py"
+NBGRADER_RANDOMIZED_FETCH_MODULE = "nbgrader_randomized_fetch"
 
 
 def _validate_nbgrader_randomization_cfg(course_slug: str, course_data: Dict) -> None:
@@ -911,7 +922,9 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     # /course/pymod is used by the autograder, can be used to create custom
     # late submission plugins
     # TODO: Remove once all notebooks have the newer hooks.
-    environ["PYTHONPATH"] = "/course/pymod:/m/jhnas/jupyter/software/pymod/"
+    environ["PYTHONPATH"] = (
+        "/srv/nbgrader-plugins:/course/pymod:/m/jhnas/jupyter/software/pymod/"
+    )
 
     environ["TZ"] = os.environ.get("TZ", "Europe/Helsinki")
     cmds = []
@@ -1072,6 +1085,31 @@ async def pre_spawn_hook(spawner: KubeSpawner):
         # Course configuration - only if it has instructors. Courses without
         # instructors do not have any course data nor assignments
         if course_data["gid"] or course_data.get("instructors", []):
+            randomization_cfg = course_data.get("nbgrader_randomization")
+            randomization_enabled = bool(
+                isinstance(randomization_cfg, dict)
+                and randomization_cfg.get("enabled", False)
+            )
+            randomization_lines = []
+            if randomization_enabled:
+                assignment = randomization_cfg["assignment"]
+                fmt = {
+                    "course_slug": course_slug,
+                    "coursedir_slug": coursedir_slug,
+                    "assignment": assignment,
+                }
+                output_dir = randomization_cfg.get(
+                    "output_dir", f"/courses/{coursedir_slug}/files/randomized"
+                ).format(**fmt)
+                randomization_lines = [
+                    "c.ExchangeFactory.fetch_assignment = "
+                    f"'{NBGRADER_RANDOMIZED_FETCH_MODULE}.RandomizedExchangeFetchAssignment'",
+                    (
+                        "c.RandomizedExchangeFetchAssignment.randomization_root = "
+                        f"'{output_dir}'"
+                    ),
+                ]
+
             # admins are always considered instructors if they spawn the
             # instructor instance
             is_instructor = is_admin or username in course_data.get("instructors", {})
@@ -1143,6 +1181,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                     "[%(name)s | %(levelname)s]%(end_color)s %(message)s'"
                 ),
                 "c.Application.log_datefmt = '%Y-%m-%dT%H:%M:%S%z'",
+                *randomization_lines,
                 *course_data.get("nbgrader_config", "").split("\n"),
             ]:
                 cmds.append(f'echo "{line}" >> /etc/jupyter/nbgrader_config.py')

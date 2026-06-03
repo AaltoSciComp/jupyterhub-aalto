@@ -11,6 +11,7 @@ kubectl delete configmap -n "$NAMESPACE" hub-status-service
 kubectl delete configmap -n "$NAMESPACE" cull-idle-servers
 kubectl delete configmap -n "$NAMESPACE" create-ci-user
 kubectl delete configmap -n "$NAMESPACE" nbgrader-randomize-release
+kubectl delete configmap -n "$NAMESPACE" nbgrader-randomized-fetch
 kubectl delete configmap -n "$NAMESPACE" spawn-test
 
 # Delete non-stopping pods:
