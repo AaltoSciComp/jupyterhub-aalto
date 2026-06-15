@@ -789,6 +789,12 @@ def _run_nbgrader_randomization(
             f"Course {course_slug}: nbgrader_randomization.pick_count must be > 0"
         )
 
+    students = sorted(course_data.get("students") or [])
+    if not students:
+        raise RuntimeError(
+            f"pre_spawn_hook: nbgrader randomization enabled for {course_slug}, but no students listed"
+        )
+
     fmt = {
         "course_slug": course_slug,
         "coursedir_slug": coursedir_slug,
@@ -807,14 +813,6 @@ def _run_nbgrader_randomization(
     ).format(**fmt)
     weight_key = cfg.get("weight_key", "weight").format(**fmt)
     seed_salt = cfg.get("seed_salt", "").format(**fmt)
-
-    students = sorted(course_data.get("students") or [])
-    if not students:
-        spawner.log.info(
-            "pre_spawn_hook: nbgrader randomization enabled for %s, but no students listed",
-            course_slug,
-        )
-        return
 
     cmd = [
         "python3",
