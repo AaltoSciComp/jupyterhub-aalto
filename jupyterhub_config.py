@@ -457,7 +457,7 @@ def GET_COURSES() -> dict:
                 )
                 course_data["instructors"] |= DEFAULT_INSTRUCTORS
                 # Testcourse gets all instructors
-                if "testcourse" in course_slug:
+                if course_slug == "testcourse":
                     courses["testcourse"]["instructors"] |= set(
                         grp.getgrnam("jupyter-" + course_slug).gr_mem
                     )
