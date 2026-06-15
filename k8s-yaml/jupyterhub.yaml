@@ -5,7 +5,7 @@ metadata:
   labels:
     cs-aalto/app: jh-exam2
   name: jupyterhub
-  namespace: jupyter-exam2
+  namespace: jupyter-exam1
 spec:
   replicas: 1
   selector:
@@ -110,11 +110,11 @@ spec:
       - name: jupyterhub-hubdata
         nfs:
           server: jhnas.org.aalto.fi
-          path: /vol/jupyter/jupyter-exam2/admin/hubdata/
+          path: /vol/jupyter/jupyter-exam1/admin/hubdata/
       - name: nfs-keytab
         nfs:
           server: jhnas.org.aalto.fi
-          path: /vol/jupyter/jupyter-exam2/admin/keytab/
+          path: /vol/jupyter/jupyter-exam1/admin/keytab/
       - name: jupyterhub-config
         configMap:
           name: jupyterhub-config
@@ -124,11 +124,11 @@ spec:
       - name: jupyterhub-course-list
         nfs:
           server: jhnas.org.aalto.fi
-          path: /vol/jupyter/jupyter-exam2/course/
+          path: /vol/jupyter/jupyter-exam1/course/
       # - name: jupyterhub-coursedata
       #   nfs:
       #     server: jhnas.org.aalto.fi
-      #     path: /vol/jupyter/jupyter-exam2/course/coursedata/
+      #     path: /vol/jupyter/jupyter-exam1/course/coursedata/
       - name: adpw
         secret:
           secretName: adpw.txt
