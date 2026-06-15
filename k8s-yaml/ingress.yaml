@@ -3,7 +3,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: jupyterhub-ingress
-  namespace: jupyter-exam2
+  namespace: jupyter-exam1
   annotations:
     # nginx.ingress.kubernetes.io/secure-backends: "true"
     # nginx.ingress.kubernetes.io/rewrite-target: /
@@ -17,11 +17,11 @@ metadata:
 spec:
   tls:
   - hosts:
-    - jupyter-exam2.cs.aalto.fi
+    - jupyter-exam1.cs.aalto.fi
     # Change name to tls-le when using LE certificates
     secretName: tls
   rules:
-  - host: jupyter-exam2.cs.aalto.fi
+  - host: jupyter-exam1.cs.aalto.fi
     http:
       paths:
       - path: /
