@@ -306,6 +306,10 @@ c.KubeSpawner.singleuser_image_pull_secrets = "registry-secret-jupyter"
 DEFAULT_VOLUMES = [
     {"name": "jupyter-nfs", "persistentVolumeClaim": {"claimName": "jupyter-nfs"}},
     {
+        "name": "nbgrader-randomize-release",
+        "configMap": {"name": "nbgrader-randomize-release"},
+    },
+    {
         "name": "nbgrader-randomized-fetch",
         "configMap": {"name": "nbgrader-randomized-fetch"},
     },
@@ -336,6 +340,12 @@ DEFAULT_VOLUME_MOUNTS = [
         "readOnly": True,
     },
     {
+        "name": "nbgrader-randomize-release",
+        "mountPath": "/srv/nbgrader-plugins/nbgrader_randomize_release.py",
+        "subPath": "nbgrader_randomize_release.py",
+        "readOnly": True,
+    },
+    {
         "name": "nbgrader-randomized-fetch",
         "mountPath": "/srv/nbgrader-plugins/nbgrader_randomized_fetch.py",
         "subPath": "nbgrader_randomized_fetch.py",
@@ -350,7 +360,7 @@ COURSES = {}
 COURSES_TS = None
 METADIR = "/courses/meta"
 GROUPS = {}  # map username->{group:name, gid:number} for all allowed courses.
-NBGRADER_RANDOMIZE_SCRIPT = "/srv/jupyterhub/nbgrader_randomize_release.py"
+NBGRADER_RANDOMIZE_SCRIPT = "/srv/nbgrader-plugins/nbgrader_randomize_release.py"
 NBGRADER_RANDOMIZED_FETCH_MODULE = "nbgrader_randomized_fetch"
 
 
@@ -769,13 +779,11 @@ def _run_nbgrader_randomization(
     course_slug: str,
     coursedir_slug: str,
     course_data: dict,
+    cmds: list[str],
 ) -> None:
     cfg = course_data.get("nbgrader_randomization")
     if not isinstance(cfg, dict) or not cfg.get("enabled", False):
         return
-
-    if not os.path.exists(NBGRADER_RANDOMIZE_SCRIPT):
-        raise RuntimeError(f"Randomization script missing: {NBGRADER_RANDOMIZE_SCRIPT}")
 
     assignment = cfg.get("assignment")
     if not isinstance(assignment, str) or not assignment:
@@ -838,24 +846,24 @@ def _run_nbgrader_randomization(
     if cfg.get("force", False):
         cmd.append("--force")
 
+    randomize_cmd = shlex.join(cmd)
+    hook_path = "/usr/libexec/nbgrader-randomize-release.sh"
+    script_lines = [
+        "#!/bin/bash",
+        "set -euo pipefail",
+        "echo '[nbgrader-randomization] generating per-student variants'",
+        randomize_cmd,
+    ]
+    rendered_lines = " ".join(shlex.quote(line) for line in script_lines)
+    cmds.append(
+        "printf '%s\\n' " + rendered_lines + f" > {hook_path} && chmod 755 {hook_path}"
+    )
+
     spawner.log.info(
-        "pre_spawn_hook: generating randomized nbgrader notebooks for %s (%s)",
+        "pre_spawn_hook: queued in-pod nbgrader randomization for %s (%s)",
         course_slug,
         assignment,
     )
-    ret = subprocess.run(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        timeout=300,
-    )
-    if ret.returncode != 0:
-        raise RuntimeError(
-            "nbgrader randomization failed for "
-            f"{course_slug}/{assignment}:\n{ret.stdout}"
-        )
-    spawner.log.info("pre_spawn_hook: nbgrader randomization output: %s", ret.stdout)
 
 
 async def pre_spawn_hook(spawner: KubeSpawner):
@@ -1305,6 +1313,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                     course_slug=course_slug,
                     coursedir_slug=coursedir_slug,
                     course_data=course_data,
+                    cmds=cmds,
                 )
 
             # Student attempting spawning a course (or instructor with
