@@ -9,8 +9,8 @@ puts it in the DBs.
 
 Add this to crontab:
 
-find /mnt/jupyter/jupyter-exam2/course/ -maxdepth 3 -name gradebook.db -mtime -14 \
-  -exec python3 /root/jupyterhub-aalto/scripts/nbgrader-gradebook-update-student-names.py /mnt/jupyter/jupyter-exam2/admin/lastlogin/ {} \;
+find /mnt/jupyter/jupyter-exam1/course/ -maxdepth 3 -name gradebook.db -mtime -14 \
+  -exec python3 /root/jupyterhub-aalto/scripts/nbgrader-gradebook-update-student-names.py /mnt/jupyter/jupyter-exam1/admin/lastlogin/ {} \;
 
 """
 

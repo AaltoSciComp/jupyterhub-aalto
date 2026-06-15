@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: jupyter-exam-network-policy
-  namespace: jupyter-exam2
+  namespace: jupyter-exam1
 spec:
   podSelector:
     matchLabels:

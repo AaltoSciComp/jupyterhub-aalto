@@ -76,8 +76,8 @@ ROOT_THEN_SU = True
 MOUNT_EXTRA_COURSES = True
 DEFAULT_INSTRUCTORS = {"darstr1"}
 
-NAMESPACE = "jupyter-exam2"
-APP_NAME = "jupyter-exam2"
+NAMESPACE = "jupyter-exam1"
+APP_NAME = "jupyter-exam1"
 
 # Currently empty (uses all nodes), but can be edited to limit to specific
 # nodes.
@@ -249,7 +249,7 @@ if USE_OAUTHENTICATOR and os.path.exists("/etc/azuread_oauth.json"):
         f"https://login.microsoftonline.com/{oauth_info['tenantId']}/oauth2/v2.0/token"
     )
     c.AzureAdOAuthenticator.oauth_callback_url = (
-        "https://jupyter-exam2.cs.aalto.fi/hub/oauth_callback"
+        "https://jupyter-exam1.cs.aalto.fi/hub/oauth_callback"
     )
     c.AzureAdOAuthenticator.scope = ["openid", "user.read"]
     c.AzureAdOAuthenticator.username_claim = "samAccountName"  # "email" with /v2.0/
