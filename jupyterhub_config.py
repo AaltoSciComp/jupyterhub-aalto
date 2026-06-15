@@ -810,11 +810,9 @@ def _run_nbgrader_randomization(
 
     source_notebook = cfg.get(
         "source_notebook",
-        f"/courses/{coursedir_slug}/files/source/{assignment}/{assignment}.ipynb",
+        f"/course/source/{assignment}/{assignment}.ipynb",
     ).format(**fmt)
-    output_dir = cfg.get(
-        "output_dir", f"/courses/{coursedir_slug}/files/randomized"
-    ).format(**fmt)
+    output_dir = cfg.get("output_dir", "/courses/randomized").format(**fmt)
     question_metadata_key = cfg.get(
         "question_metadata_key", "aalto_nbgrader_bank"
     ).format(**fmt)
@@ -1105,7 +1103,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                     "assignment": assignment,
                 }
                 output_dir = randomization_cfg.get(
-                    "output_dir", f"/courses/{coursedir_slug}/files/randomized"
+                    "output_dir", "/course/randomized"
                 ).format(**fmt)
                 randomization_lines = [
                     "c.ExchangeFactory.fetch_assignment = "
