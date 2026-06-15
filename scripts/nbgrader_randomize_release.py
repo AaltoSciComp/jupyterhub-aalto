@@ -217,7 +217,9 @@ def main() -> int:
 
     source_path = Path(args.source_notebook)
     output_dir = Path(args.output_dir)
-    lock_path = output_dir / args.assignment / ".randomization.lock"
+    assignment_dir = output_dir / args.assignment
+    assignment_dir.mkdir(parents=True, exist_ok=True)
+    lock_path = assignment_dir / ".randomization.lock"
 
     _acquire_lock(lock_path, timeout_s=args.lock_timeout)
     try:
