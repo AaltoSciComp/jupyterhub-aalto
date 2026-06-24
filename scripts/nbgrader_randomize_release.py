@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Generate deterministic per-student randomized nbgrader notebooks.
+"""Custom nbgrader release plugin for per-student randomized assignments.
+
+This plugin keeps the normal nbgrader exchange flow and only alters release:
+1. If randomisation is not enabled for the assignment, perform the standard
+   release to exchange outbound.
+2. If randomisation is enabled for the assignment, generate one
+   student-specific notebook per student with only the selected questions, and
+   place them in a per-user directory for the assignment, so that they can be
+   mounted in the user's single-user container and fetched as normal.
 
 This tool reads one source notebook containing a question bank and writes one
 student-specific notebook per student with only the selected questions.
@@ -33,6 +41,140 @@ import time
 from pathlib import Path
 from typing import Any
 
+from nbgrader.exchange.default.release_assignment import ExchangeReleaseAssignment
+from traitlets.traitlets import Bool, Int, Unicode
+
+
+class RandomizedExchangeReleaseAssignment(ExchangeReleaseAssignment):
+    """Release plugin that generates randomized notebook variants per student."""
+
+    randomization_enabled = Bool(
+        False,
+        help="Enable randomized notebook generation on release.",
+    ).tag(config=True)
+
+    randomization_root = Unicode(
+        "",
+        help=(
+            "Root directory containing randomized assignment outputs, for example "
+            "'/courses/<slug>/files/randomized'."
+        ),
+    ).tag(config=True)
+
+    source_notebook = Unicode(
+        "",
+        help=(
+            "Path to source bank notebook. If empty, defaults to "
+            "'<release source path>/<assignment_id>.ipynb'."
+        ),
+    ).tag(config=True)
+
+    pick_count = Int(
+        0,
+        help="Number of randomizable questions selected per student.",
+    ).tag(config=True)
+
+    students = Unicode(
+        "",
+        help="Comma-separated student usernames.",
+    ).tag(config=True)
+
+    students_file = Unicode(
+        "",
+        help="Path to newline-separated student usernames.",
+    ).tag(config=True)
+
+    seed_salt = Unicode(
+        "",
+        help="Optional extra salt used in deterministic per-student seeding.",
+    ).tag(config=True)
+
+    question_metadata_key = Unicode(
+        "aalto_nbgrader_bank",
+        help="Cell metadata key containing randomization metadata.",
+    ).tag(config=True)
+
+    weight_key = Unicode(
+        "weight",
+        help="Weight key inside question metadata.",
+    ).tag(config=True)
+
+    force = Bool(
+        False,
+        help="Regenerate variants even if manifest config matches existing output.",
+    ).tag(config=True)
+
+    lock_timeout = Int(
+        90,
+        help="Lock wait timeout in seconds.",
+    ).tag(config=True)
+
+    def _course_slug(self) -> str:
+        course_slug = getattr(self.coursedir, "course_id", "")
+        if not isinstance(course_slug, str) or not course_slug:
+            return "unknown-course"
+        return course_slug
+
+    def _assignment(self) -> str:
+        assignment = getattr(self.coursedir, "assignment_id", "")
+        if not isinstance(assignment, str) or not assignment:
+            raise ValueError("Could not determine assignment_id from coursedir")
+        return assignment
+
+    def _source_notebook_path(self, assignment: str) -> Path:
+        if self.source_notebook:
+            return Path(self.source_notebook)
+
+        src_path = getattr(self, "src_path", "")
+        if not isinstance(src_path, str) or not src_path:
+            raise ValueError(
+                "source_notebook was not configured and release source path is unavailable"
+            )
+        return Path(src_path) / f"{assignment}.ipynb"
+
+    def copy_files(self):
+        if not self.randomization_enabled:
+            self.log.debug("Randomization disabled; skipping variant generation")
+            super().copy_files()
+            return
+
+        if not self.randomization_root:
+            raise ValueError(
+                "RandomizedExchangeReleaseAssignment.randomization_root must be set"
+            )
+        if self.pick_count <= 0:
+            raise ValueError(
+                "RandomizedExchangeReleaseAssignment.pick_count must be > 0"
+            )
+
+        students = _load_students_from_values(self.students, self.students_file)
+        if not students:
+            raise ValueError(
+                "No students configured. Set RandomizedExchangeReleaseAssignment.students "
+                "or students_file"
+            )
+
+        # Run standard release workflow first.
+        super().copy_files()
+
+        assignment = self._assignment()
+        source_path = self._source_notebook_path(assignment)
+
+        _generate_randomized_notebooks(
+            course_slug=self._course_slug(),
+            assignment=assignment,
+            source_path=source_path,
+            output_dir=Path(self.randomization_root),
+            pick_count=self.pick_count,
+            students=students,
+            seed_salt=self.seed_salt,
+            question_metadata_key=self.question_metadata_key,
+            weight_key=self.weight_key,
+            force=self.force,
+            lock_timeout=self.lock_timeout,
+            logger=self.log,
+        )
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -51,16 +193,20 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _load_students(args: argparse.Namespace) -> list[str]:
+def _load_students_from_values(students_csv: str, students_file: str) -> list[str]:
     students: set[str] = set()
-    if args.students:
-        students.update(x.strip() for x in args.students.split(",") if x.strip())
-    if args.students_file:
-        for line in Path(args.students_file).read_text(encoding="utf-8").splitlines():
+    if students_csv:
+        students.update(x.strip() for x in students_csv.split(",") if x.strip())
+    if students_file:
+        for line in Path(students_file).read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if line and not line.startswith("#"):
                 students.add(line)
     return sorted(students)
+
+
+def _load_students(args: argparse.Namespace) -> list[str]:
+    return _load_students_from_values(args.students, args.students_file)
 
 
 def _source_digest(text: str) -> str:
@@ -184,14 +330,14 @@ def _manifest_path(output_dir: Path, assignment: str) -> Path:
     return output_dir / assignment / "_randomization_manifest.json"
 
 
-def _acquire_lock(lock_path: Path, timeout_s: int) -> int:
+def _acquire_lock(lock_path: Path, timeout_s: int) -> None:
     start = time.time()
     while True:
         try:
             fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
             os.write(fd, str(os.getpid()).encode("ascii"))
             os.close(fd)
-            return fd
+            return
         except FileExistsError:
             if time.time() - start > timeout_s:
                 raise TimeoutError(f"Timed out waiting for lock {lock_path}")
@@ -205,23 +351,31 @@ def _write_json(path: Path, data: Any) -> None:
     tmp.replace(path)
 
 
-def main() -> int:
-    args = parse_args()
-    students = _load_students(args)
-    if not students:
-        print("No students provided; nothing to generate.", file=sys.stderr)
-        return 2
-
-    if args.pick_count <= 0:
+def _generate_randomized_notebooks(
+    *,
+    course_slug: str,
+    assignment: str,
+    source_path: Path,
+    output_dir: Path,
+    pick_count: int,
+    students: list[str],
+    seed_salt: str,
+    question_metadata_key: str,
+    weight_key: str,
+    force: bool,
+    lock_timeout: int,
+    logger: Any | None,
+) -> None:
+    if pick_count <= 0:
         raise ValueError("pick_count must be > 0")
+    if not students:
+        raise ValueError("No students provided; nothing to generate")
 
-    source_path = Path(args.source_notebook)
-    output_dir = Path(args.output_dir)
-    assignment_dir = output_dir / args.assignment
+    assignment_dir = output_dir / assignment
     assignment_dir.mkdir(parents=True, exist_ok=True)
     lock_path = assignment_dir / ".randomization.lock"
 
-    _acquire_lock(lock_path, timeout_s=args.lock_timeout)
+    _acquire_lock(lock_path, timeout_s=lock_timeout)
     try:
         source_text = source_path.read_text(encoding="utf-8")
         source_hash = _source_digest(source_text)
@@ -229,34 +383,38 @@ def main() -> int:
 
         common_cells, question_cells, question_weights, question_order = extract_bank(
             source_notebook,
-            question_metadata_key=args.question_metadata_key,
-            weight_key=args.weight_key,
+            question_metadata_key=question_metadata_key,
+            weight_key=weight_key,
         )
         question_ids = list(question_cells.keys())
         weights = [question_weights[qid] for qid in question_ids]
 
-        manifest_path = _manifest_path(output_dir, args.assignment)
+        manifest_path = _manifest_path(output_dir, assignment)
         previous_manifest = None
         if manifest_path.exists():
             previous_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
         desired_manifest_header = {
-            "course_slug": args.course_slug,
-            "assignment": args.assignment,
+            "course_slug": course_slug,
+            "assignment": assignment,
             "source_notebook": str(source_path),
             "source_hash": source_hash,
-            "pick_count": args.pick_count,
-            "question_metadata_key": args.question_metadata_key,
-            "weight_key": args.weight_key,
+            "pick_count": pick_count,
+            "question_metadata_key": question_metadata_key,
+            "weight_key": weight_key,
             "question_ids": sorted(question_ids),
             "students": students,
         }
         if (
             previous_manifest
             and previous_manifest.get("config") == desired_manifest_header
-            and not args.force
+            and not force
         ):
-            print(f"Randomization already up to date for {args.assignment}.")
-            return 0
+            if logger is None:
+                print(f"Randomization already up to date for {assignment}.")
+            else:
+                logger.info("Randomization already up to date for %s", assignment)
+            return
 
         manifest: dict[str, Any] = {
             "config": desired_manifest_header,
@@ -266,16 +424,16 @@ def main() -> int:
 
         for student in students:
             seed_value = _seed(
-                seed_salt=args.seed_salt,
-                course_slug=args.course_slug,
-                assignment=args.assignment,
+                seed_salt=seed_salt,
+                course_slug=course_slug,
+                assignment=assignment,
                 student=student,
             )
             rng = random.Random(seed_value)
             selected = weighted_without_replacement(
                 population=question_ids,
                 weights=weights,
-                k=args.pick_count,
+                k=pick_count,
                 rng=rng,
             )
             selected_set = set(selected)
@@ -289,11 +447,7 @@ def main() -> int:
                 seed_value=seed_value,
             )
             output_path = (
-                output_dir
-                / args.assignment
-                / "students"
-                / student
-                / f"{args.assignment}.ipynb"
+                output_dir / assignment / "students" / student / f"{assignment}.ipynb"
             )
             _write_json(output_path, generated_notebook)
 
@@ -304,15 +458,51 @@ def main() -> int:
             }
 
         _write_json(manifest_path, manifest)
-        print(
-            f"Generated randomized notebooks for {len(students)} students in {output_dir}/{args.assignment}"
-        )
-        return 0
+
+        if logger is None:
+            print(
+                f"Generated randomized notebooks for {len(students)} students "
+                f"in {output_dir}/{assignment}"
+            )
+        else:
+            logger.info(
+                "Generated randomized notebooks for %d students in %s/%s",
+                len(students),
+                output_dir,
+                assignment,
+            )
     finally:
         try:
             lock_path.unlink(missing_ok=True)
         except OSError:
             pass
+
+
+def main() -> int:
+    args = parse_args()
+    students = _load_students(args)
+    if not students:
+        print("No students provided; nothing to generate.", file=sys.stderr)
+        return 2
+
+    if args.pick_count <= 0:
+        raise ValueError("pick_count must be > 0")
+
+    _generate_randomized_notebooks(
+        course_slug=args.course_slug,
+        assignment=args.assignment,
+        source_path=Path(args.source_notebook),
+        output_dir=Path(args.output_dir),
+        pick_count=args.pick_count,
+        students=students,
+        seed_salt=args.seed_salt,
+        question_metadata_key=args.question_metadata_key,
+        weight_key=args.weight_key,
+        force=args.force,
+        lock_timeout=args.lock_timeout,
+        logger=None,
+    )
+    return 0
 
 
 if __name__ == "__main__":

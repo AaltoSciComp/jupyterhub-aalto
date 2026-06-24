@@ -363,6 +363,7 @@ METADIR = "/courses/meta"
 GROUPS = {}  # map username->{group:name, gid:number} for all allowed courses.
 NBGRADER_RANDOMIZE_SCRIPT = "/srv/nbgrader-plugins/nbgrader_randomize_release.py"
 NBGRADER_RANDOMIZED_FETCH_MODULE = "nbgrader_randomized_fetch"
+NBGRADER_RANDOMIZED_RELEASE_MODULE = "nbgrader_randomize_release"
 
 
 def _validate_nbgrader_randomization_cfg(course_slug: str, course_data: Dict) -> None:
@@ -1098,14 +1099,25 @@ async def pre_spawn_hook(spawner: KubeSpawner):
             randomization_lines = []
             if randomization_enabled:
                 assignment = randomization_cfg["assignment"]
+                students = sorted(course_data.get("students") or [])
                 fmt = {
                     "course_slug": course_slug,
                     "coursedir_slug": coursedir_slug,
                     "assignment": assignment,
                 }
+                source_notebook = randomization_cfg.get(
+                    "source_notebook", f"/course/source/{assignment}/{assignment}.ipynb"
+                ).format(**fmt)
                 output_dir = randomization_cfg.get(
                     "output_dir", "/course/randomized"
                 ).format(**fmt)
+                pick_count = randomization_cfg["pick_count"]
+                question_metadata_key = randomization_cfg.get(
+                    "question_metadata_key", "aalto_nbgrader_bank"
+                ).format(**fmt)
+                weight_key = randomization_cfg.get("weight_key", "weight").format(**fmt)
+                seed_salt = randomization_cfg.get("seed_salt", "").format(**fmt)
+                force = bool(randomization_cfg.get("force", False))
                 randomization_lines = [
                     "c.ExchangeFactory.fetch_assignment = "
                     f"'{NBGRADER_RANDOMIZED_FETCH_MODULE}.RandomizedExchangeFetchAssignment'",
@@ -1113,6 +1125,39 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                         "c.RandomizedExchangeFetchAssignment.randomization_root = "
                         f"'{output_dir}'"
                     ),
+                    "c.ExchangeFactory.release_assignment = "
+                    f"'{NBGRADER_RANDOMIZED_RELEASE_MODULE}.RandomizedExchangeReleaseAssignment'",
+                    "c.RandomizedExchangeReleaseAssignment.randomization_enabled = True",
+                    (
+                        "c.RandomizedExchangeReleaseAssignment.randomization_root = "
+                        f"'{output_dir}'"
+                    ),
+                    (
+                        "c.RandomizedExchangeReleaseAssignment.source_notebook = "
+                        f"'{source_notebook}'"
+                    ),
+                    (
+                        "c.RandomizedExchangeReleaseAssignment.pick_count = "
+                        f"{pick_count}"
+                    ),
+                    (
+                        "c.RandomizedExchangeReleaseAssignment.students = "
+                        f"'{','.join(students)}'"
+                    ),
+                    (
+                        "c.RandomizedExchangeReleaseAssignment.seed_salt = "
+                        f"'{seed_salt}'"
+                    ),
+                    (
+                        "c.RandomizedExchangeReleaseAssignment.question_metadata_key = "
+                        f"'{question_metadata_key}'"
+                    ),
+                    (
+                        "c.RandomizedExchangeReleaseAssignment.weight_key = "
+                        f"'{weight_key}'"
+                    ),
+                    "c.RandomizedExchangeReleaseAssignment.lock_timeout = 90",
+                    f"c.RandomizedExchangeReleaseAssignment.force = {force}",
                 ]
 
             # admins are always considered instructors if they spawn the
@@ -1307,13 +1352,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                         spawner.create_groups.append((name, gid))
                         spawner.supplemental_gids.append(gid)
 
-                _run_nbgrader_randomization(
-                    spawner,
-                    course_slug=course_slug,
-                    coursedir_slug=coursedir_slug,
-                    course_data=course_data,
-                    cmds=cmds,
-                )
+                # Randomization now runs in the custom nbgrader release plugin.
 
             # Student attempting spawning a course (or instructor with
             # as_instructor=False to test the student mode)
