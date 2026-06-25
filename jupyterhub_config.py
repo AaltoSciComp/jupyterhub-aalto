@@ -1064,7 +1064,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
         # extra_labels are only on pods and the like (not PVCs)
         spawner.extra_labels["cs-aalto/jupyter-course"] = "generic"
     else:
-        spawner.log.info("pre_spawn_hook: is a course")
+        spawner.log.info("pre_spawn_hook: is a course %s", course_slug)
         course_data = GET_COURSES()[course_slug]
         if course_data.get("jupyterlab", True):
             spawner.default_url = "lab/tree/notebooks/"
@@ -1096,6 +1096,11 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 and randomization_cfg.get("enabled", False)
             )
             randomization_lines = []
+            spawner.log.debug(
+                "pre_spawn_hook: course %s randomization enabled=%s",
+                course_slug,
+                randomization_enabled,
+            )
             if randomization_enabled:
                 assignment = randomization_cfg["assignment"]
                 students = sorted(course_data.get("students") or [])
