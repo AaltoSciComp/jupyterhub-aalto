@@ -253,6 +253,7 @@ USER_RE = re.compile("^[a-z0-9.]+$")
 
 # Spawner config
 c.JupyterHub.spawner_class = "kubespawner.KubeSpawner"
+c.KubeSpawner.pod_security_context = { "seccompProfile": { "type": "RuntimeDefault" } }
 c.KubeSpawner.start_timeout = 60 * 5
 c.KubeSpawner.hub_connect_port = 8081
 c.KubeSpawner.http_timeout = 60
