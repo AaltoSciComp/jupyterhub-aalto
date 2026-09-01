@@ -654,25 +654,43 @@ def get_profile_list(spawner: KubeSpawner):
             f' <small style="color: #999999">{course_notes}</small>'
         )
 
-    if not is_allowed_ip and len(profile_list) == 0:
-        spawner.log.info(
-            "No allowed profiles found for user %s from %s.", spawner.user.name, ip
-        )
-        spawner.log.warning(
-            ACCESS_DENIED_MESSAGE.format(ip=ip, error_from="get_profile_list")
-        )
-        return [
-            {
-                "default": True,
-                "display_name": ACCESS_DENIED_MESSAGE.format(
-                    ip=ip, error_from="get_profile_list"
-                ),
-                "kubespawner_override": {
-                    "slug": "access-denied",
-                    **EMPTY_PROFILE,
-                },
-            }
-        ]
+    if len(profile_list) == 0:
+        if is_allowed_ip:
+            spawner.log.warning(
+                "No allowed profiles found for user %s from %s.", spawner.user.name, ip
+            )
+            return [
+                {
+                    "default": True,
+                    "display_name": (
+                        "No exams available for your account. Contact the "
+                        "course instructor if you think this is an error."
+                    ),
+                    "kubespawner_override": {
+                        "slug": "no-courses",
+                        **EMPTY_PROFILE,
+                    },
+                }
+            ]
+        else:
+            spawner.log.info(
+                "No allowed profiles found for user %s from %s.", spawner.user.name, ip
+            )
+            spawner.log.warning(
+                ACCESS_DENIED_MESSAGE.format(ip=ip, error_from="get_profile_list")
+            )
+            return [
+                {
+                    "default": True,
+                    "display_name": ACCESS_DENIED_MESSAGE.format(
+                        ip=ip, error_from="get_profile_list"
+                    ),
+                    "kubespawner_override": {
+                        "slug": "access-denied",
+                        **EMPTY_PROFILE,
+                    },
+                }
+            ]
 
     return profile_list
 
