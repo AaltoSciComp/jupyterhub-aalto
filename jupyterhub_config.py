@@ -413,14 +413,13 @@ def GET_COURSES() -> dict:
             course_data["gid"] = None
         else:
             try:
-                course_data["instructors"] |= set(
-                    grp.getgrnam("jupyter-" + course_slug).gr_mem
-                )
+                group_name = course_data.get("group_name", "jupyter-" + course_slug)
+                course_data["instructors"] |= set(grp.getgrnam(group_name).gr_mem)
                 course_data["instructors"] |= DEFAULT_INSTRUCTORS
                 # Testcourse gets all instructors
                 if "testcourse" in course_slug:
                     courses["testcourse"]["instructors"] |= set(
-                        grp.getgrnam("jupyter-" + course_slug).gr_mem
+                        grp.getgrnam(group_name).gr_mem
                     )
             except KeyError as e:
                 # TODO: convert to logger calls?
@@ -923,6 +922,9 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     course_slug = getattr(spawner, "course_slug", "")
     as_instructor = False
 
+    # Set later after parsing course data
+    manual_instructor_group_name = ""
+
     enable_formgrader = False
 
     spawner_name = "-" + spawner.name if spawner.name else ""
@@ -953,7 +955,9 @@ async def pre_spawn_hook(spawner: KubeSpawner):
         coursedir_slug = course_data.get("coursedir_slug", course_slug)
         if coursedir_slug != course_slug:
             spawner.log.info(
-                f"pre_spawn_hook: course {course_slug} has coursedir_slug {coursedir_slug}"
+                "pre_spawn_hook: course %s has coursedir_slug %s",
+                course_slug,
+                coursedir_slug,
             )
 
         # Indicates whether the user has an explicit permission to launch
@@ -1081,6 +1085,21 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                     username,
                     course_slug,
                 )
+
+                # Course can reuse the same group name for multiple instances
+                # of the same course, for example course2026 and course2026-gpu
+                # can share the same group name, so that a single unix group
+                # can be used to manage access to the instructor view.
+                manual_instructor_group_name = course_data.get(
+                    "group_name", "jupyter-" + course_slug
+                )
+                if manual_instructor_group_name != course_slug:
+                    spawner.log.info(
+                        "pre_spawn_hook: course %s has group name %s",
+                        course_slug,
+                        manual_instructor_group_name,
+                    )
+
                 allow_spawn = True
                 enable_formgrader = True
                 environ["AALTO_NB_ENABLE_FORMGRADER"] = "1"
@@ -1116,14 +1135,17 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 )
                 course_gid = int(course_data["gid"])
                 spawner.log.debug(
-                    "pre_spawn_hook: Course gid for %s is %d", course_slug, course_gid
+                    "pre_spawn_hook: Course gid for %s is %d and group name is %s",
+                    course_slug,
+                    course_gid,
+                    manual_instructor_group_name,
                 )
                 cmds.append(r"umask 0007")  # also used through sudo
                 environ["NB_UMASK"] = "0007"
                 if ROOT_THEN_SU:
                     # This branch happens only if we are root (see above)
                     environ["NB_GID"] = str(course_gid)
-                    environ["NB_GROUP"] = "jupyter-" + course_slug
+                    environ["NB_GROUP"] = manual_instructor_group_name
 
                     # The start.sh script renumbers the default group 100 to
                     # $NB_GID. We rename it first.
@@ -1269,9 +1291,25 @@ async def pre_spawn_hook(spawner: KubeSpawner):
         for name, gid in GROUPS.get(username, []):
             try:
                 if name == course_slug:
+                    # The group for the active course is always created by the
+                    # startup script and the main mount is created elsewhere
                     continue
-                spawner.create_groups.append((f"jupyter-{name}", gid))
-                spawner.supplemental_gids.append(gid)
+                if manual_instructor_group_name == f"jupyter-{name}":
+                    # The group is created by the startup script, we don't want
+                    # to create a duplicate here. The mount is not skipped
+                    # because we still want to mount the "main" course folder,
+                    # so that instructors can access the data from other
+                    # courses
+                    spawner.log.info(
+                        "pre_spawn_hook: not creating group %s (group_name: %s) for %s (group_name==name)",
+                        name,
+                        manual_instructor_group_name,
+                        username,
+                    )
+                else:
+                    spawner.create_groups.append((f"jupyter-{name}", gid))
+                    spawner.supplemental_gids.append(gid)
+
                 spawner.volume_mounts.append(
                     {
                         "mountPath": f"/m/jhnas/jupyter/course/{name}/",
