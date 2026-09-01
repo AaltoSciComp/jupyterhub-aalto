@@ -1161,7 +1161,9 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                         f"'{weight_key}'"
                     ),
                     "c.RandomizedExchangeReleaseAssignment.lock_timeout = 90",
-                    f"c.RandomizedExchangeReleaseAssignment.force = {force}",
+                    "c.RandomizedExchangeReleaseAssignment.force = True"
+                    if force
+                    else "",
                 ]
 
             # admins are always considered instructors if they spawn the
