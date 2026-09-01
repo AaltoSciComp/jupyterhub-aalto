@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+from pathlib import Path
 
 from nbgrader.exchange.default.fetch_assignment import ExchangeFetchAssignment
 from traitlets import Unicode
@@ -28,18 +29,22 @@ class RandomizedExchangeFetchAssignment(ExchangeFetchAssignment):
         ),
     ).tag(config=True)
 
-    def _manifest_path(self) -> str:
-        return os.path.join(
-            self.randomization_root,
-            self.coursedir.assignment_id,
-            "_randomization_manifest.json",
-        )
+    # def _manifest_path(self) -> str:
+    #     return os.path.join(
+    #         self.randomization_root,
+    #         self.coursedir.assignment_id,
+    #         "_randomization_manifest.json",
+    #     )
 
     def _randomized_notebook(self) -> str | None:
         if not self.randomization_root:
             return None
 
-        manifest_path = self._manifest_path()
+        manifest_path = (
+            Path(self.randomization_root)
+            / self.coursedir.assignment_id
+            / "_randomization_manifest.json"
+        )
         if not os.path.isfile(manifest_path):
             return None
 
