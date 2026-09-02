@@ -33,7 +33,7 @@ from tornado import web
 c: traitlets.config.Config = get_config()  # type: ignore # noqa: F821
 
 # c.JupyterHub.log_level = "DEBUG"
-c.Authenticator.admin_users = {"jhadmin"}
+c.Authenticator.admin_users = {"darstr1", "laines5", "bordong1", "murhum1", "jhadmin"}
 
 USE_OAUTHENTICATOR = False
 
