@@ -1147,7 +1147,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 # are no logic mistakes above).  The previous block is denied
                 # and goes here, print a warning to assist in debugging.
                 if getattr(spawner, "as_instructor", False):
-                    spawner.log.info(
+                    spawner.log.warning(
                         "pre_spawn_hook: %s tried to start %s as "
                         "instructor, but was not allowed",
                         username,
