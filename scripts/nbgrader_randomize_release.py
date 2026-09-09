@@ -109,18 +109,6 @@ class RandomizedExchangeReleaseAssignment(ExchangeReleaseAssignment):
         help="Lock wait timeout in seconds.",
     ).tag(config=True)
 
-    def _course_slug(self) -> str:
-        course_slug = getattr(self.coursedir, "course_id", "")
-        if not isinstance(course_slug, str) or not course_slug:
-            return "unknown-course"
-        return course_slug
-
-    def _assignment(self) -> str:
-        assignment = getattr(self.coursedir, "assignment_id", "")
-        if not isinstance(assignment, str) or not assignment:
-            raise ValueError("Could not determine assignment_id from coursedir")
-        return assignment
-
     def _source_notebook_path(self, assignment: str) -> Path:
         if self.source_notebook:
             return Path(self.source_notebook)
@@ -134,9 +122,13 @@ class RandomizedExchangeReleaseAssignment(ExchangeReleaseAssignment):
 
     def copy_files(self):
         if not self.randomization_enabled:
-            self.log.debug("Randomization disabled; skipping variant generation")
+            self.log.info(
+                "Randomization disabled; skipping variant generation and copying files normally"
+            )
             super().copy_files()
             return
+
+        self.log.info("Randomization enabled; generating per-student variants")
 
         if not self.randomization_root:
             raise ValueError(
@@ -151,17 +143,21 @@ class RandomizedExchangeReleaseAssignment(ExchangeReleaseAssignment):
         if not students:
             raise ValueError(
                 "No students configured. Set RandomizedExchangeReleaseAssignment.students "
-                "or students_file"
+                "or RandomizedExchangeReleaseAssignment.students_file"
             )
+
+        # Ignore the assignment file in coursedir.ignore, since we are generating it ourselves.
+        self.coursedir.ignore.append(f"{self.coursedir.assignment_id}.ipynb")
+        self.log.info("ignored files in coursedir.ignore: %s", self.coursedir.ignore)
 
         # Run standard release workflow first.
         super().copy_files()
 
-        assignment = self._assignment()
+        assignment = self.coursedir.assignment_id
         source_path = self._source_notebook_path(assignment)
 
         _generate_randomized_notebooks(
-            course_slug=self._course_slug(),
+            course_slug=self.coursedir.course_id,
             assignment=assignment,
             source_path=source_path,
             output_dir=Path(self.randomization_root),
@@ -205,10 +201,6 @@ def _load_students_from_values(students_csv: str, students_file: str) -> list[st
     return sorted(students)
 
 
-def _load_students(args: argparse.Namespace) -> list[str]:
-    return _load_students_from_values(args.students, args.students_file)
-
-
 def _source_digest(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -221,17 +213,17 @@ def _seed(seed_salt: str, course_slug: str, assignment: str, student: str) -> in
 def weighted_without_replacement(
     population: list[str],
     weights: list[float],
-    k: int,
+    pick_count: int,
     rng: random.Random,
 ) -> list[str]:
-    if k > len(population):
+    if pick_count > len(population):
         raise ValueError(
-            f"pick_count={k} is larger than question count={len(population)}"
+            f"pick_count={pick_count} is larger than question count={len(population)}"
         )
 
     chosen: list[str] = []
     items = list(zip(population, weights))
-    for _ in range(k):
+    for _ in range(pick_count):
         total = sum(weight for _, weight in items)
         if total <= 0:
             raise ValueError("All remaining question weights are <= 0")
@@ -299,7 +291,7 @@ def extract_bank(
 
 
 def build_notebook(
-    base_notebook: dict[str, Any],
+    source_notebook: dict[str, Any],
     common_cells: list[dict[str, Any]],
     question_cells: dict[str, list[dict[str, Any]]],
     selected_ids: set[str],
@@ -313,9 +305,9 @@ def build_notebook(
         if qid in selected_ids:
             generated_cells.extend(question_cells[qid])
 
-    notebook = dict(base_notebook)
+    notebook = dict(source_notebook)
     notebook["cells"] = generated_cells
-    metadata = dict(base_notebook.get("metadata") or {})
+    metadata = dict(source_notebook.get("metadata") or {})
     metadata["aalto_nbgrader_randomization"] = {
         "student": student,
         "seed": seed_value,
@@ -324,10 +316,6 @@ def build_notebook(
     }
     notebook["metadata"] = metadata
     return notebook
-
-
-def _manifest_path(output_dir: Path, assignment: str) -> Path:
-    return output_dir / assignment / "_randomization_manifest.json"
 
 
 def _acquire_lock(lock_path: Path, timeout_s: int) -> None:
@@ -383,13 +371,13 @@ def _generate_randomized_notebooks(
 
         common_cells, question_cells, question_weights, question_order = extract_bank(
             source_notebook,
-            question_metadata_key=question_metadata_key,
-            weight_key=weight_key,
+            question_metadata_key,
+            weight_key,
         )
         question_ids = list(question_cells.keys())
         weights = [question_weights[qid] for qid in question_ids]
 
-        manifest_path = _manifest_path(output_dir, assignment)
+        manifest_path = output_dir / assignment / "_randomization_manifest.json"
         previous_manifest = None
         if manifest_path.exists():
             previous_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -423,28 +411,20 @@ def _generate_randomized_notebooks(
         }
 
         for student in students:
-            seed_value = _seed(
-                seed_salt=seed_salt,
-                course_slug=course_slug,
-                assignment=assignment,
-                student=student,
-            )
+            seed_value = _seed(seed_salt, course_slug, assignment, student)
             rng = random.Random(seed_value)
             selected = weighted_without_replacement(
-                population=question_ids,
-                weights=weights,
-                k=pick_count,
-                rng=rng,
+                question_ids, weights, pick_count, rng
             )
-            selected_set = set(selected)
+            selected_ids = set(selected)
             generated_notebook = build_notebook(
-                base_notebook=source_notebook,
-                common_cells=common_cells,
-                question_cells=question_cells,
-                selected_ids=selected_set,
-                question_order=question_order,
-                student=student,
-                seed_value=seed_value,
+                source_notebook,
+                common_cells,
+                question_cells,
+                selected_ids,
+                question_order,
+                student,
+                seed_value,
             )
             output_path = (
                 output_dir / assignment / "students" / student / f"{assignment}.ipynb"
@@ -480,7 +460,7 @@ def _generate_randomized_notebooks(
 
 def main() -> int:
     args = parse_args()
-    students = _load_students(args)
+    students = _load_students_from_values(args.students, args.students_file)
     if not students:
         print("No students provided; nothing to generate.", file=sys.stderr)
         return 2
