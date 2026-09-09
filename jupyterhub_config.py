@@ -1123,49 +1123,16 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 weight_key = randomization_cfg.get("weight_key", "weight").format(**fmt)
                 seed_salt = randomization_cfg.get("seed_salt", "").format(**fmt)
                 force = bool(randomization_cfg.get("force", False))
-                randomization_lines = [
-                    "c.ExchangeFactory.fetch_assignment = "
-                    f"'{NBGRADER_RANDOMIZED_FETCH_MODULE}.RandomizedExchangeFetchAssignment'",
-                    (
-                        "c.RandomizedExchangeFetchAssignment.randomization_root = "
-                        f"'{output_dir}'"
-                    ),
-                    "c.ExchangeFactory.release_assignment = "
-                    f"'{NBGRADER_RANDOMIZED_RELEASE_MODULE}.RandomizedExchangeReleaseAssignment'",
-                    "c.RandomizedExchangeReleaseAssignment.randomization_enabled = True",
-                    (
-                        "c.RandomizedExchangeReleaseAssignment.randomization_root = "
-                        f"'{output_dir}'"
-                    ),
-                    (
-                        "c.RandomizedExchangeReleaseAssignment.source_notebook = "
-                        f"'{source_notebook}'"
-                    ),
-                    (
-                        "c.RandomizedExchangeReleaseAssignment.pick_count = "
-                        f"{pick_count}"
-                    ),
-                    (
-                        "c.RandomizedExchangeReleaseAssignment.students = "
-                        f"'{','.join(students)}'"
-                    ),
-                    (
-                        "c.RandomizedExchangeReleaseAssignment.seed_salt = "
-                        f"'{seed_salt}'"
-                    ),
-                    (
-                        "c.RandomizedExchangeReleaseAssignment.question_metadata_key = "
-                        f"'{question_metadata_key}'"
-                    ),
-                    (
-                        "c.RandomizedExchangeReleaseAssignment.weight_key = "
-                        f"'{weight_key}'"
-                    ),
-                    "c.RandomizedExchangeReleaseAssignment.lock_timeout = 90",
-                    "c.RandomizedExchangeReleaseAssignment.force = True"
-                    if force
-                    else "",
-                ]
+                randomization_lines = _get_randomization_lines(
+                    students,
+                    source_notebook,
+                    output_dir,
+                    pick_count,
+                    question_metadata_key,
+                    weight_key,
+                    seed_salt,
+                    force,
+                )
 
             # admins are always considered instructors if they spawn the
             # instructor instance
@@ -1510,6 +1477,34 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     # Setting this replaces the container's default entrypoint (CMD)
     spawner.cmd = ["bash", "-x", "-c"] + [" && ".join(cmds)]
     spawner.log.info("pre_spawn_hook: done")
+
+
+def _get_randomization_lines(
+    students: list[str],
+    source_notebook: str,
+    output_dir: str,
+    pick_count: int,
+    question_metadata_key: str,
+    weight_key: str,
+    seed_salt: str,
+    force: bool,
+):
+    """Split into a separate function to make formatting a bit nicer"""
+    return [
+        f"c.ExchangeFactory.fetch_assignment = '{NBGRADER_RANDOMIZED_FETCH_MODULE}.RandomizedExchangeFetchAssignment'",
+        f"c.RandomizedExchangeFetchAssignment.randomization_root = '{output_dir}'",
+        f"c.ExchangeFactory.release_assignment = '{NBGRADER_RANDOMIZED_RELEASE_MODULE}.RandomizedExchangeReleaseAssignment'",
+        "c.RandomizedExchangeReleaseAssignment.randomization_enabled = True",
+        f"c.RandomizedExchangeReleaseAssignment.randomization_root = '{output_dir}'",
+        f"c.RandomizedExchangeReleaseAssignment.source_notebook = '{source_notebook}'",
+        f"c.RandomizedExchangeReleaseAssignment.pick_count = {pick_count}",
+        f"c.RandomizedExchangeReleaseAssignment.students = '{','.join(students)}'",
+        f"c.RandomizedExchangeReleaseAssignment.seed_salt = '{seed_salt}'",
+        f"c.RandomizedExchangeReleaseAssignment.question_metadata_key = '{question_metadata_key}'",
+        f"c.RandomizedExchangeReleaseAssignment.weight_key = '{weight_key}'",
+        "c.RandomizedExchangeReleaseAssignment.lock_timeout = 90",
+        "c.RandomizedExchangeReleaseAssignment.force = True" if force else "",
+    ]
 
 
 def post_stop_hook(spawner: KubeSpawner):
