@@ -35,4 +35,13 @@ kubectl create configmap create-ci-user -n "$NAMESPACE" --from-file="$SCRIPTPATH
 kubectl create configmap nbgrader-randomize-release -n "$NAMESPACE" --from-file="$SCRIPTPATH/../scripts/nbgrader_randomize_release.py" -o yaml --dry-run=client | kubectl apply -f -
 kubectl create configmap nbgrader-randomized-fetch -n "$NAMESPACE" --from-file="$SCRIPTPATH/../scripts/nbgrader_randomized_fetch.py" -o yaml --dry-run=client | kubectl apply -f -
 kubectl create configmap spawn-test -n "$NAMESPACE" --from-file="$SCRIPTPATH/../bin/spawn_test.py" -o yaml --dry-run=client | kubectl apply -f -
-kubectl apply -f "$SCRIPTPATH/../k8s-yaml/jupyterhub.yaml"
+
+# Restart hub. The hub needs to actually restart to load the config changes,
+# need to delete and recreate instead of just `kubectl apply`
+kubectl delete -f "$SCRIPTPATH/../k8s-yaml/jupyterhub.yaml"
+# Wait for stop
+echo "Waiting to stop existing pod..."
+while kubectl get pods -n "$NAMESPACE" | grep '^jupyterhub-.*Running' ; do
+    sleep 1
+done
+kubectl create -f "$SCRIPTPATH/../k8s-yaml/jupyterhub.yaml"
