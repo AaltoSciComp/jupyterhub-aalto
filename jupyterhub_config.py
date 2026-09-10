@@ -340,18 +340,6 @@ DEFAULT_VOLUME_MOUNTS = [
         "subPath": "software/",
         "readOnly": True,
     },
-    {
-        "name": "nbgrader-randomised-release",
-        "mountPath": "/srv/nbgrader-plugins/nbgrader_randomised_release.py",
-        "subPath": "nbgrader_randomised_release.py",
-        "readOnly": True,
-    },
-    {
-        "name": "nbgrader-randomised-fetch",
-        "mountPath": "/srv/nbgrader-plugins/nbgrader_randomised_fetch.py",
-        "subPath": "nbgrader_randomised_fetch.py",
-        "readOnly": True,
-    },
 ]
 c.KubeSpawner.volumes = DEFAULT_VOLUMES
 c.KubeSpawner.volume_mounts = DEFAULT_VOLUME_MOUNTS
@@ -1104,14 +1092,22 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                     f"c.ExchangeFactory.fetch_assignment = '{NBGRADER_RANDOMISED_FETCH_MODULE}.RandomisedExchangeFetchAssignment'",
                 ]
 
-                spawner.volume_mounts.append(
-                    {
-                        "mountPath": "/srv/nbgrader/per-student-randomised",
-                        "subPath": f"course/{coursedir_slug}/randomised/students/{username}",
-                        "name": "jupyter-nfs",
-                        # Students cannot edit their randomised notebooks
-                        "readOnly": True,
-                    }
+                spawner.volume_mounts.extend(
+                    [
+                        {
+                            "mountPath": "/srv/nbgrader/per-student-randomised",
+                            "subPath": f"course/{coursedir_slug}/randomised/students/{username}",
+                            "name": "jupyter-nfs",
+                            # Students cannot edit their randomised notebooks
+                            "readOnly": True,
+                        },
+                        {
+                            "name": "nbgrader-randomised-fetch",
+                            "mountPath": "/srv/nbgrader-plugins/nbgrader_randomised_fetch.py",
+                            "subPath": "nbgrader_randomised_fetch.py",
+                            "readOnly": True,
+                        },
+                    ]
                 )
 
             # admins are always considered instructors if they spawn the
@@ -1304,12 +1300,20 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                     for line in randomisation_config_lines:
                         cmds.append(f'echo "{line}" >> /etc/jupyter/nbgrader_config.py')
 
-                    spawner.volume_mounts.append(
-                        {
-                            "mountPath": "/srv/nbgrader/randomised",
-                            "name": "jupyter-nfs",
-                            "subPath": f"course/{coursedir_slug}/randomised/",
-                        }
+                    spawner.volume_mounts.extend(
+                        [
+                            {
+                                "mountPath": "/srv/nbgrader/randomised",
+                                "name": "jupyter-nfs",
+                                "subPath": f"course/{coursedir_slug}/randomised/",
+                            },
+                            {
+                                "name": "nbgrader-randomised-release",
+                                "mountPath": "/srv/nbgrader-plugins/nbgrader_randomised_release.py",
+                                "subPath": "nbgrader_randomised_release.py",
+                                "readOnly": True,
+                            },
+                        ]
                     )
 
                 course_gid = int(course_data["gid"])
