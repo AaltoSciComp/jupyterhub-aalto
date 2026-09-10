@@ -1100,35 +1100,18 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 randomisation_enabled,
             )
             if randomisation_enabled:
-                assignment = randomisation_cfg["assignment"]
-                students = sorted(course_data.get("students") or [])
-                fmt = {
-                    "course_slug": course_slug,
-                    "coursedir_slug": coursedir_slug,
-                    "assignment": assignment,
-                }
-                source_notebook = randomisation_cfg.get(
-                    "source_notebook", f"/course/source/{assignment}/{assignment}.ipynb"
-                ).format(**fmt)
-                output_dir = randomisation_cfg.get(
-                    "output_dir", "/course/randomised"
-                ).format(**fmt)
-                pick_count = randomisation_cfg["pick_count"]
-                question_metadata_key = randomisation_cfg.get(
-                    "question_metadata_key", "aalto_nbgrader_bank"
-                ).format(**fmt)
-                weight_key = randomisation_cfg.get("weight_key", "weight").format(**fmt)
-                seed_salt = randomisation_cfg.get("seed_salt", "").format(**fmt)
-                force = bool(randomisation_cfg.get("force", False))
-                randomisation_config_lines = _get_randomisation_lines(
-                    students,
-                    source_notebook,
-                    output_dir,
-                    pick_count,
-                    question_metadata_key,
-                    weight_key,
-                    seed_salt,
-                    force,
+                randomisation_config_lines = [
+                    f"c.ExchangeFactory.fetch_assignment = '{NBGRADER_RANDOMISED_FETCH_MODULE}.RandomisedExchangeFetchAssignment'",
+                ]
+
+                spawner.volume_mounts.append(
+                    {
+                        "mountPath": "/srv/nbgrader/per-student-randomised",
+                        "subPath": f"course/{coursedir_slug}/randomised/students/{username}",
+                        "name": "jupyter-nfs",
+                        # Students cannot edit their randomised notebooks
+                        "readOnly": True,
+                    }
                 )
 
             # admins are always considered instructors if they spawn the
@@ -1283,6 +1266,52 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                         "subPath": f"course/{coursedir_slug}",
                     }
                 )
+
+                if randomisation_enabled:
+                    assignment = randomisation_cfg["assignment"]
+                    students = sorted(course_data.get("students") or [])
+                    fmt = {
+                        "course_slug": course_slug,
+                        "coursedir_slug": coursedir_slug,
+                        "assignment": assignment,
+                    }
+                    source_notebook = randomisation_cfg.get(
+                        "source_notebook",
+                        f"/course/source/{assignment}/{assignment}.ipynb",
+                    ).format(**fmt)
+                    output_dir = randomisation_cfg.get(
+                        "output_dir", "/course/randomised"
+                    ).format(**fmt)
+                    pick_count = randomisation_cfg["pick_count"]
+                    question_metadata_key = randomisation_cfg.get(
+                        "question_metadata_key", "aalto_nbgrader_bank"
+                    ).format(**fmt)
+                    weight_key = randomisation_cfg.get("weight_key", "weight").format(
+                        **fmt
+                    )
+                    seed_salt = randomisation_cfg.get("seed_salt", "").format(**fmt)
+                    force = bool(randomisation_cfg.get("force", False))
+                    randomisation_config_lines = _get_randomisation_lines(
+                        students,
+                        source_notebook,
+                        output_dir,
+                        pick_count,
+                        question_metadata_key,
+                        weight_key,
+                        seed_salt,
+                        force,
+                    )
+                    for line in randomisation_config_lines:
+                        cmds.append(f'echo "{line}" >> /etc/jupyter/nbgrader_config.py')
+
+                    spawner.volume_mounts.append(
+                        {
+                            "mountPath": "/srv/nbgrader/randomised",
+                            "name": "jupyter-nfs",
+                            "subPath": f"course/{coursedir_slug}/randomised/",
+                        }
+                    )
+
                 course_gid = int(course_data["gid"])
                 spawner.log.debug(
                     "pre_spawn_hook: Course gid for %s is %d", course_slug, course_gid
@@ -1488,8 +1517,8 @@ def _get_randomisation_lines(
 ):
     """Split into a separate function to make formatting a bit nicer"""
     return [
-        f"c.ExchangeFactory.fetch_assignment = '{NBGRADER_RANDOMISED_FETCH_MODULE}.RandomisedExchangeFetchAssignment'",
-        f"c.RandomisedExchangeFetchAssignment.randomisation_root = '{output_dir}'",
+        # f"c.ExchangeFactory.fetch_assignment = '{NBGRADER_RANDOMISED_FETCH_MODULE}.RandomisedExchangeFetchAssignment'",
+        # f"c.RandomisedExchangeFetchAssignment.randomisation_root = '{output_dir}'",
         f"c.ExchangeFactory.release_assignment = '{NBGRADER_RANDOMISED_RELEASE_MODULE}.RandomisedExchangeReleaseAssignment'",
         "c.RandomisedExchangeReleaseAssignment.randomisation_enabled = True",
         f"c.RandomisedExchangeReleaseAssignment.randomisation_root = '{output_dir}'",

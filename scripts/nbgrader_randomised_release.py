@@ -150,6 +150,9 @@ class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
         self.coursedir.ignore.append(f"{self.coursedir.assignment_id}.ipynb")
         self.log.info("ignored files in coursedir.ignore: %s", self.coursedir.ignore)
 
+        self.log.info(
+            f"{self.root=}, {self.coursedir.course_id=}, {self.coursedir.assignment_id=}"
+        )
         # Run standard release workflow first.
         super().copy_files()
 
@@ -377,7 +380,9 @@ def _generate_randomised_notebooks(
         question_ids = list(question_cells.keys())
         weights = [question_weights[qid] for qid in question_ids]
 
-        manifest_path = output_dir / assignment / "_randomisation_manifest.json"
+        manifest_path = (
+            output_dir / "manifests" / assignment / "_randomisation_manifest.json"
+        )
         previous_manifest = None
         if manifest_path.exists():
             previous_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -426,15 +431,15 @@ def _generate_randomised_notebooks(
                 student,
                 seed_value,
             )
-            output_path = (
-                output_dir / assignment / "students" / student / f"{assignment}.ipynb"
+            notebook_output_path = (
+                output_dir / "students" / student / assignment / f"{assignment}.ipynb"
             )
-            _write_json(output_path, generated_notebook)
+            _write_json(notebook_output_path, generated_notebook)
 
             manifest["per_student"][student] = {
                 "seed": seed_value,
                 "selected_question_ids": selected,
-                "path": str(output_path),
+                "path": str(notebook_output_path),
             }
 
         _write_json(manifest_path, manifest)
@@ -442,11 +447,11 @@ def _generate_randomised_notebooks(
         if logger is None:
             print(
                 f"Generated randomised notebooks for {len(students)} students "
-                f"in {output_dir}/{assignment}"
+                f"in {output_dir}/**/{assignment}"
             )
         else:
             logger.info(
-                "Generated randomised notebooks for %d students in %s/%s",
+                "Generated randomised notebooks for %d students in %s/**/%s",
                 len(students),
                 output_dir,
                 assignment,
