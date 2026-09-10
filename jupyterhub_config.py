@@ -306,12 +306,12 @@ c.KubeSpawner.singleuser_image_pull_secrets = "registry-secret-jupyter"
 DEFAULT_VOLUMES = [
     {"name": "jupyter-nfs", "persistentVolumeClaim": {"claimName": "jupyter-nfs"}},
     {
-        "name": "nbgrader-randomize-release",
-        "configMap": {"name": "nbgrader-randomize-release"},
+        "name": "nbgrader-randomise-release",
+        "configMap": {"name": "nbgrader-randomise-release"},
     },
     {
-        "name": "nbgrader-randomized-fetch",
-        "configMap": {"name": "nbgrader-randomized-fetch"},
+        "name": "nbgrader-randomised-fetch",
+        "configMap": {"name": "nbgrader-randomised-fetch"},
     },
 ]
 DEFAULT_VOLUME_MOUNTS = [
@@ -340,15 +340,15 @@ DEFAULT_VOLUME_MOUNTS = [
         "readOnly": True,
     },
     {
-        "name": "nbgrader-randomize-release",
-        "mountPath": "/srv/nbgrader-plugins/nbgrader_randomize_release.py",
-        "subPath": "nbgrader_randomize_release.py",
+        "name": "nbgrader-randomise-release",
+        "mountPath": "/srv/nbgrader-plugins/nbgrader_randomised_release.py",
+        "subPath": "nbgrader_randomised_release.py",
         "readOnly": True,
     },
     {
-        "name": "nbgrader-randomized-fetch",
-        "mountPath": "/srv/nbgrader-plugins/nbgrader_randomized_fetch.py",
-        "subPath": "nbgrader_randomized_fetch.py",
+        "name": "nbgrader-randomised-fetch",
+        "mountPath": "/srv/nbgrader-plugins/nbgrader_randomised_fetch.py",
+        "subPath": "nbgrader_randomised_fetch.py",
         "readOnly": True,
     },
 ]
@@ -360,35 +360,35 @@ COURSES = {}
 COURSES_TS = None
 METADIR = "/courses/meta"
 GROUPS = {}  # map username->{group:name, gid:number} for all allowed courses.
-NBGRADER_RANDOMIZE_SCRIPT = "/srv/nbgrader-plugins/nbgrader_randomize_release.py"
-NBGRADER_RANDOMIZED_FETCH_MODULE = "nbgrader_randomized_fetch"
-NBGRADER_RANDOMIZED_RELEASE_MODULE = "nbgrader_randomize_release"
+NBGRADER_RANDOMISE_SCRIPT = "/srv/nbgrader-plugins/nbgrader_randomised_release.py"
+NBGRADER_RANDOMISED_FETCH_MODULE = "nbgrader_randomised_fetch"
+NBGRADER_RANDOMISED_RELEASE_MODULE = "nbgrader_randomised_release"
 
 
-def _validate_nbgrader_randomization_cfg(course_slug: str, course_data: Dict) -> None:
-    cfg = course_data.get("nbgrader_randomization")
+def _validate_nbgrader_randomisation_cfg(course_slug: str, course_data: Dict) -> None:
+    cfg = course_data.get("nbgrader_randomisation")
     if cfg is None:
         return
     if not isinstance(cfg, dict):
-        raise ValueError(f"{course_slug}: nbgrader_randomization must be a dict")
+        raise ValueError(f"{course_slug}: nbgrader_randomisation must be a dict")
 
     required = ["assignment", "pick_count"]
     if cfg.get("enabled", False):
         for key in required:
             if key not in cfg:
                 raise ValueError(
-                    f"{course_slug}: nbgrader_randomization.{key} is required"
+                    f"{course_slug}: nbgrader_randomisation.{key} is required"
                 )
 
     if "assignment" in cfg and not isinstance(cfg["assignment"], str):
         raise ValueError(
-            f"{course_slug}: nbgrader_randomization.assignment must be str"
+            f"{course_slug}: nbgrader_randomisation.assignment must be str"
         )
     if "pick_count" in cfg and (
         not isinstance(cfg["pick_count"], int) or cfg["pick_count"] <= 0
     ):
         raise ValueError(
-            f"{course_slug}: nbgrader_randomization.pick_count must be a positive int"
+            f"{course_slug}: nbgrader_randomisation.pick_count must be a positive int"
         )
 
 
@@ -485,7 +485,7 @@ def GET_COURSES() -> dict:
                     (course_slug, course_data["gid"])
                 )
 
-        _validate_nbgrader_randomization_cfg(course_slug, course_data)
+        _validate_nbgrader_randomisation_cfg(course_slug, course_data)
 
     # Set global variable from new local variable.
     COURSES = courses
@@ -774,7 +774,7 @@ def _allowed_ip(spawner: KubeSpawner) -> tuple[bool, IPv4Address | IPv6Address |
     return False, ip
 
 
-def _run_nbgrader_randomization(
+def _run_nbgrader_randomisation(
     spawner: KubeSpawner,
     *,
     course_slug: str,
@@ -782,25 +782,25 @@ def _run_nbgrader_randomization(
     course_data: dict,
     cmds: list[str],
 ) -> None:
-    cfg = course_data.get("nbgrader_randomization")
+    cfg = course_data.get("nbgrader_randomisation")
     if not isinstance(cfg, dict) or not cfg.get("enabled", False):
         return
 
     assignment = cfg.get("assignment")
     if not isinstance(assignment, str) or not assignment:
         raise ValueError(
-            f"Course {course_slug}: nbgrader_randomization.assignment is required"
+            f"Course {course_slug}: nbgrader_randomisation.assignment is required"
         )
     pick_count = cfg.get("pick_count")
     if not isinstance(pick_count, int) or pick_count <= 0:
         raise ValueError(
-            f"Course {course_slug}: nbgrader_randomization.pick_count must be > 0"
+            f"Course {course_slug}: nbgrader_randomisation.pick_count must be > 0"
         )
 
     students = sorted(course_data.get("students") or [])
     if not students:
         raise RuntimeError(
-            f"pre_spawn_hook: nbgrader randomization enabled for {course_slug}, but no students listed"
+            f"pre_spawn_hook: nbgrader randomisation enabled for {course_slug}, but no students listed"
         )
 
     fmt = {
@@ -813,7 +813,7 @@ def _run_nbgrader_randomization(
         "source_notebook",
         f"/course/source/{assignment}/{assignment}.ipynb",
     ).format(**fmt)
-    output_dir = cfg.get("output_dir", "/courses/randomized").format(**fmt)
+    output_dir = cfg.get("output_dir", "/courses/randomised").format(**fmt)
     question_metadata_key = cfg.get(
         "question_metadata_key", "aalto_nbgrader_bank"
     ).format(**fmt)
@@ -822,7 +822,7 @@ def _run_nbgrader_randomization(
 
     cmd = [
         "python3",
-        NBGRADER_RANDOMIZE_SCRIPT,
+        NBGRADER_RANDOMISE_SCRIPT,
         "--course-slug",
         course_slug,
         "--assignment",
@@ -845,13 +845,13 @@ def _run_nbgrader_randomization(
     if cfg.get("force", False):
         cmd.append("--force")
 
-    randomize_cmd = shlex.join(cmd)
-    hook_path = "/usr/libexec/nbgrader-randomize-release.sh"
+    randomise_cmd = shlex.join(cmd)
+    hook_path = "/usr/libexec/nbgrader-randomise-release.sh"
     script_lines = [
         "#!/bin/bash",
         "set -euo pipefail",
-        "echo '[nbgrader-randomization] generating per-student variants'",
-        randomize_cmd,
+        "echo '[nbgrader-randomisation] generating per-student variants'",
+        randomise_cmd,
     ]
     rendered_lines = " ".join(shlex.quote(line) for line in script_lines)
     cmds.append(
@@ -859,7 +859,7 @@ def _run_nbgrader_randomization(
     )
 
     spawner.log.info(
-        "pre_spawn_hook: queued in-pod nbgrader randomization for %s (%s)",
+        "pre_spawn_hook: queued in-pod nbgrader randomisation for %s (%s)",
         course_slug,
         assignment,
     )
@@ -1090,39 +1090,36 @@ async def pre_spawn_hook(spawner: KubeSpawner):
         # Course configuration - only if it has instructors. Courses without
         # instructors do not have any course data nor assignments
         if course_data["gid"] or course_data.get("instructors", []):
-            randomization_cfg = course_data.get("nbgrader_randomization")
-            randomization_enabled = bool(
-                isinstance(randomization_cfg, dict)
-                and randomization_cfg.get("enabled", False)
-            )
-            randomization_lines = []
+            randomisation_cfg = course_data.get("nbgrader_randomisation", {})
+            randomisation_enabled = bool(randomisation_cfg.get("enabled", False))
+            randomisation_config_lines = []
             spawner.log.debug(
-                "pre_spawn_hook: course %s randomization enabled=%s",
+                "pre_spawn_hook: course %s randomisation enabled=%s",
                 course_slug,
-                randomization_enabled,
+                randomisation_enabled,
             )
-            if randomization_enabled:
-                assignment = randomization_cfg["assignment"]
+            if randomisation_enabled:
+                assignment = randomisation_cfg["assignment"]
                 students = sorted(course_data.get("students") or [])
                 fmt = {
                     "course_slug": course_slug,
                     "coursedir_slug": coursedir_slug,
                     "assignment": assignment,
                 }
-                source_notebook = randomization_cfg.get(
+                source_notebook = randomisation_cfg.get(
                     "source_notebook", f"/course/source/{assignment}/{assignment}.ipynb"
                 ).format(**fmt)
-                output_dir = randomization_cfg.get(
-                    "output_dir", "/course/randomized"
+                output_dir = randomisation_cfg.get(
+                    "output_dir", "/course/randomised"
                 ).format(**fmt)
-                pick_count = randomization_cfg["pick_count"]
-                question_metadata_key = randomization_cfg.get(
+                pick_count = randomisation_cfg["pick_count"]
+                question_metadata_key = randomisation_cfg.get(
                     "question_metadata_key", "aalto_nbgrader_bank"
                 ).format(**fmt)
-                weight_key = randomization_cfg.get("weight_key", "weight").format(**fmt)
-                seed_salt = randomization_cfg.get("seed_salt", "").format(**fmt)
-                force = bool(randomization_cfg.get("force", False))
-                randomization_lines = _get_randomization_lines(
+                weight_key = randomisation_cfg.get("weight_key", "weight").format(**fmt)
+                seed_salt = randomisation_cfg.get("seed_salt", "").format(**fmt)
+                force = bool(randomisation_cfg.get("force", False))
+                randomisation_config_lines = _get_randomisation_lines(
                     students,
                     source_notebook,
                     output_dir,
@@ -1204,7 +1201,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                     "[%(name)s | %(levelname)s]%(end_color)s %(message)s'"
                 ),
                 "c.Application.log_datefmt = '%Y-%m-%dT%H:%M:%S%z'",
-                *randomization_lines,
+                *randomisation_config_lines,
                 *course_data.get("nbgrader_config", "").split("\n"),
             ]:
                 cmds.append(f'echo "{line}" >> /etc/jupyter/nbgrader_config.py')
@@ -1325,7 +1322,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                         spawner.create_groups.append((name, gid))
                         spawner.supplemental_gids.append(gid)
 
-                # Randomization now runs in the custom nbgrader release plugin.
+                # Randomisation now runs in the custom nbgrader release plugin.
 
             # Student attempting spawning a course (or instructor with
             # as_instructor=False to test the student mode)
@@ -1478,7 +1475,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
     spawner.log.info("pre_spawn_hook: done")
 
 
-def _get_randomization_lines(
+def _get_randomisation_lines(
     students: list[str],
     source_notebook: str,
     output_dir: str,
@@ -1490,19 +1487,19 @@ def _get_randomization_lines(
 ):
     """Split into a separate function to make formatting a bit nicer"""
     return [
-        f"c.ExchangeFactory.fetch_assignment = '{NBGRADER_RANDOMIZED_FETCH_MODULE}.RandomizedExchangeFetchAssignment'",
-        f"c.RandomizedExchangeFetchAssignment.randomization_root = '{output_dir}'",
-        f"c.ExchangeFactory.release_assignment = '{NBGRADER_RANDOMIZED_RELEASE_MODULE}.RandomizedExchangeReleaseAssignment'",
-        "c.RandomizedExchangeReleaseAssignment.randomization_enabled = True",
-        f"c.RandomizedExchangeReleaseAssignment.randomization_root = '{output_dir}'",
-        f"c.RandomizedExchangeReleaseAssignment.source_notebook = '{source_notebook}'",
-        f"c.RandomizedExchangeReleaseAssignment.pick_count = {pick_count}",
-        f"c.RandomizedExchangeReleaseAssignment.students = '{','.join(students)}'",
-        f"c.RandomizedExchangeReleaseAssignment.seed_salt = '{seed_salt}'",
-        f"c.RandomizedExchangeReleaseAssignment.question_metadata_key = '{question_metadata_key}'",
-        f"c.RandomizedExchangeReleaseAssignment.weight_key = '{weight_key}'",
-        "c.RandomizedExchangeReleaseAssignment.lock_timeout = 90",
-        "c.RandomizedExchangeReleaseAssignment.force = True" if force else "",
+        f"c.ExchangeFactory.fetch_assignment = '{NBGRADER_RANDOMISED_FETCH_MODULE}.RandomisedExchangeFetchAssignment'",
+        f"c.RandomisedExchangeFetchAssignment.randomisation_root = '{output_dir}'",
+        f"c.ExchangeFactory.release_assignment = '{NBGRADER_RANDOMISED_RELEASE_MODULE}.RandomisedExchangeReleaseAssignment'",
+        "c.RandomisedExchangeReleaseAssignment.randomisation_enabled = True",
+        f"c.RandomisedExchangeReleaseAssignment.randomisation_root = '{output_dir}'",
+        f"c.RandomisedExchangeReleaseAssignment.source_notebook = '{source_notebook}'",
+        f"c.RandomisedExchangeReleaseAssignment.pick_count = {pick_count}",
+        f"c.RandomisedExchangeReleaseAssignment.students = '{','.join(students)}'",
+        f"c.RandomisedExchangeReleaseAssignment.seed_salt = '{seed_salt}'",
+        f"c.RandomisedExchangeReleaseAssignment.question_metadata_key = '{question_metadata_key}'",
+        f"c.RandomisedExchangeReleaseAssignment.weight_key = '{weight_key}'",
+        "c.RandomisedExchangeReleaseAssignment.lock_timeout = 90",
+        "c.RandomisedExchangeReleaseAssignment.force = True" if force else "",
     ]
 
 
