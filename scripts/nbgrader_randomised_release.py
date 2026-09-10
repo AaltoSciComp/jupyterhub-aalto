@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Custom nbgrader release plugin for per-student randomized assignments.
+"""Custom nbgrader release plugin for per-student randomised assignments.
 
 This plugin keeps the normal nbgrader exchange flow and only alters release:
 1. If randomisation is not enabled for the assignment, perform the standard
@@ -13,7 +13,7 @@ This tool reads one source notebook containing a question bank and writes one
 student-specific notebook per student with only the selected questions.
 
 Question-bank cell format:
-- A cell belongs to a randomizable question when cell metadata contains
+- A cell belongs to a randomisable question when cell metadata contains
   `question_metadata_key` (default: "aalto_nbgrader_bank") with a dict:
 
     {
@@ -45,19 +45,19 @@ from nbgrader.exchange.default.release_assignment import ExchangeReleaseAssignme
 from traitlets.traitlets import Bool, Int, Unicode
 
 
-class RandomizedExchangeReleaseAssignment(ExchangeReleaseAssignment):
-    """Release plugin that generates randomized notebook variants per student."""
+class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
+    """Release plugin that generates randomised notebook variants per student."""
 
-    randomization_enabled = Bool(
+    randomisation_enabled = Bool(
         False,
-        help="Enable randomized notebook generation on release.",
+        help="Enable randomised notebook generation on release.",
     ).tag(config=True)
 
-    randomization_root = Unicode(
+    randomisation_root = Unicode(
         "",
         help=(
-            "Root directory containing randomized assignment outputs, for example "
-            "'/courses/<slug>/files/randomized'."
+            "Root directory containing randomised assignment outputs, for example "
+            "'/courses/<slug>/files/randomised'."
         ),
     ).tag(config=True)
 
@@ -71,7 +71,7 @@ class RandomizedExchangeReleaseAssignment(ExchangeReleaseAssignment):
 
     pick_count = Int(
         0,
-        help="Number of randomizable questions selected per student.",
+        help="Number of randomisable questions selected per student.",
     ).tag(config=True)
 
     students = Unicode(
@@ -91,7 +91,7 @@ class RandomizedExchangeReleaseAssignment(ExchangeReleaseAssignment):
 
     question_metadata_key = Unicode(
         "aalto_nbgrader_bank",
-        help="Cell metadata key containing randomization metadata.",
+        help="Cell metadata key containing randomisation metadata.",
     ).tag(config=True)
 
     weight_key = Unicode(
@@ -121,29 +121,29 @@ class RandomizedExchangeReleaseAssignment(ExchangeReleaseAssignment):
         return Path(src_path) / f"{assignment}.ipynb"
 
     def copy_files(self):
-        if not self.randomization_enabled:
+        if not self.randomisation_enabled:
             self.log.info(
-                "Randomization disabled; skipping variant generation and copying files normally"
+                "Randomisation disabled; skipping variant generation and copying files normally"
             )
             super().copy_files()
             return
 
-        self.log.info("Randomization enabled; generating per-student variants")
+        self.log.info("Randomisation enabled; generating per-student variants")
 
-        if not self.randomization_root:
+        if not self.randomisation_root:
             raise ValueError(
-                "RandomizedExchangeReleaseAssignment.randomization_root must be set"
+                "RandomisedExchangeReleaseAssignment.randomisation_root must be set"
             )
         if self.pick_count <= 0:
             raise ValueError(
-                "RandomizedExchangeReleaseAssignment.pick_count must be > 0"
+                "RandomisedExchangeReleaseAssignment.pick_count must be > 0"
             )
 
         students = _load_students_from_values(self.students, self.students_file)
         if not students:
             raise ValueError(
-                "No students configured. Set RandomizedExchangeReleaseAssignment.students "
-                "or RandomizedExchangeReleaseAssignment.students_file"
+                "No students configured. Set RandomisedExchangeReleaseAssignment.students "
+                "or RandomisedExchangeReleaseAssignment.students_file"
             )
 
         # Ignore the assignment file in coursedir.ignore, since we are generating it ourselves.
@@ -156,11 +156,11 @@ class RandomizedExchangeReleaseAssignment(ExchangeReleaseAssignment):
         assignment = self.coursedir.assignment_id
         source_path = self._source_notebook_path(assignment)
 
-        _generate_randomized_notebooks(
+        _generate_randomised_notebooks(
             course_slug=self.coursedir.course_id,
             assignment=assignment,
             source_path=source_path,
-            output_dir=Path(self.randomization_root),
+            output_dir=Path(self.randomisation_root),
             pick_count=self.pick_count,
             students=students,
             seed_salt=self.seed_salt,
@@ -284,7 +284,7 @@ def extract_bank(
 
     if not question_cells:
         raise ValueError(
-            f"No randomizable questions found. Add cell metadata key {question_metadata_key}."
+            f"No randomisable questions found. Add cell metadata key {question_metadata_key}."
         )
 
     return common_cells, question_cells, question_weights, first_order
@@ -308,7 +308,7 @@ def build_notebook(
     notebook = dict(source_notebook)
     notebook["cells"] = generated_cells
     metadata = dict(source_notebook.get("metadata") or {})
-    metadata["aalto_nbgrader_randomization"] = {
+    metadata["aalto_nbgrader_randomisation"] = {
         "student": student,
         "seed": seed_value,
         "selected_question_ids": sorted(selected_ids),
@@ -339,7 +339,7 @@ def _write_json(path: Path, data: Any) -> None:
     tmp.replace(path)
 
 
-def _generate_randomized_notebooks(
+def _generate_randomised_notebooks(
     *,
     course_slug: str,
     assignment: str,
@@ -361,7 +361,7 @@ def _generate_randomized_notebooks(
 
     assignment_dir = output_dir / assignment
     assignment_dir.mkdir(parents=True, exist_ok=True)
-    lock_path = assignment_dir / ".randomization.lock"
+    lock_path = assignment_dir / ".randomisation.lock"
 
     _acquire_lock(lock_path, timeout_s=lock_timeout)
     try:
@@ -377,7 +377,7 @@ def _generate_randomized_notebooks(
         question_ids = list(question_cells.keys())
         weights = [question_weights[qid] for qid in question_ids]
 
-        manifest_path = output_dir / assignment / "_randomization_manifest.json"
+        manifest_path = output_dir / assignment / "_randomisation_manifest.json"
         previous_manifest = None
         if manifest_path.exists():
             previous_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -399,9 +399,9 @@ def _generate_randomized_notebooks(
             and not force
         ):
             if logger is None:
-                print(f"Randomization already up to date for {assignment}.")
+                print(f"Randomisation already up to date for {assignment}.")
             else:
-                logger.info("Randomization already up to date for %s", assignment)
+                logger.info("Randomisation already up to date for %s", assignment)
             return
 
         manifest: dict[str, Any] = {
@@ -441,12 +441,12 @@ def _generate_randomized_notebooks(
 
         if logger is None:
             print(
-                f"Generated randomized notebooks for {len(students)} students "
+                f"Generated randomised notebooks for {len(students)} students "
                 f"in {output_dir}/{assignment}"
             )
         else:
             logger.info(
-                "Generated randomized notebooks for %d students in %s/%s",
+                "Generated randomised notebooks for %d students in %s/%s",
                 len(students),
                 output_dir,
                 assignment,
@@ -468,7 +468,7 @@ def main() -> int:
     if args.pick_count <= 0:
         raise ValueError("pick_count must be > 0")
 
-    _generate_randomized_notebooks(
+    _generate_randomised_notebooks(
         course_slug=args.course_slug,
         assignment=args.assignment,
         source_path=Path(args.source_notebook),

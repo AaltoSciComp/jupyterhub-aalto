@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Custom nbgrader fetch plugin for per-student randomized assignments.
+"""Custom nbgrader fetch plugin for per-student randomised assignments.
 
 This plugin keeps the normal nbgrader exchange flow and only alters fetch:
 1. Perform the standard fetch from exchange outbound.
-2. If a randomization manifest exists for the assignment and student, replace
+2. If a randomisation manifest exists for the assignment and student, replace
    the fetched notebook with the pre-generated student-specific notebook.
 """
 
@@ -19,33 +19,33 @@ from nbgrader.exchange.default.fetch_assignment import ExchangeFetchAssignment
 from traitlets import Unicode
 
 
-class RandomizedExchangeFetchAssignment(ExchangeFetchAssignment):
-    """Fetch plugin that overlays randomized notebook variants per student."""
+class RandomisedExchangeFetchAssignment(ExchangeFetchAssignment):
+    """Fetch plugin that overlays randomised notebook variants per student."""
 
-    randomization_root = Unicode(
+    randomisation_root = Unicode(
         "",
         help=(
-            "Root directory containing randomized assignment outputs, for example "
-            "'/courses/<slug>/files/randomized'."
+            "Root directory containing randomised assignment outputs, for example "
+            "'/courses/<slug>/files/randomised'."
         ),
     ).tag(config=True)
 
     # def _manifest_path(self) -> str:
     #     return os.path.join(
-    #         self.randomization_root,
+    #         self.randomisation_root,
     #         self.coursedir.assignment_id,
-    #         "_randomization_manifest.json",
+    #         "_randomisation_manifest.json",
     #     )
 
-    def _randomized_notebook(self, student_id: str) -> str | None:
-        if not self.randomization_root:
-            self.log.warn("random fetch: no randomization root")
+    def _randomised_notebook(self, student_id: str) -> str | None:
+        if not self.randomisation_root:
+            self.log.warn("random fetch: no randomisation root")
             return None
 
         manifest_path = (
-            Path(self.randomization_root)
+            Path(self.randomisation_root)
             / self.coursedir.assignment_id
-            / "_randomization_manifest.json"
+            / "_randomisation_manifest.json"
         )
         if not os.path.isfile(manifest_path):
             self.log.warn("random fetch: no manifest path")
@@ -53,7 +53,7 @@ class RandomizedExchangeFetchAssignment(ExchangeFetchAssignment):
 
         if not student_id or student_id == "*":
             self.log.warn(
-                "random fetch: No student ID provided, cannot fetch randomized notebook"
+                "random fetch: No student ID provided, cannot fetch randomised notebook"
             )
             return None
 
@@ -86,18 +86,18 @@ class RandomizedExchangeFetchAssignment(ExchangeFetchAssignment):
             student_id = self.coursedir.student_id
         self.log.info(f"{student_id=}")
 
-        randomized_path = self._randomized_notebook(student_id=student_id)
-        if randomized_path is None:
+        randomised_path = self._randomised_notebook(student_id=student_id)
+        if randomised_path is None:
             self.log.warn("no random path")
             return
 
         super().copy_files()
 
-        dest_name = os.path.basename(randomized_path)
+        dest_name = os.path.basename(randomised_path)
         dest_path = os.path.join(self.dest_path, dest_name)
         self.log.info(
-            "Applying randomized variant for %s from %s",
+            "Applying randomised variant for %s from %s",
             student_id,
-            randomized_path,
+            randomised_path,
         )
-        shutil.copyfile(randomized_path, dest_path)
+        shutil.copyfile(randomised_path, dest_path)
