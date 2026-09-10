@@ -360,7 +360,7 @@ COURSES = {}
 COURSES_TS = None
 METADIR = "/courses/meta"
 GROUPS = {}  # map username->{group:name, gid:number} for all allowed courses.
-NBGRADER_RANDOMISE_SCRIPT = "/srv/nbgrader-plugins/nbgrader_randomised_release.py"
+# NBGRADER_RANDOMISE_SCRIPT = "/srv/nbgrader-plugins/nbgrader_randomised_release.py"
 NBGRADER_RANDOMISED_FETCH_MODULE = "nbgrader_randomised_fetch"
 NBGRADER_RANDOMISED_RELEASE_MODULE = "nbgrader_randomised_release"
 
@@ -774,95 +774,95 @@ def _allowed_ip(spawner: KubeSpawner) -> tuple[bool, IPv4Address | IPv6Address |
     return False, ip
 
 
-def _run_nbgrader_randomisation(
-    spawner: KubeSpawner,
-    *,
-    course_slug: str,
-    coursedir_slug: str,
-    course_data: dict,
-    cmds: list[str],
-) -> None:
-    cfg = course_data.get("nbgrader_randomisation")
-    if not isinstance(cfg, dict) or not cfg.get("enabled", False):
-        return
+# def _run_nbgrader_randomisation(
+#     spawner: KubeSpawner,
+#     *,
+#     course_slug: str,
+#     coursedir_slug: str,
+#     course_data: dict,
+#     cmds: list[str],
+# ) -> None:
+#     cfg = course_data.get("nbgrader_randomisation")
+#     if not isinstance(cfg, dict) or not cfg.get("enabled", False):
+#         return
 
-    assignment = cfg.get("assignment")
-    if not isinstance(assignment, str) or not assignment:
-        raise ValueError(
-            f"Course {course_slug}: nbgrader_randomisation.assignment is required"
-        )
-    pick_count = cfg.get("pick_count")
-    if not isinstance(pick_count, int) or pick_count <= 0:
-        raise ValueError(
-            f"Course {course_slug}: nbgrader_randomisation.pick_count must be > 0"
-        )
+#     assignment = cfg.get("assignment")
+#     if not isinstance(assignment, str) or not assignment:
+#         raise ValueError(
+#             f"Course {course_slug}: nbgrader_randomisation.assignment is required"
+#         )
+#     pick_count = cfg.get("pick_count")
+#     if not isinstance(pick_count, int) or pick_count <= 0:
+#         raise ValueError(
+#             f"Course {course_slug}: nbgrader_randomisation.pick_count must be > 0"
+#         )
 
-    students = sorted(course_data.get("students") or [])
-    if not students:
-        raise RuntimeError(
-            f"pre_spawn_hook: nbgrader randomisation enabled for {course_slug}, but no students listed"
-        )
+#     students = sorted(course_data.get("students") or [])
+#     if not students:
+#         raise RuntimeError(
+#             f"pre_spawn_hook: nbgrader randomisation enabled for {course_slug}, but no students listed"
+#         )
 
-    fmt = {
-        "course_slug": course_slug,
-        "coursedir_slug": coursedir_slug,
-        "assignment": assignment,
-    }
+#     fmt = {
+#         "course_slug": course_slug,
+#         "coursedir_slug": coursedir_slug,
+#         "assignment": assignment,
+#     }
 
-    source_notebook = cfg.get(
-        "source_notebook",
-        f"/course/source/{assignment}/{assignment}.ipynb",
-    ).format(**fmt)
-    output_dir = cfg.get("output_dir", "/courses/randomised").format(**fmt)
-    question_metadata_key = cfg.get(
-        "question_metadata_key", "aalto_nbgrader_bank"
-    ).format(**fmt)
-    weight_key = cfg.get("weight_key", "weight").format(**fmt)
-    seed_salt = cfg.get("seed_salt", "").format(**fmt)
+#     source_notebook = cfg.get(
+#         "source_notebook",
+#         f"/course/source/{assignment}/{assignment}.ipynb",
+#     ).format(**fmt)
+#     output_dir = cfg.get("output_dir", "/courses/randomised").format(**fmt)
+#     question_metadata_key = cfg.get(
+#         "question_metadata_key", "aalto_nbgrader_bank"
+#     ).format(**fmt)
+#     weight_key = cfg.get("weight_key", "weight").format(**fmt)
+#     seed_salt = cfg.get("seed_salt", "").format(**fmt)
 
-    cmd = [
-        "python3",
-        NBGRADER_RANDOMISE_SCRIPT,
-        "--course-slug",
-        course_slug,
-        "--assignment",
-        assignment,
-        "--source-notebook",
-        source_notebook,
-        "--output-dir",
-        output_dir,
-        "--pick-count",
-        str(pick_count),
-        "--students",
-        ",".join(students),
-        "--seed-salt",
-        seed_salt,
-        "--question-metadata-key",
-        question_metadata_key,
-        "--weight-key",
-        weight_key,
-    ]
-    if cfg.get("force", False):
-        cmd.append("--force")
+#     cmd = [
+#         "python3",
+#         NBGRADER_RANDOMISE_SCRIPT,
+#         "--course-slug",
+#         course_slug,
+#         "--assignment",
+#         assignment,
+#         "--source-notebook",
+#         source_notebook,
+#         "--output-dir",
+#         output_dir,
+#         "--pick-count",
+#         str(pick_count),
+#         "--students",
+#         ",".join(students),
+#         "--seed-salt",
+#         seed_salt,
+#         "--question-metadata-key",
+#         question_metadata_key,
+#         "--weight-key",
+#         weight_key,
+#     ]
+#     if cfg.get("force", False):
+#         cmd.append("--force")
 
-    randomise_cmd = shlex.join(cmd)
-    hook_path = "/usr/libexec/nbgrader-randomised-release.sh"
-    script_lines = [
-        "#!/bin/bash",
-        "set -euo pipefail",
-        "echo '[nbgrader-randomisation] generating per-student variants'",
-        randomise_cmd,
-    ]
-    rendered_lines = " ".join(shlex.quote(line) for line in script_lines)
-    cmds.append(
-        "printf '%s\\n' " + rendered_lines + f" > {hook_path} && chmod 755 {hook_path}"
-    )
+#     randomise_cmd = shlex.join(cmd)
+#     hook_path = "/usr/libexec/nbgrader-randomised-release.sh"
+#     script_lines = [
+#         "#!/bin/bash",
+#         "set -euo pipefail",
+#         "echo '[nbgrader-randomisation] generating per-student variants'",
+#         randomise_cmd,
+#     ]
+#     rendered_lines = " ".join(shlex.quote(line) for line in script_lines)
+#     cmds.append(
+#         "printf '%s\\n' " + rendered_lines + f" > {hook_path} && chmod 755 {hook_path}"
+#     )
 
-    spawner.log.info(
-        "pre_spawn_hook: queued in-pod nbgrader randomisation for %s (%s)",
-        course_slug,
-        assignment,
-    )
+#     spawner.log.info(
+#         "pre_spawn_hook: queued in-pod nbgrader randomisation for %s (%s)",
+#         course_slug,
+#         assignment,
+#     )
 
 
 async def pre_spawn_hook(spawner: KubeSpawner):
