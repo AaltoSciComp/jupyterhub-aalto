@@ -73,12 +73,12 @@ spec:
         - name: create-ci-user
           mountPath: /create_ci_user.py
           subPath: create_ci_user.py
-        - name: nbgrader-randomize-release
-          mountPath: /srv/jupyterhub/nbgrader_randomize_release.py
-          subPath: nbgrader_randomize_release.py
-        - name: nbgrader-randomized-fetch
-          mountPath: /srv/jupyterhub/nbgrader_randomized_fetch.py
-          subPath: nbgrader_randomized_fetch.py
+        - name: nbgrader-randomised-release
+          mountPath: /srv/jupyterhub/nbgrader_randomised_release.py
+          subPath: nbgrader_randomised_release.py
+        - name: nbgrader-randomised-fetch
+          mountPath: /srv/jupyterhub/nbgrader_randomised_fetch.py
+          subPath: nbgrader_randomised_fetch.py
         - name: spawn-test
           mountPath: /srv/jupyterhub/spawn_test.py
           subPath: spawn_test.py
@@ -166,12 +166,12 @@ spec:
       - name: create-ci-user
         configMap:
           name: create-ci-user
-      - name: nbgrader-randomize-release
+      - name: nbgrader-randomised-release
         configMap:
-          name: nbgrader-randomize-release
-      - name: nbgrader-randomized-fetch
+          name: nbgrader-randomised-release
+      - name: nbgrader-randomised-fetch
         configMap:
-          name: nbgrader-randomized-fetch
+          name: nbgrader-randomised-fetch
       - name: spawn-test
         configMap:
           name: spawn-test
