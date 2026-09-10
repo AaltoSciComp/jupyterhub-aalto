@@ -1088,6 +1088,10 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 randomisation_enabled,
             )
             if randomisation_enabled:
+                spawner.log.info(
+                    "pre_spawn_hook: course %s randomisation enabled as student, adding config and volume mounts",
+                    course_slug,
+                )
                 randomisation_config_lines = [
                     f"c.ExchangeFactory.fetch_assignment = '{NBGRADER_RANDOMISED_FETCH_MODULE}.RandomisedExchangeFetchAssignment'",
                 ]
@@ -1264,6 +1268,11 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                 )
 
                 if randomisation_enabled:
+                    spawner.log.info(
+                        "pre_spawn_hook: course %s randomisation enabled as instructor, adding config and volume mounts",
+                        course_slug,
+                    )
+
                     assignment = randomisation_cfg["assignment"]
                     students = sorted(course_data.get("students") or [])
                     fmt = {
