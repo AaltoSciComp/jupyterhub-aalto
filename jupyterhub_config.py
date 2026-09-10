@@ -306,8 +306,8 @@ c.KubeSpawner.singleuser_image_pull_secrets = "registry-secret-jupyter"
 DEFAULT_VOLUMES = [
     {"name": "jupyter-nfs", "persistentVolumeClaim": {"claimName": "jupyter-nfs"}},
     {
-        "name": "nbgrader-randomise-release",
-        "configMap": {"name": "nbgrader-randomise-release"},
+        "name": "nbgrader-randomised-release",
+        "configMap": {"name": "nbgrader-randomised-release"},
     },
     {
         "name": "nbgrader-randomised-fetch",
@@ -340,7 +340,7 @@ DEFAULT_VOLUME_MOUNTS = [
         "readOnly": True,
     },
     {
-        "name": "nbgrader-randomise-release",
+        "name": "nbgrader-randomised-release",
         "mountPath": "/srv/nbgrader-plugins/nbgrader_randomised_release.py",
         "subPath": "nbgrader_randomised_release.py",
         "readOnly": True,
@@ -846,7 +846,7 @@ def _run_nbgrader_randomisation(
         cmd.append("--force")
 
     randomise_cmd = shlex.join(cmd)
-    hook_path = "/usr/libexec/nbgrader-randomise-release.sh"
+    hook_path = "/usr/libexec/nbgrader-randomised-release.sh"
     script_lines = [
         "#!/bin/bash",
         "set -euo pipefail",

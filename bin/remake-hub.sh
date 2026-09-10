@@ -32,8 +32,8 @@ kubectl create configmap jupyterhub-config -n "$NAMESPACE" --from-file="$SCRIPTP
 kubectl create configmap hub-status-service -n "$NAMESPACE" --from-file="$SCRIPTPATH/../scripts/hub_status_service.py" -o yaml --dry-run=client | kubectl apply -f -
 kubectl create configmap cull-idle-servers -n "$NAMESPACE" --from-file="$SCRIPTPATH/../scripts/cull_idle_servers.py" -o yaml --dry-run=client | kubectl apply -f -
 kubectl create configmap create-ci-user -n "$NAMESPACE" --from-file="$SCRIPTPATH/../scripts/create_ci_user.py" -o yaml --dry-run=client | kubectl apply -f -
-kubectl create configmap nbgrader-randomize-release -n "$NAMESPACE" --from-file="$SCRIPTPATH/../scripts/nbgrader_randomize_release.py" -o yaml --dry-run=client | kubectl apply -f -
-kubectl create configmap nbgrader-randomized-fetch -n "$NAMESPACE" --from-file="$SCRIPTPATH/../scripts/nbgrader_randomized_fetch.py" -o yaml --dry-run=client | kubectl apply -f -
+kubectl create configmap nbgrader-randomised-release -n "$NAMESPACE" --from-file="$SCRIPTPATH/../scripts/nbgrader_randomised_release.py" -o yaml --dry-run=client | kubectl apply -f -
+kubectl create configmap nbgrader-randomised-fetch -n "$NAMESPACE" --from-file="$SCRIPTPATH/../scripts/nbgrader_randomised_fetch.py" -o yaml --dry-run=client | kubectl apply -f -
 kubectl create configmap spawn-test -n "$NAMESPACE" --from-file="$SCRIPTPATH/../bin/spawn_test.py" -o yaml --dry-run=client | kubectl apply -f -
 
 # Restart hub. The hub needs to actually restart to load the config changes,
