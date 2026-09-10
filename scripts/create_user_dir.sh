@@ -52,3 +52,12 @@ default_group=70000
   chown "$uid:$default_group" "$dir_name"
   chmod 700 "$dir_name"
 #fi
+
+# Create per-student randomised directory if randomisation is enabled for the course
+if [ $# -eq 4 ]; then
+  random_course="$4"
+  random_dir="$JUPYTER_DIR/course/$random_course/randomised/students/$username"
+  mkdir -p "$random_dir"
+  chown "$uid:$default_group" "$random_dir"
+  chmod 700 "$random_dir"
+fi
