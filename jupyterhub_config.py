@@ -1369,12 +1369,6 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                     cmds.append(
                         "echo Defaults umask=0007, umask_override >> /etc/sudoers"
                     )
-                    cmds.append(
-                        # mounted when course randomisation is enabled
-                        "test -e /srv/nbgrader/randomised "
-                        "&& chmod -R u+rwX,g+rwX,o-rwx /srv/nbgrader/randomised "
-                        f"&& chgrp -R {course_gid} /srv/nbgrader/randomised || true"
-                    )
                 else:
                     spawner.gid = spawner.fs_gid = course_gid
                     spawner.supplemental_gids.insert(0, course_gid)
