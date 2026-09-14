@@ -1088,6 +1088,10 @@ async def pre_spawn_hook(spawner: KubeSpawner):
         # Course configuration - only if it has instructors. Courses without
         # instructors do not have any course data nor assignments
         if course_data["gid"] or course_data.get("instructors", []):
+            # admins are always considered instructors if they spawn the
+            # instructor instance
+            is_instructor = is_admin or username in course_data.get("instructors", {})
+
             randomisation_cfg = course_data.get("nbgrader_randomisation", {})
             randomisation_enabled = bool(randomisation_cfg.get("enabled", False))
             randomisation_config_lines = []
@@ -1098,30 +1102,48 @@ async def pre_spawn_hook(spawner: KubeSpawner):
             )
             if randomisation_enabled:
                 spawner.log.info(
-                    "pre_spawn_hook: course %s randomisation enabled as student, adding config and volume mounts",
+                    "pre_spawn_hook: course %s randomisation enabled, adding config entry and ExchangeFetch mount",
                     course_slug,
                 )
                 randomisation_config_lines = [
                     f"c.ExchangeFactory.fetch_assignment = '{NBGRADER_RANDOMISED_FETCH_MODULE}.RandomisedExchangeFetchAssignment'",
                 ]
 
-                spawner.volume_mounts.extend(
-                    [
+                spawner.volume_mounts.append(
+                    {
+                        "name": "nbgrader-randomised-fetch",
+                        "mountPath": "/srv/nbgrader-plugins/nbgrader_randomised_fetch.py",
+                        "subPath": "nbgrader_randomised_fetch.py",
+                        "readOnly": True,
+                    }
+                )
+
+                if is_instructor:
+                    spawner.log.info(
+                        "pre_spawn_hook: course %s randomisation enabled as instructor, symlinking per-student randomised directory",
+                        course_slug,
+                    )
+                    # The parent directory is mounted r/w elsewhere for
+                    # instructors, k8s doesn't seem to like mounting a
+                    # subdirectory of a volume as read-write, so we just
+                    # symlink it to the right place.
+                    cmds.append(
+                        f"ln -s /srv/nbgrader/randomised/students/{username} /srv/nbgrader/per-student-randomised"
+                    )
+                else:
+                    spawner.log.info(
+                        "pre_spawn_hook: course %s randomisation enabled as student, mounting per-student randomised directory",
+                        course_slug,
+                    )
+                    spawner.volume_mounts.append(
                         {
                             "mountPath": "/srv/nbgrader/per-student-randomised",
                             "subPath": f"course/{coursedir_slug}/randomised/students/{username}",
                             "name": "jupyter-nfs",
                             # Students cannot edit their randomised notebooks
                             "readOnly": True,
-                        },
-                        {
-                            "name": "nbgrader-randomised-fetch",
-                            "mountPath": "/srv/nbgrader-plugins/nbgrader_randomised_fetch.py",
-                            "subPath": "nbgrader_randomised_fetch.py",
-                            "readOnly": True,
-                        },
-                    ]
-                )
+                        }
+                    )
 
                 # Create the per-student randomised directory. The script will
                 # try to create the user dir as well, but that will already
@@ -1133,10 +1155,6 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                     log=spawner.log,
                     random_course=coursedir_slug,
                 )
-
-            # admins are always considered instructors if they spawn the
-            # instructor instance
-            is_instructor = is_admin or username in course_data.get("instructors", {})
 
             # Add course exchange
             # /srv/nbgrader/exchange is the default path
