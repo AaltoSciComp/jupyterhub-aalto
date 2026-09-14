@@ -724,14 +724,8 @@ c.KubeSpawner.profile_list = get_profile_list  # (None)
 #    raise RuntimeError("Startup error: no course profiles found")
 
 
-def create_user_dir(
-    username: str,
-    uid: int,
-    human_name: str,
-    log: logging.Logger,
-    random_course: str | None = None,
-):
-    human_name = re.sub(r"[^\w -]*", "", human_name, flags=re.IGNORECASE)
+def create_user_dir(username: str, uid: int, human_name: str, log: logging.Logger):
+    human_name = re.sub(r"[^\w -]*", "", human_name, flags=re.I)
     human_name = human_name.replace(" ", "++")
     # NOTE: $JMGR_HOSTNAME defines a hardcoded command in
     # authorized_keys, the command here is most likely ignored
@@ -745,12 +739,9 @@ def create_user_dir(
             shlex.quote(username),
             str(uid),
             shlex.quote(human_name),
-            # Create the per-student randomised directory if randomisation is enabled for the course
-            shlex.quote(random_course) if random_course else "",
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        check=False,
     )
     if ret.returncode != 0:
         log.error("create_user_dir failed for %s %s", username, uid)
@@ -1144,17 +1135,6 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                             "readOnly": True,
                         }
                     )
-
-                # Create the per-student randomised directory. The script will
-                # try to create the user dir as well, but that will already
-                # exist anyway
-                create_user_dir(
-                    username,
-                    uid,
-                    human_name=human_name,
-                    log=spawner.log,
-                    random_course=coursedir_slug,
-                )
 
             # Add course exchange
             # /srv/nbgrader/exchange is the default path
