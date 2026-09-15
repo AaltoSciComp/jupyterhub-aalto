@@ -36,23 +36,15 @@ import hashlib
 import json
 import os
 import random
-import sys
 import time
 from pathlib import Path
 from stat import (
-    S_IRGRP,
-    S_IROTH,
-    S_IRUSR,
     S_ISGID,
     S_IWGRP,
-    S_IWOTH,
-    S_IWUSR,
-    S_IXGRP,
-    S_IXOTH,
-    S_IXUSR,
 )
 from typing import Any
 
+# import sys
 from nbgrader.exchange.default.release_assignment import ExchangeReleaseAssignment
 from traitlets.traitlets import Bool, Int, Unicode
 
@@ -351,10 +343,28 @@ def _acquire_lock(lock_path: Path, timeout_s: int) -> None:
             time.sleep(1)
 
 
-def _write_json(path: Path, data: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
+def _mkdir_with_mode(path: Path, mode: int) -> None:
+    missing: list[Path] = []
+    directory = path
+    while not directory.exists():
+        missing.append(directory)
+        directory = directory.parent
+
+    for directory in reversed(missing):
+        try:
+            directory.mkdir(mode=mode)
+        except FileExistsError:
+            if not directory.is_dir():
+                raise
+        else:
+            os.chmod(directory, mode | directory.stat().st_mode)
+
+
+def _write_json(path: Path, data: Any, *, file_mode: int, dir_mode: int) -> None:
+    _mkdir_with_mode(path.parent, dir_mode)
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.chmod(tmp, file_mode)
     tmp.replace(path)
 
 
@@ -380,7 +390,7 @@ def _generate_randomised_notebooks(
         raise ValueError("No students provided; nothing to generate")
 
     manifest_dir = output_dir / "manifests" / assignment
-    manifest_dir.mkdir(parents=True, exist_ok=True)
+    _mkdir_with_mode(manifest_dir, 0o770)
     lock_path = manifest_dir / ".randomisation.lock"
 
     _acquire_lock(lock_path, timeout_s=lock_timeout)
@@ -432,8 +442,10 @@ def _generate_randomised_notebooks(
             "per_student": {},
         }
 
-        # Student-specific notebooks are generated with 0o644 permissions, and directories with 0o755.  If the course is group-shared, group write is added to both.
-        # os.umask(0o777-S_IRUSR-S_IWUSR-S_IRGRP-(S_IWGRP if self.coursedir.groupshared else 0)-S_IXUSR-S_IXGRP-S_IXOTH)
+        notebook_file_mode = 0o644 | (S_IWGRP if self.coursedir.groupshared else 0)
+        notebook_dir_mode = 0o755 | (
+            (S_ISGID | S_IWGRP) if self.coursedir.groupshared else 0
+        )
 
         for student in students:
             seed_value = _seed(seed_salt, course_slug, assignment, student)
@@ -453,35 +465,26 @@ def _generate_randomised_notebooks(
             )
             notebook_dir = output_dir / "students" / student / assignment
             notebook_file_path = notebook_dir / f"{assignment}.ipynb"
-            _write_json(notebook_file_path, generated_notebook)
-
-            # self.set_perms(
-            #     notebook_dir,
-            #     fileperms=(S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH|(S_IWGRP if self.coursedir.groupshared else 0)),
-            #     dirperms=(S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH|((S_ISGID|S_IWGRP) if self.coursedir.groupshared else 0)))
+            _write_json(
+                notebook_file_path,
+                generated_notebook,
+                file_mode=notebook_file_mode,
+                dir_mode=notebook_dir_mode,
+            )
 
             manifest["per_student"][student] = {
                 "seed": seed_value,
                 "selected_question_ids": selected,
                 "path": str(notebook_file_path),
             }
-
-        _write_json(manifest_file_path, manifest)
-
-        os.chmod(
+        file_mode = 0o600 | (S_IWGRP if self.coursedir.groupshared else 0)
+        dir_mode = 0o700 | (0o070 | S_ISGID if self.coursedir.groupshared else 0)
+        _write_json(
             manifest_file_path,
-            S_IRUSR
-            | S_IWUSR
-            | ~S_IROTH
-            | ~S_IWOTH
-            | ~S_IXOTH
-            | (S_IRGRP | S_IWGRP if self.coursedir.groupshared else 0),
+            manifest,
+            file_mode=file_mode,
+            dir_mode=dir_mode,
         )
-        # self.set_perms(
-        #     manifest_dir,
-        #     fileperms=(S_IRUSR|S_IWUSR|(S_IRGRP|S_IWGRP if self.coursedir.groupshared else 0)),
-        #     dirperms=(S_IRUSR|S_IWUSR|S_IXUSR|(S_IRGRP|S_IXGRP|S_ISGID|S_IWGRP if self.coursedir.groupshared else 0)),
-        # )
 
         if logger is None:
             print(
