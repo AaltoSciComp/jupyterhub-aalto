@@ -183,21 +183,21 @@ class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
         )
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--course-slug", required=True)
-    parser.add_argument("--assignment", required=True)
-    parser.add_argument("--source-notebook", required=True)
-    parser.add_argument("--output-dir", required=True)
-    parser.add_argument("--pick-count", type=int, required=True)
-    parser.add_argument("--students", default="")
-    parser.add_argument("--students-file")
-    parser.add_argument("--seed-salt", default="")
-    parser.add_argument("--question-metadata-key", default="aalto_nbgrader_bank")
-    parser.add_argument("--weight-key", default="weight")
-    parser.add_argument("--force", action="store_true")
-    parser.add_argument("--lock-timeout", type=int, default=90)
-    return parser.parse_args()
+# def parse_args() -> argparse.Namespace:
+#     parser = argparse.ArgumentParser(description=__doc__)
+#     parser.add_argument("--course-slug", required=True)
+#     parser.add_argument("--assignment", required=True)
+#     parser.add_argument("--source-notebook", required=True)
+#     parser.add_argument("--output-dir", required=True)
+#     parser.add_argument("--pick-count", type=int, required=True)
+#     parser.add_argument("--students", default="")
+#     parser.add_argument("--students-file")
+#     parser.add_argument("--seed-salt", default="")
+#     parser.add_argument("--question-metadata-key", default="aalto_nbgrader_bank")
+#     parser.add_argument("--weight-key", default="weight")
+#     parser.add_argument("--force", action="store_true")
+#     parser.add_argument("--lock-timeout", type=int, default=90)
+#     return parser.parse_args()
 
 
 def _load_students_from_values(students_csv: str, students_file: str) -> list[str]:
