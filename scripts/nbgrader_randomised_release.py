@@ -39,6 +39,18 @@ import random
 import sys
 import time
 from pathlib import Path
+from stat import (
+    S_IRGRP,
+    S_IROTH,
+    S_IRUSR,
+    S_ISGID,
+    S_IWGRP,
+    S_IWOTH,
+    S_IWUSR,
+    S_IXGRP,
+    S_IXOTH,
+    S_IXUSR,
+)
 from typing import Any
 
 from nbgrader.exchange.default.release_assignment import ExchangeReleaseAssignment
@@ -154,6 +166,9 @@ class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
             f"{self.root=}, {self.coursedir.course_id=}, {self.coursedir.assignment_id=}"
         )
         # Run standard release workflow first.
+        self.log.info(
+            f"Copying files normally to {self.dest_path} before generating randomised variants"
+        )
         super().copy_files()
 
         assignment = self.coursedir.assignment_id
@@ -172,6 +187,7 @@ class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
             force=self.force,
             lock_timeout=self.lock_timeout,
             logger=self.log,
+            self=self,
         )
 
 
@@ -355,6 +371,7 @@ def _generate_randomised_notebooks(
     weight_key: str,
     force: bool,
     lock_timeout: int,
+    self: RandomisedExchangeReleaseAssignment,
     logger: Any | None,
 ) -> None:
     if pick_count <= 0:
@@ -362,9 +379,9 @@ def _generate_randomised_notebooks(
     if not students:
         raise ValueError("No students provided; nothing to generate")
 
-    assignment_dir = output_dir / assignment
-    assignment_dir.mkdir(parents=True, exist_ok=True)
-    lock_path = assignment_dir / ".randomisation.lock"
+    manifest_dir = output_dir / "manifests" / assignment
+    manifest_dir.mkdir(parents=True, exist_ok=True)
+    lock_path = manifest_dir / ".randomisation.lock"
 
     _acquire_lock(lock_path, timeout_s=lock_timeout)
     try:
@@ -380,12 +397,12 @@ def _generate_randomised_notebooks(
         question_ids = list(question_cells.keys())
         weights = [question_weights[qid] for qid in question_ids]
 
-        manifest_path = (
-            output_dir / "manifests" / assignment / "_randomisation_manifest.json"
-        )
+        manifest_file_path = manifest_dir / "_randomisation_manifest.json"
         previous_manifest = None
-        if manifest_path.exists():
-            previous_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if manifest_file_path.exists():
+            previous_manifest = json.loads(
+                manifest_file_path.read_text(encoding="utf-8")
+            )
 
         desired_manifest_header = {
             "course_slug": course_slug,
@@ -415,6 +432,9 @@ def _generate_randomised_notebooks(
             "per_student": {},
         }
 
+        # Student-specific notebooks are generated with 0o644 permissions, and directories with 0o755.  If the course is group-shared, group write is added to both.
+        # os.umask(0o777-S_IRUSR-S_IWUSR-S_IRGRP-(S_IWGRP if self.coursedir.groupshared else 0)-S_IXUSR-S_IXGRP-S_IXOTH)
+
         for student in students:
             seed_value = _seed(seed_salt, course_slug, assignment, student)
             rng = random.Random(seed_value)
@@ -431,30 +451,50 @@ def _generate_randomised_notebooks(
                 student,
                 seed_value,
             )
-            notebook_output_path = (
-                output_dir / "students" / student / assignment / f"{assignment}.ipynb"
-            )
-            _write_json(notebook_output_path, generated_notebook)
+            notebook_dir = output_dir / "students" / student / assignment
+            notebook_file_path = notebook_dir / f"{assignment}.ipynb"
+            _write_json(notebook_file_path, generated_notebook)
+
+            # self.set_perms(
+            #     notebook_dir,
+            #     fileperms=(S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH|(S_IWGRP if self.coursedir.groupshared else 0)),
+            #     dirperms=(S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH|((S_ISGID|S_IWGRP) if self.coursedir.groupshared else 0)))
 
             manifest["per_student"][student] = {
                 "seed": seed_value,
                 "selected_question_ids": selected,
-                "path": str(notebook_output_path),
+                "path": str(notebook_file_path),
             }
 
-        _write_json(manifest_path, manifest)
+        _write_json(manifest_file_path, manifest)
+
+        os.chmod(
+            manifest_file_path,
+            S_IRUSR
+            | S_IWUSR
+            | ~S_IROTH
+            | ~S_IWOTH
+            | ~S_IXOTH
+            | (S_IRGRP | S_IWGRP if self.coursedir.groupshared else 0),
+        )
+        # self.set_perms(
+        #     manifest_dir,
+        #     fileperms=(S_IRUSR|S_IWUSR|(S_IRGRP|S_IWGRP if self.coursedir.groupshared else 0)),
+        #     dirperms=(S_IRUSR|S_IWUSR|S_IXUSR|(S_IRGRP|S_IXGRP|S_ISGID|S_IWGRP if self.coursedir.groupshared else 0)),
+        # )
 
         if logger is None:
             print(
                 f"Generated randomised notebooks for {len(students)} students "
-                f"in {output_dir}/**/{assignment}"
+                f"in {output_dir}/students/*/{assignment}, and manifest at {manifest_file_path}"
             )
         else:
             logger.info(
-                "Generated randomised notebooks for %d students in %s/**/%s",
+                "Generated randomised notebooks for %d students in %s/students/*/%s, and manifest at %s",
                 len(students),
                 output_dir,
                 assignment,
+                manifest_file_path,
             )
     finally:
         try:
@@ -463,32 +503,32 @@ def _generate_randomised_notebooks(
             pass
 
 
-def main() -> int:
-    args = parse_args()
-    students = _load_students_from_values(args.students, args.students_file)
-    if not students:
-        print("No students provided; nothing to generate.", file=sys.stderr)
-        return 2
+# def main() -> int:
+#     args = parse_args()
+#     students = _load_students_from_values(args.students, args.students_file)
+#     if not students:
+#         print("No students provided; nothing to generate.", file=sys.stderr)
+#         return 2
 
-    if args.pick_count <= 0:
-        raise ValueError("pick_count must be > 0")
+#     if args.pick_count <= 0:
+#         raise ValueError("pick_count must be > 0")
 
-    _generate_randomised_notebooks(
-        course_slug=args.course_slug,
-        assignment=args.assignment,
-        source_path=Path(args.source_notebook),
-        output_dir=Path(args.output_dir),
-        pick_count=args.pick_count,
-        students=students,
-        seed_salt=args.seed_salt,
-        question_metadata_key=args.question_metadata_key,
-        weight_key=args.weight_key,
-        force=args.force,
-        lock_timeout=args.lock_timeout,
-        logger=None,
-    )
-    return 0
+#     _generate_randomised_notebooks(
+#         course_slug=args.course_slug,
+#         assignment=args.assignment,
+#         source_path=Path(args.source_notebook),
+#         output_dir=Path(args.output_dir),
+#         pick_count=args.pick_count,
+#         students=students,
+#         seed_salt=args.seed_salt,
+#         question_metadata_key=args.question_metadata_key,
+#         weight_key=args.weight_key,
+#         force=args.force,
+#         lock_timeout=args.lock_timeout,
+#         logger=None,
+#     )
+#     return 0
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+# if __name__ == "__main__":
+#     raise SystemExit(main())
