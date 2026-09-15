@@ -65,14 +65,6 @@ class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
         ),
     ).tag(config=True)
 
-    source_notebook = Unicode(
-        "",
-        help=(
-            "Path to source bank notebook. If empty, defaults to "
-            "'<release source path>/<assignment_id>.ipynb'."
-        ),
-    ).tag(config=True)
-
     pick_count = Int(
         0,
         help="Number of randomisable questions selected per student.",
@@ -112,17 +104,6 @@ class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
         90,
         help="Lock wait timeout in seconds.",
     ).tag(config=True)
-
-    def _source_notebook_path(self, assignment: str) -> Path:
-        if self.source_notebook:
-            return Path(self.source_notebook)
-
-        src_path = getattr(self, "src_path", "")
-        if not isinstance(src_path, str) or not src_path:
-            raise ValueError(
-                "source_notebook was not configured and release source path is unavailable"
-            )
-        return Path(src_path) / f"{assignment}.ipynb"
 
     def copy_files(self):
         if not self.randomisation_enabled:
@@ -164,7 +145,8 @@ class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
         super().copy_files()
 
         assignment = self.coursedir.assignment_id
-        source_path = self._source_notebook_path(assignment)
+        # src_path points to the release directory
+        source_path = Path(self.src_path) / f"{assignment}.ipynb"
 
         _generate_randomised_notebooks(
             course_slug=self.coursedir.course_id,
