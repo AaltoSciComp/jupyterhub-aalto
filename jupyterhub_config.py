@@ -1298,10 +1298,6 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                         "coursedir_slug": coursedir_slug,
                         "assignment": assignment,
                     }
-                    source_notebook = randomisation_cfg.get(
-                        "source_notebook",
-                        f"/course/source/{assignment}/{assignment}.ipynb",
-                    ).format(**fmt)
                     output_dir = randomisation_cfg.get(
                         "output_dir", "/course/randomised"
                     ).format(**fmt)
@@ -1316,7 +1312,6 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                     force = bool(randomisation_cfg.get("force", False))
                     randomisation_config_lines = _get_randomisation_lines(
                         students,
-                        source_notebook,
                         output_dir,
                         pick_count,
                         question_metadata_key,
@@ -1538,7 +1533,6 @@ async def pre_spawn_hook(spawner: KubeSpawner):
 
 def _get_randomisation_lines(
     students: list[str],
-    source_notebook: str,
     output_dir: str,
     pick_count: int,
     question_metadata_key: str,
@@ -1553,7 +1547,6 @@ def _get_randomisation_lines(
         f"c.ExchangeFactory.release_assignment = '{NBGRADER_RANDOMISED_RELEASE_MODULE}.RandomisedExchangeReleaseAssignment'",
         "c.RandomisedExchangeReleaseAssignment.randomisation_enabled = True",
         f"c.RandomisedExchangeReleaseAssignment.randomisation_root = '{output_dir}'",
-        f"c.RandomisedExchangeReleaseAssignment.source_notebook = '{source_notebook}'",
         f"c.RandomisedExchangeReleaseAssignment.pick_count = {pick_count}",
         f"c.RandomisedExchangeReleaseAssignment.students = '{','.join(students)}'",
         f"c.RandomisedExchangeReleaseAssignment.seed_salt = '{seed_salt}'",
