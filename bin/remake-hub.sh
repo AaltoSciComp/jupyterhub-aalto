@@ -5,6 +5,8 @@ NAMESPACE=${1:-jupyter}
 # shellcheck source-path=bin
 source "$SCRIPTPATH/_check_namespace.sh"
 
+echo "Restarting hub in $NAMESPACE at $(date)"
+
 JMGR_HOSTNAME=root@jupyter-manager-2.cs.aalto.fi
 
 # Syntax check the hub config file first.
@@ -27,3 +29,5 @@ timeout 2 ssh $JMGR_HOSTNAME "rm -f $JUPYTER_PATH/admin/hubdata/jupyterhub-proxy
 
 echo "Starting hub"
 "$SCRIPTPATH/create-hub.sh" "$NAMESPACE"
+
+echo "Restart done at $(date)"
