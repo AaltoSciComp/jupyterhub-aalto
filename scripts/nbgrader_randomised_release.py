@@ -375,6 +375,17 @@ def _generate_randomised_notebooks(
     _mkdir_with_mode(manifest_dir, 0o770)
     lock_path = manifest_dir / ".randomisation.lock"
 
+    if logger is None:
+        print(
+            f"Generating randomised notebooks for assignment {assignment} in {output_dir}"
+        )
+    else:
+        logger.info(
+            "Generating randomised notebooks for assignment %s in %s",
+            assignment,
+            output_dir,
+        )
+
     _acquire_lock(lock_path, timeout_s=lock_timeout)
     try:
         source_text = source_path.read_text(encoding="utf-8")
