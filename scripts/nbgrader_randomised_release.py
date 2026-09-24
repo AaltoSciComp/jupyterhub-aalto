@@ -230,8 +230,8 @@ def weighted_without_replacement(
 
     chosen: list[str] = []
     items = list(zip(population, weights))
+    total = sum(weight for _, weight in items)
     for _ in range(pick_count):
-        total = sum(weight for _, weight in items)
         if total <= 0:
             raise ValueError("All remaining question weights are <= 0")
         r = rng.random() * total
@@ -244,8 +244,9 @@ def weighted_without_replacement(
                 break
         if idx == -1:
             idx = len(items) - 1
-        qid, _ = items.pop(idx)
-        chosen.append(qid)
+        chosen_id, chosen_weight = items.pop(idx)
+        chosen.append(chosen_id)
+        total -= chosen_weight
     return chosen
 
 
