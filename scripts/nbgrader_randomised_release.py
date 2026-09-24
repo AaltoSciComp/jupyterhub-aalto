@@ -214,6 +214,20 @@ def weighted_without_replacement(
             f"pick_count={pick_count} is larger than question count={len(population)}"
         )
 
+    if len(weights) != len(population):
+        raise ValueError(
+            f"weights length {len(weights)} does not match population length {len(population)}"
+        )
+
+    if pick_count <= 0:
+        raise ValueError(f"pick_count={pick_count} must be > 0")
+
+    if any(weight <= 0 for weight in weights):
+        raise ValueError("One or more question weights are <= 0")
+
+    if pick_count == len(population):
+        return list(population)
+
     chosen: list[str] = []
     items = list(zip(population, weights))
     for _ in range(pick_count):
