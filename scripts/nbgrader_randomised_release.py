@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Custom nbgrader release plugin for per-student randomised assignments.
 
 This plugin keeps the normal nbgrader exchange flow and only alters release:
@@ -31,7 +30,7 @@ submitted through the usual pipeline.
 
 from __future__ import annotations
 
-import argparse
+# import argparse
 import hashlib
 import json
 import os
