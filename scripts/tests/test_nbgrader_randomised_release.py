@@ -87,7 +87,9 @@ def test_rejects_invalid_selection_arguments(arguments, message):
 
 def test_extract_bank_groups_question_cells_and_keeps_first_seen_order():
     common, questions, weights, order = release.extract_bank(
-        make_notebook(), "aalto_nbgrader_bank", "weight"
+        make_notebook(),
+        question_metadata_key="aalto_nbgrader_bank",
+        weight_key="weight",
     )
 
     assert [cell["source"] for cell in common] == [["Introduction"]]
@@ -103,6 +105,7 @@ def test_extract_bank_groups_question_cells_and_keeps_first_seen_order():
         ({"weight": 1}, "invalid"),
         ({"question_id": "q1", "weight": "heavy"}, "non-numeric"),
         ({"question_id": "q1", "weight": 0}, "non-positive"),
+        ({"question_id": "q1", "weight": -1.0}, "non-positive"),
     ],
 )
 def test_extract_bank_rejects_invalid_question_metadata(bank_metadata, message):
@@ -115,13 +118,48 @@ def test_extract_bank_rejects_invalid_question_metadata(bank_metadata, message):
     ]
 
     with pytest.raises(ValueError, match=message):
-        release.extract_bank(notebook, "aalto_nbgrader_bank", "weight")
+        release.extract_bank(
+            notebook, question_metadata_key="aalto_nbgrader_bank", weight_key="weight"
+        )
+
+
+def test_extract_bank_multiple_weights():
+    notebook = make_notebook()
+    notebook["cells"] = [
+        {
+            "metadata": {"aalto_nbgrader_bank": {"question_id": "q1", "weight": 1.0}},
+            "source": [],
+        },
+        {
+            "metadata": {"aalto_nbgrader_bank": {"question_id": "q1", "weight": 2.0}},
+            "source": [],
+        },
+        {
+            "metadata": {"aalto_nbgrader_bank": {"question_id": "q2", "weight": 2.0}},
+            "source": [],
+        },
+        {
+            "metadata": {"aalto_nbgrader_bank": {"question_id": "q3"}},
+            "source": [],
+        },
+        {
+            "metadata": {"aalto_nbgrader_bank": {"question_id": "q3", "weight": 2.0}},
+            "source": [],
+        },
+    ]
+
+    _, questions, weights, order = release.extract_bank(
+        notebook, question_metadata_key="aalto_nbgrader_bank", weight_key="weight"
+    )
+    assert list(questions) == ["q1", "q2", "q3"]
+    assert weights == {"q1": 1.0, "q2": 2.0, "q3": 1.0}
+    assert order == ["q1", "q2", "q3"]
 
 
 def test_build_notebook_keeps_metadata_and_only_selected_question(monkeypatch):
     source = make_notebook()
     common, questions, _, order = release.extract_bank(
-        source, "aalto_nbgrader_bank", "weight"
+        source, question_metadata_key="aalto_nbgrader_bank", weight_key="weight"
     )
     monkeypatch.setattr(release.time, "time", lambda: 1234)
 

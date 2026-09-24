@@ -237,8 +237,8 @@ def weighted_without_replacement(
         r = rng.random() * total
         acc = 0.0
         idx = -1
-        for i, (_, w) in enumerate(items):
-            acc += w
+        for i, (_, weight) in enumerate(items):
+            acc += weight
             if acc >= r:
                 idx = i
                 break
