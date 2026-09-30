@@ -352,6 +352,7 @@ GROUPS = {}  # map username->{group:name, gid:number} for all allowed courses.
 # NBGRADER_RANDOMISE_SCRIPT = "/srv/nbgrader-plugins/nbgrader_randomised_release.py"
 NBGRADER_RANDOMISED_FETCH_MODULE = "nbgrader_randomised_fetch"
 NBGRADER_RANDOMISED_RELEASE_MODULE = "nbgrader_randomised_release"
+NBGRADER_RANDOMISED_LIST_MODULE = "nbgrader_randomised_list"
 
 
 def _validate_nbgrader_randomisation_cfg(course_slug: str, course_data: dict) -> None:
@@ -1559,6 +1560,8 @@ def _get_randomisation_lines(
         # f"c.ExchangeFactory.fetch_assignment = '{NBGRADER_RANDOMISED_FETCH_MODULE}.RandomisedExchangeFetchAssignment'",
         # f"c.RandomisedExchangeFetchAssignment.randomisation_root = '{output_dir}'",
         f"c.ExchangeFactory.release_assignment = '{NBGRADER_RANDOMISED_RELEASE_MODULE}.RandomisedExchangeReleaseAssignment'",
+        f"c.ExchangeFactory.list = '{NBGRADER_RANDOMISED_LIST_MODULE}.RandomisedExchangeList'",
+        f"c.RandomisedExchangeList.randomisation_root = '{output_dir}'",
         "c.RandomisedExchangeReleaseAssignment.randomisation_enabled = True",
         f"c.RandomisedExchangeReleaseAssignment.randomisation_root = '{output_dir}'",
         f"c.RandomisedExchangeReleaseAssignment.pick_count = {pick_count}",
