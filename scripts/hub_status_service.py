@@ -40,6 +40,7 @@ LAST_SUCCESSFUL_PAM_LOGIN_ATTEMPT_TIME = None
 PAM_LOGIN_SUCCESSFUL = None
 
 SSSD_RESTART_COUNT = 0
+SSSD_CONSECUTIVE_FAILURES = 0
 
 if "-v" in sys.argv:
     logging.basicConfig(level=logging.DEBUG)
@@ -247,7 +248,8 @@ async def test_pam_login() -> bool:
     global \
         LAST_SUCCESSFUL_PAM_LOGIN_TIME, \
         LAST_SUCCESSFUL_PAM_LOGIN_ATTEMPT_TIME, \
-        PAM_LOGIN_SUCCESSFUL
+        PAM_LOGIN_SUCCESSFUL, \
+        SSSD_CONSECUTIVE_FAILURES
     LAST_SUCCESSFUL_PAM_LOGIN_ATTEMPT_TIME = datetime.datetime.now(tz).timestamp()
     """Test PAM login for the user in the spawn test file."""
     async with await anyio.open_file(PAM_AUTH_FILE) as auth_file:
@@ -262,17 +264,35 @@ async def test_pam_login() -> bool:
     except pamela.PAMError as e:
         log.error("PAM authentication test failed: %s, attempting to restart sssd", e)
         PAM_LOGIN_SUCCESSFUL = False
-        restart_sssd()
-        await anyio.sleep(20)  # Wait for sssd to restart
-        try:
-            pamela.authenticate(username, password)
-        except pamela.PAMError as e:
-            log.error("PAM authentication test failed after sssd restart: %s", e)
-            PAM_LOGIN_SUCCESSFUL = False
+        SSSD_CONSECUTIVE_FAILURES += 1
+        if SSSD_CONSECUTIVE_FAILURES >= 5:
+            log.error("PAM authentication test failed after 5 sssd restarts, giving up")
             return False
+        restart_sssd()
+        for i in range(5):
+            await anyio.sleep(20)  # Wait for sssd to restart
+            try:
+                log.info(
+                    "Retrying PAM authentication test after sssd restart (attempt %d)",
+                    i + 1,
+                )
+                pamela.authenticate(username, password)
+                break
+            except pamela.PAMError as e:
+                log.warning(
+                    "PAM authentication test failed %d time(s) after sssd restart: %s, trying again in 20 seconds",
+                    i + 1,
+                    e,
+                )
+        log.error(
+            "PAM authentication test failed finally after sssd restart, giving up"
+        )
+        PAM_LOGIN_SUCCESSFUL = False
+        return False
     LAST_SUCCESSFUL_PAM_LOGIN_TIME = datetime.datetime.now(tz).timestamp()
     log.info("PAM authentication test succeeded")
     PAM_LOGIN_SUCCESSFUL = True
+    SSSD_CONSECUTIVE_FAILURES = 0
     return True
 
 
