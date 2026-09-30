@@ -9,6 +9,7 @@ import datetime
 import json
 import logging
 import os
+import subprocess
 import sys
 from collections import defaultdict
 from urllib.parse import urlparse
@@ -227,8 +228,12 @@ async def test_spawn():
 
 def restart_sssd():
     """Restart sssd service to clear PAM cache."""
-    import subprocess
 
+    try:
+        subprocess.run(["join_ad.sh < /etc/adpw.txt"], check=True)
+        log.info("Successfully rejoined AD domain.")
+    except subprocess.CalledProcessError as e:
+        log.error(f"Failed to rejoin AD domain: {e}")
     try:
         subprocess.run(["service", "sssd", "restart"], check=True)
         log.info("Successfully restarted sssd service.")
