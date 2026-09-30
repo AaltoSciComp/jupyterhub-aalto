@@ -78,10 +78,13 @@ nbgrader assignments by using a question bank in a source notebook.
 Enable in course YAML (`meta/*.yaml`) with:
 
 ```yaml
-nbgrader_randomization:
+nbgrader_randomisation:
   enabled: true
   assignment: assign1
   pick_count: 3
+  group_pick_counts:
+    algebra: 2
+    geometry: 1
   # Optional overrides:
   # source_notebook: /courses/{coursedir_slug}/files/source/assign1/assign1.ipynb
   # output_dir: /courses/{coursedir_slug}/files/randomized
@@ -93,6 +96,8 @@ nbgrader_randomization:
 Question-bank cells are identified by per-cell metadata. Cells without
 the bank metadata are included for everyone; tagged question cells are
 sampled with weighted sampling without replacement.
+`pick_count` applies to questions without a group, while each entry in
+`group_pick_counts` applies independently to the matching group.
 
 Example cell metadata:
 
@@ -100,6 +105,7 @@ Example cell metadata:
 {
   "aalto_nbgrader_bank": {
     "question_id": "q05",
+    "group": "algebra",
     "weight": 1.0
   }
 }

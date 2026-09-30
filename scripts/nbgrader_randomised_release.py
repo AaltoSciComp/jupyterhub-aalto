@@ -45,7 +45,7 @@ from typing import Any
 
 # import sys
 from nbgrader.exchange.default.release_assignment import ExchangeReleaseAssignment
-from traitlets.traitlets import Bool, Int, Unicode
+from traitlets.traitlets import Bool, Dict, Int, Unicode
 
 
 class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
@@ -67,6 +67,13 @@ class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
     pick_count = Int(
         0,
         help="Number of randomisable questions selected per student.",
+    ).tag(config=True)
+
+    group_pick_counts = Dict(
+        key_trait=Unicode(),
+        value_trait=Int(),
+        default_value={},
+        help="Number of questions selected from each sub-topic group.",
     ).tag(config=True)
 
     students = Unicode(
@@ -153,6 +160,7 @@ class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
             source_path=source_path,
             output_dir=Path(self.randomisation_root),
             pick_count=self.pick_count,
+            group_pick_counts=dict(self.group_pick_counts),
             students=students,
             seed_salt=self.seed_salt,
             question_metadata_key=self.question_metadata_key,
@@ -254,11 +262,16 @@ def extract_bank(
     question_metadata_key: str,
     weight_key: str,
 ) -> tuple[
-    list[dict[str, Any]], dict[str, list[dict[str, Any]]], dict[str, float], list[str]
+    list[dict[str, Any]],
+    dict[str, list[dict[str, Any]]],
+    dict[str, float],
+    dict[str, str | None],
+    list[str],
 ]:
     common_cells: list[dict[str, Any]] = []
     question_cells: dict[str, list[dict[str, Any]]] = {}
     question_weights: dict[str, float] = {}
+    question_groups: dict[str, str | None] = {}
     first_order: list[str] = []
 
     for cell in notebook.get("cells", []):
@@ -274,9 +287,16 @@ def extract_bank(
                 f"Question cell has invalid {question_metadata_key}.question_id: {bank_meta!r}"
             )
 
+        group = bank_meta.get("group")
+        if group is not None and (not isinstance(group, str) or not group):
+            raise ValueError(f"Question {question_id} has invalid group {group!r}")
+
         if question_id not in question_cells:
             question_cells[question_id] = []
+            question_groups[question_id] = group
             first_order.append(question_id)
+        elif question_groups[question_id] != group:
+            raise ValueError(f"Question {question_id} has inconsistent group metadata")
         question_cells[question_id].append(cell)
 
         if question_id not in question_weights:
@@ -294,7 +314,64 @@ def extract_bank(
             f"No randomisable questions found. Add cell metadata key {question_metadata_key}."
         )
 
-    return common_cells, question_cells, question_weights, first_order
+    return common_cells, question_cells, question_weights, question_groups, first_order
+
+
+def select_questions(
+    question_ids: list[str],
+    question_weights: dict[str, float],
+    question_groups: dict[str, str | None],
+    pick_count: int,
+    group_pick_counts: dict[str, int],
+    rng: random.Random,
+) -> tuple[list[str], list[str], dict[str, list[str]]]:
+    grouped_ids: dict[str | None, list[str]] = {}
+    for question_id in question_ids:
+        grouped_ids.setdefault(question_groups[question_id], []).append(question_id)
+
+    bank_groups = {group for group in grouped_ids if group is not None}
+    configured_groups = set(group_pick_counts)
+    missing_groups = sorted(bank_groups - configured_groups)
+    if missing_groups:
+        raise ValueError(
+            f"Missing group_pick_counts for groups: {', '.join(missing_groups)}"
+        )
+    unknown_groups = sorted(configured_groups - bank_groups)
+    if unknown_groups:
+        raise ValueError(
+            f"group_pick_counts contains unknown groups: {', '.join(unknown_groups)}"
+        )
+    invalid_counts = sorted(
+        group for group, count in group_pick_counts.items() if count <= 0
+    )
+    if invalid_counts:
+        raise ValueError(
+            f"group_pick_counts must be > 0 for groups: {', '.join(invalid_counts)}"
+        )
+
+    ungrouped_ids = grouped_ids.get(None, [])
+    selected_ungrouped = weighted_without_replacement(
+        ungrouped_ids,
+        [question_weights[question_id] for question_id in ungrouped_ids],
+        pick_count,
+        rng,
+    )
+    selected_by_group: dict[str, list[str]] = {}
+    for group in sorted(bank_groups):
+        group_ids = grouped_ids[group]
+        selected_by_group[group] = weighted_without_replacement(
+            group_ids,
+            [question_weights[question_id] for question_id in group_ids],
+            group_pick_counts[group],
+            rng,
+        )
+
+    selected = selected_ungrouped + [
+        question_id
+        for group_selection in selected_by_group.values()
+        for question_id in group_selection
+    ]
+    return selected, selected_ungrouped, selected_by_group
 
 
 def build_notebook(
@@ -371,6 +448,7 @@ def _generate_randomised_notebooks(
     source_path: Path,
     output_dir: Path,
     pick_count: int,
+    group_pick_counts: dict[str, int],
     students: list[str],
     seed_salt: str,
     question_metadata_key: str,
@@ -406,13 +484,14 @@ def _generate_randomised_notebooks(
         source_hash = _source_digest(source_text)
         source_notebook = json.loads(source_text)
 
-        common_cells, question_cells, question_weights, question_order = extract_bank(
-            source_notebook,
-            question_metadata_key,
-            weight_key,
-        )
+        (
+            common_cells,
+            question_cells,
+            question_weights,
+            question_groups,
+            question_order,
+        ) = extract_bank(source_notebook, question_metadata_key, weight_key)
         question_ids = list(question_cells.keys())
-        weights = [question_weights[qid] for qid in question_ids]
 
         manifest_file_path = manifest_dir / "_randomisation_manifest.json"
         previous_manifest = None
@@ -427,6 +506,7 @@ def _generate_randomised_notebooks(
             "source_notebook": str(source_path),
             "source_hash": source_hash,
             "pick_count": pick_count,
+            "group_pick_counts": dict(sorted(group_pick_counts.items())),
             "question_metadata_key": question_metadata_key,
             "weight_key": weight_key,
             "question_ids": sorted(question_ids),
@@ -457,8 +537,13 @@ def _generate_randomised_notebooks(
         for student in students:
             seed_value = _seed(seed_salt, course_slug, assignment, student)
             rng = random.Random(seed_value)
-            selected = weighted_without_replacement(
-                question_ids, weights, pick_count, rng
+            selected, selected_ungrouped, selected_by_group = select_questions(
+                question_ids,
+                question_weights,
+                question_groups,
+                pick_count,
+                group_pick_counts,
+                rng,
             )
             selected_ids = set(selected)
             generated_notebook = build_notebook(
@@ -482,6 +567,8 @@ def _generate_randomised_notebooks(
             manifest["per_student"][student] = {
                 "seed": seed_value,
                 "selected_question_ids": selected,
+                "selected_ungrouped_question_ids": selected_ungrouped,
+                "selected_by_group": selected_by_group,
                 "path": str(notebook_file_path),
             }
         file_mode = 0o600 | (S_IWGRP if self.coursedir.groupshared else 0)
