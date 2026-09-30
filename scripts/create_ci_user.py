@@ -116,7 +116,7 @@ def main():
         "url",
         help="JupyterHub API URL",
         type=str,
-        default=os.environ["JUPYTERHUB_API_URL"],
+        default="http://localhost:8081/hub/api/",
     )
     define(
         "username",
