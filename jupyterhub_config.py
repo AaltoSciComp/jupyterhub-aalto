@@ -354,12 +354,12 @@ NBGRADER_RANDOMISED_FETCH_MODULE = "nbgrader_randomised_fetch"
 NBGRADER_RANDOMISED_RELEASE_MODULE = "nbgrader_randomised_release"
 
 
-def _validate_nbgrader_randomisation_cfg(course_slug: str, course_data: Dict) -> None:
+def _validate_nbgrader_randomisation_cfg(course_slug: str, course_data: dict) -> None:
     cfg = course_data.get("nbgrader_randomisation")
     if cfg is None:
         return
     if not isinstance(cfg, dict):
-        raise ValueError(f"{course_slug}: nbgrader_randomisation must be a dict")
+        raise TypeError(f"{course_slug}: nbgrader_randomisation must be a dict")
 
     required = ["assignment", "pick_count"]
     if cfg.get("enabled", False):
@@ -370,14 +370,25 @@ def _validate_nbgrader_randomisation_cfg(course_slug: str, course_data: Dict) ->
                 )
 
     if "assignment" in cfg and not isinstance(cfg["assignment"], str):
-        raise ValueError(
-            f"{course_slug}: nbgrader_randomisation.assignment must be str"
-        )
+        raise TypeError(f"{course_slug}: nbgrader_randomisation.assignment must be str")
     if "pick_count" in cfg and (
         not isinstance(cfg["pick_count"], int) or cfg["pick_count"] <= 0
     ):
         raise ValueError(
             f"{course_slug}: nbgrader_randomisation.pick_count must be a positive int"
+        )
+    group_pick_counts = cfg.get("group_pick_counts", {})
+    if not isinstance(group_pick_counts, dict) or any(
+        not isinstance(group, str)
+        or not group
+        or not isinstance(count, int)
+        or isinstance(count, bool)
+        or count <= 0
+        for group, count in group_pick_counts.items()
+    ):
+        raise ValueError(
+            f"{course_slug}: nbgrader_randomisation.group_pick_counts must map "
+            "non-empty group names to positive ints"
         )
 
 
@@ -1302,6 +1313,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                         "output_dir", "/course/randomised"
                     ).format(**fmt)
                     pick_count = randomisation_cfg["pick_count"]
+                    group_pick_counts = randomisation_cfg.get("group_pick_counts", {})
                     question_metadata_key = randomisation_cfg.get(
                         "question_metadata_key", "aalto_nbgrader_bank"
                     ).format(**fmt)
@@ -1314,6 +1326,7 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                         students,
                         output_dir,
                         pick_count,
+                        group_pick_counts,
                         question_metadata_key,
                         weight_key,
                         seed_salt,
@@ -1535,6 +1548,7 @@ def _get_randomisation_lines(
     students: list[str],
     output_dir: str,
     pick_count: int,
+    group_pick_counts: dict[str, int],
     question_metadata_key: str,
     weight_key: str,
     seed_salt: str,
@@ -1548,6 +1562,7 @@ def _get_randomisation_lines(
         "c.RandomisedExchangeReleaseAssignment.randomisation_enabled = True",
         f"c.RandomisedExchangeReleaseAssignment.randomisation_root = '{output_dir}'",
         f"c.RandomisedExchangeReleaseAssignment.pick_count = {pick_count}",
+        f"c.RandomisedExchangeReleaseAssignment.group_pick_counts = {dict(sorted(group_pick_counts.items()))!r}",
         f"c.RandomisedExchangeReleaseAssignment.students = '{','.join(students)}'",
         f"c.RandomisedExchangeReleaseAssignment.seed_salt = '{seed_salt}'",
         f"c.RandomisedExchangeReleaseAssignment.question_metadata_key = '{question_metadata_key}'",
