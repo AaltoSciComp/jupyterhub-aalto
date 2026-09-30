@@ -206,6 +206,8 @@ ALLOWED_IPS = [
     ip_network("130.233.137.192/26"),
     # manager.cs
     ip_network("130.233.192.3/32"),
+    # spawn test
+    ip_network("127.0.0.1/32"),
 ]
 
 ACCESS_DENIED_MESSAGE = (
