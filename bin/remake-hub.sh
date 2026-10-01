@@ -41,7 +41,7 @@ kubectl create configmap spawn-test -n "$NAMESPACE" --from-file="$SCRIPTPATH/../
 
 # Restart hub. The hub needs to actually restart to load the config changes,
 # need to delete and recreate instead of just `kubectl apply`
-kubectl delete -f "$SCRIPTPATH/../k8s-yaml/jupyterhub.yaml"
+kubectl delete -f "$SCRIPTPATH/../k8s-yaml/jupyterhub.yaml" || true
 # Wait for stop
 echo "Waiting to stop existing pod..."
 while kubectl get pods -n "$NAMESPACE" | grep '^jupyterhub-.*Running' ; do
