@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: chp
-        image: jupyterhub/configurable-http-proxy:3.1.1
+        image: jupyterhub/configurable-http-proxy:5.3.0
         ports:
         - containerPort: 8000
         - containerPort: 8001
