@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Custom nbgrader release plugin for per-student randomised assignments.
 
 This plugin keeps the normal nbgrader exchange flow and only alters release:
@@ -17,11 +18,51 @@ Question-bank cell format:
 
     {
       "question_id": "q1",
-      "weight": 1.0
+      "weight": 1.0,
+      "topic": "easy",
+      "subtopics": ["validation", "leak_check"]
     }
+
+  `weight` defaults to 1.0. `subtopics` (optional, outermost first) places
+  the question in a tree of subtopic groups below its `topic` (optional);
+  see "Sampling" below.
 
 - Cells without that metadata are treated as common cells and included for all
   generated student notebooks.
+
+Notebook-level settings, read from the notebook metadata under the same key
+(both optional):
+
+    {"pick_count": 3, "one_question_per_subtopic": true}
+
+- `pick_count`: questions per student. The `pick_count` trait overrides it
+  when set (> 0).
+- `one_question_per_subtopic`: see "Sampling".
+
+Sampling:
+- Without `one_question_per_subtopic`, `pick_count` questions are drawn by
+  weight, without replacement, from all questions.
+- With it, a student never gets two questions from the same subtopic group,
+  at any level of the tree. The draw picks `pick_count` units among the
+  top-level units -- each question without subtopics, and each outermost
+  subtopic group -- and then one question inside every picked group, again
+  by weight, level by level. A group's weight is the mean of its units'
+  weights, so a group of variants is drawn as often as a single question.
+  Groups are keyed by topic and subtopic together, so the same subtopic
+  name in two topics is two groups.
+- There are no per-topic quotas: questions of different topics share one
+  pool, so if their points differ, so do the students' totals.
+- Don't switch plugin versions during a running exam: the first release
+  with another version re-draws every student.
+
+Question files:
+- Files under `<question_files_directory>/<question_id>/` (default
+  "sources/<question_id>/") belong to that question. That directory is left
+  out of the normal release copy, and each student's directory receives only
+  the folders of their selected questions, so a student never gets the files
+  of questions they weren't given. `question_files_directory` must be a
+  single directory name at the top of the release folder; set it to "" to
+  release every file normally.
 
 The generated notebooks keep original cell metadata (including nbgrader
 metadata), allowing standard nbgrader autograding once they are released and
@@ -30,20 +71,19 @@ submitted through the usual pipeline.
 
 from __future__ import annotations
 
-# import argparse
 import hashlib
 import json
 import os
 import random
+import shutil
 import time
 from pathlib import Path
 from stat import (
     S_ISGID,
     S_IWGRP,
 )
-from typing import Any
+from typing import Any, List, Optional, Tuple
 
-# import sys
 from nbgrader.exchange.default.release_assignment import ExchangeReleaseAssignment
 from traitlets.traitlets import Bool, Int, Unicode
 
@@ -66,7 +106,10 @@ class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
 
     pick_count = Int(
         0,
-        help="Number of randomisable questions selected per student.",
+        help=(
+            "Number of randomisable questions selected per student. 0 reads "
+            "`pick_count` from the notebook metadata instead."
+        ),
     ).tag(config=True)
 
     students = Unicode(
@@ -86,12 +129,34 @@ class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
 
     question_metadata_key = Unicode(
         "aalto_nbgrader_bank",
-        help="Cell metadata key containing randomisation metadata.",
+        help="Cell and notebook metadata key containing randomisation metadata.",
     ).tag(config=True)
 
     weight_key = Unicode(
         "weight",
         help="Weight key inside question metadata.",
+    ).tag(config=True)
+
+    subtopics_key = Unicode(
+        "subtopics",
+        help="Key inside question metadata listing its subtopic groups, outermost first.",
+    ).tag(config=True)
+
+    topic_key = Unicode(
+        "topic",
+        help=(
+            "Key inside question metadata naming the question's topic; subtopic groups "
+            "of the same name in different topics are kept apart."
+        ),
+    ).tag(config=True)
+
+    question_files_directory = Unicode(
+        "sources",
+        help=(
+            "Directory in the release folder with one subfolder per question_id. It is "
+            "left out of the normal release copy; each student gets only the subfolders "
+            "of their selected questions. Empty releases every file normally."
+        ),
     ).tag(config=True)
 
     force = Bool(
@@ -118,9 +183,9 @@ class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
             raise ValueError(
                 "RandomisedExchangeReleaseAssignment.randomisation_root must be set"
             )
-        if self.pick_count <= 0:
+        if self.pick_count < 0:
             raise ValueError(
-                "RandomisedExchangeReleaseAssignment.pick_count must be > 0"
+                "RandomisedExchangeReleaseAssignment.pick_count must be >= 0"
             )
 
         students = _load_students_from_values(self.students, self.students_file)
@@ -130,9 +195,33 @@ class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
                 "or RandomisedExchangeReleaseAssignment.students_file"
             )
 
-        # Ignore the assignment file in coursedir.ignore, since we are generating it ourselves.
-        self.coursedir.ignore.append(f"{self.coursedir.assignment_id}.ipynb")
-        self.log.info("ignored files in coursedir.ignore: %s", self.coursedir.ignore)
+        name = self.question_files_directory
+        if name and (
+            Path(name).name != name
+            or name in (".", "..")
+            or any(c in name for c in "*?[]")
+        ):
+            raise ValueError(
+                "RandomisedExchangeReleaseAssignment.question_files_directory must be a "
+                f"single directory name, not a path: {self.question_files_directory!r}"
+            )
+
+        # Ignore the assignment file, since we are generating it ourselves, and the
+        # question files, which only go to the students who get those questions.
+        # nbgrader matches these patterns against file and directory names at every
+        # level of the tree. coursedir is shared with every later step of a
+        # long-running formgrader (collect, autograde, ...), so the extra patterns
+        # apply to this copy only.
+        # Check the bank notebook before the release copy, which replaces outbound.
+        source_path = Path(self.src_path) / f"{self.coursedir.assignment_id}.ipynb"
+        if not source_path.is_file():
+            found = sorted(p.name for p in Path(self.src_path).glob("*.ipynb"))
+            raise FileNotFoundError(
+                f"Randomisation needs the bank notebook {source_path}, named after the "
+                f"assignment; the release folder has {found or 'no notebooks'}. Run "
+                f"`nbgrader generate_assignment {self.coursedir.assignment_id}` with the "
+                f"notebook saved as {source_path.name} in the source folder."
+            )
 
         self.log.info(
             f"{self.root=}, {self.coursedir.course_id=}, {self.coursedir.assignment_id=}"
@@ -141,44 +230,44 @@ class RandomisedExchangeReleaseAssignment(ExchangeReleaseAssignment):
         self.log.info(
             f"Copying files normally to {self.dest_path} before generating randomised variants"
         )
-        super().copy_files()
+        original_ignore = list(self.coursedir.ignore)
+        self.coursedir.ignore = original_ignore + [
+            f"{self.coursedir.assignment_id}.ipynb",
+            *([self.question_files_directory] if self.question_files_directory else []),
+        ]
+        try:
+            self.log.info(
+                "ignored files in coursedir.ignore: %s", self.coursedir.ignore
+            )
+            super().copy_files()
+        finally:
+            self.coursedir.ignore = original_ignore
 
         assignment = self.coursedir.assignment_id
-        # src_path points to the release directory
-        source_path = Path(self.src_path) / f"{assignment}.ipynb"
+        question_files_root = (
+            Path(self.src_path) / self.question_files_directory
+            if self.question_files_directory
+            else None
+        )
 
         _generate_randomised_notebooks(
             course_slug=self.coursedir.course_id,
             assignment=assignment,
             source_path=source_path,
             output_dir=Path(self.randomisation_root),
-            pick_count=self.pick_count,
+            pick_count_override=self.pick_count,
             students=students,
             seed_salt=self.seed_salt,
             question_metadata_key=self.question_metadata_key,
             weight_key=self.weight_key,
+            subtopics_key=self.subtopics_key,
+            topic_key=self.topic_key,
+            question_files_root=question_files_root,
             force=self.force,
             lock_timeout=self.lock_timeout,
+            groupshared=self.coursedir.groupshared,
             logger=self.log,
-            self=self,
         )
-
-
-# def parse_args() -> argparse.Namespace:
-#     parser = argparse.ArgumentParser(description=__doc__)
-#     parser.add_argument("--course-slug", required=True)
-#     parser.add_argument("--assignment", required=True)
-#     parser.add_argument("--source-notebook", required=True)
-#     parser.add_argument("--output-dir", required=True)
-#     parser.add_argument("--pick-count", type=int, required=True)
-#     parser.add_argument("--students", default="")
-#     parser.add_argument("--students-file")
-#     parser.add_argument("--seed-salt", default="")
-#     parser.add_argument("--question-metadata-key", default="aalto_nbgrader_bank")
-#     parser.add_argument("--weight-key", default="weight")
-#     parser.add_argument("--force", action="store_true")
-#     parser.add_argument("--lock-timeout", type=int, default=90)
-#     return parser.parse_args()
 
 
 def _load_students_from_values(students_csv: str, students_file: str) -> list[str]:
@@ -195,6 +284,17 @@ def _load_students_from_values(students_csv: str, students_file: str) -> list[st
 
 def _source_digest(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _tree_digest(root: Path | None) -> str:
+    """Hash every file's relative path and bytes under `root` ("" when there is none)."""
+    if root is None or not root.is_dir():
+        return ""
+    digest = hashlib.sha256()
+    for path in sorted(p for p in root.rglob("*") if p.is_file()):
+        digest.update(path.relative_to(root).as_posix().encode("utf-8") + b"\0")
+        digest.update(path.read_bytes() + b"\0")
+    return digest.hexdigest()
 
 
 def _seed(seed_salt: str, course_slug: str, assignment: str, student: str) -> int:
@@ -249,16 +349,106 @@ def weighted_without_replacement(
     return chosen
 
 
+# A question as the draw sees it: (question_id, weight, subtopics outermost first).
+# typing's Tuple/List keep these runtime aliases working on Python 3.8.
+_Member = Tuple[str, float, Tuple[str, ...]]
+# One sampling unit at some depth of the subtopic tree: a question, or a subtopic
+# group holding the questions below it. (label, weight, question_id or None for a
+# group, the group's members or None for a question).
+_Unit = Tuple[str, float, Optional[str], Optional[List[_Member]]]
+
+
+def _units(members: list[_Member], depth: int) -> list[_Unit]:
+    """Split `members` (question_id, weight, subtopics) into the units at `depth`."""
+    groups: dict[str, list[_Member]] = {}
+    units: list[_Unit] = []
+    for member in members:
+        qid, weight, subtopics = member
+        if len(subtopics) > depth:
+            name = subtopics[depth]
+            if name not in groups:
+                groups[name] = []
+                # The group's weight is filled in once all its members are known.
+                units.append((f"subtopic:{name}", 0.0, None, groups[name]))
+            groups[name].append(member)
+        else:
+            units.append((f"question:{qid}", weight, qid, None))
+    return [
+        (label, weight, qid, None)
+        if sub is None
+        else (label, _group_weight(sub, depth + 1), None, sub)
+        for label, weight, qid, sub in units
+    ]
+
+
+def _group_weight(members: list[_Member], depth: int) -> float:
+    """A group is as likely as one of its units: the mean of their weights."""
+    units = _units(members, depth)
+    return sum(weight for _, weight, _, _ in units) / len(units)
+
+
+def _draw_from_units(
+    units: list[_Unit], pick_count: int, depth: int, rng: random.Random
+) -> list[str]:
+    labels = [label for label, _, _, _ in units]
+    weights = [weight for _, weight, _, _ in units]
+    by_label = {unit[0]: unit for unit in units}
+    chosen: list[str] = []
+    for label in weighted_without_replacement(labels, weights, pick_count, rng):
+        _, _, qid, members = by_label[label]
+        if qid is not None:
+            chosen.append(qid)
+        else:
+            assert members is not None
+            chosen.extend(
+                _draw_from_units(_units(members, depth + 1), 1, depth + 1, rng)
+            )
+    return chosen
+
+
+def draw_questions(
+    question_ids: list[str],
+    weights: list[float],
+    subtopics: dict[str, tuple[str, ...]],
+    pick_count: int,
+    rng: random.Random,
+    one_question_per_subtopic: bool,
+) -> list[str]:
+    """Draw `pick_count` question ids; see "Sampling" in the module docstring."""
+    if not one_question_per_subtopic:
+        return weighted_without_replacement(question_ids, weights, pick_count, rng)
+    if any(weight <= 0 for weight in weights):
+        raise ValueError("One or more question weights are <= 0")
+    members = [
+        (qid, w, subtopics.get(qid, ())) for qid, w in zip(question_ids, weights)
+    ]
+    units = _units(members, 0)
+    if pick_count > len(units):
+        raise ValueError(
+            f"pick_count={pick_count} is larger than the {len(units)} independent units "
+            "(questions without subtopics, plus top-level subtopic groups) the bank has "
+            "with one_question_per_subtopic"
+        )
+    return _draw_from_units(units, pick_count, 0, rng)
+
+
 def extract_bank(
     notebook: dict[str, Any],
     question_metadata_key: str,
     weight_key: str,
+    subtopics_key: str = "subtopics",
+    topic_key: str = "topic",
 ) -> tuple[
-    list[dict[str, Any]], dict[str, list[dict[str, Any]]], dict[str, float], list[str]
+    list[dict[str, Any]],
+    dict[str, list[dict[str, Any]]],
+    dict[str, float],
+    list[str],
+    dict[str, tuple[str, ...]],
 ]:
     common_cells: list[dict[str, Any]] = []
     question_cells: dict[str, list[dict[str, Any]]] = {}
     question_weights: dict[str, float] = {}
+    question_subtopics: dict[str, tuple[str, ...]] = {}
     first_order: list[str] = []
 
     for cell in notebook.get("cells", []):
@@ -289,12 +479,61 @@ def extract_bank(
                 raise ValueError(f"Question {question_id} has non-positive weight")
             question_weights[question_id] = float(weight)
 
+            subtopics = bank_meta.get(subtopics_key, [])
+            if not isinstance(subtopics, list) or not all(
+                isinstance(name, str) and name for name in subtopics
+            ):
+                raise ValueError(
+                    f"Question {question_id} has invalid {subtopics_key}: {subtopics!r}"
+                )
+            # Subtopics are folders below the question's topic, so the same name in
+            # two topics is two different groups: the top level is keyed by both.
+            topic = bank_meta.get(topic_key)
+            if subtopics and isinstance(topic, str) and topic:
+                subtopics = [f"{topic}/{subtopics[0]}", *subtopics[1:]]
+            question_subtopics[question_id] = tuple(subtopics)
+
     if not question_cells:
         raise ValueError(
             f"No randomisable questions found. Add cell metadata key {question_metadata_key}."
         )
 
-    return common_cells, question_cells, question_weights, first_order
+    return (
+        common_cells,
+        question_cells,
+        question_weights,
+        first_order,
+        question_subtopics,
+    )
+
+
+def sampling_settings(
+    notebook: dict[str, Any], question_metadata_key: str, pick_count_override: int
+) -> tuple[int, bool]:
+    """Return `(pick_count, one_question_per_subtopic)` from the notebook metadata.
+
+    A `pick_count_override` > 0 (the trait) wins over the notebook's own value.
+    """
+    settings = (notebook.get("metadata") or {}).get(question_metadata_key) or {}
+    if not isinstance(settings, dict):
+        raise TypeError(f"Notebook metadata {question_metadata_key} must be a dict")
+    pick_count = pick_count_override or settings.get("pick_count", 0)
+    if (
+        not isinstance(pick_count, int)
+        or isinstance(pick_count, bool)
+        or pick_count <= 0
+    ):
+        raise TypeError(
+            "pick_count must be a positive integer: set "
+            "RandomisedExchangeReleaseAssignment.pick_count, or pick_count in the "
+            f"notebook metadata under {question_metadata_key} (got {pick_count!r})"
+        )
+    one_per_subtopic = settings.get("one_question_per_subtopic", False)
+    if not isinstance(one_per_subtopic, bool):
+        raise TypeError(
+            f"one_question_per_subtopic must be true or false (got {one_per_subtopic!r})"
+        )
+    return pick_count, one_per_subtopic
 
 
 def build_notebook(
@@ -364,24 +603,52 @@ def _write_json(path: Path, data: Any, *, file_mode: int, dir_mode: int) -> None
     tmp.replace(path)
 
 
+def _copy_question_files(
+    question_files_root: Path,
+    selected: list[str],
+    dest_root: Path,
+    *,
+    file_mode: int,
+    dir_mode: int,
+) -> None:
+    """Copy each selected question's folder from `question_files_root` into `dest_root`.
+
+    `dest_root` is emptied first, so a regenerated draw never keeps the files of
+    questions the student no longer has. A question without a folder has no files.
+    """
+    if dest_root.exists():
+        shutil.rmtree(dest_root)
+    for qid in selected:
+        source = question_files_root / qid
+        if not source.is_dir():
+            continue
+        _mkdir_with_mode(dest_root, dir_mode)
+        shutil.copytree(source, dest_root / qid)
+        for directory, _, files in os.walk(dest_root / qid):
+            os.chmod(directory, dir_mode)
+            for name in files:
+                os.chmod(Path(directory) / name, file_mode)
+
+
 def _generate_randomised_notebooks(
     *,
     course_slug: str,
     assignment: str,
     source_path: Path,
     output_dir: Path,
-    pick_count: int,
+    pick_count_override: int,
     students: list[str],
     seed_salt: str,
     question_metadata_key: str,
     weight_key: str,
+    subtopics_key: str,
+    topic_key: str,
+    question_files_root: Path | None,
     force: bool,
     lock_timeout: int,
-    self: RandomisedExchangeReleaseAssignment,
+    groupshared: bool,
     logger: Any | None,
 ) -> None:
-    if pick_count <= 0:
-        raise ValueError("pick_count must be > 0")
     if not students:
         raise ValueError("No students provided; nothing to generate")
 
@@ -406,10 +673,17 @@ def _generate_randomised_notebooks(
         source_hash = _source_digest(source_text)
         source_notebook = json.loads(source_text)
 
-        common_cells, question_cells, question_weights, question_order = extract_bank(
-            source_notebook,
-            question_metadata_key,
-            weight_key,
+        common_cells, question_cells, question_weights, question_order, subtopics = (
+            extract_bank(
+                source_notebook,
+                question_metadata_key,
+                weight_key,
+                subtopics_key,
+                topic_key,
+            )
+        )
+        pick_count, one_per_subtopic = sampling_settings(
+            source_notebook, question_metadata_key, pick_count_override
         )
         question_ids = list(question_cells.keys())
         weights = [question_weights[qid] for qid in question_ids]
@@ -426,9 +700,14 @@ def _generate_randomised_notebooks(
             "assignment": assignment,
             "source_notebook": str(source_path),
             "source_hash": source_hash,
+            "question_files": str(question_files_root or ""),
+            "question_files_hash": _tree_digest(question_files_root),
             "pick_count": pick_count,
+            "one_question_per_subtopic": one_per_subtopic,
             "question_metadata_key": question_metadata_key,
             "weight_key": weight_key,
+            "subtopics_key": subtopics_key,
+            "topic_key": topic_key,
             "question_ids": sorted(question_ids),
             "students": students,
         }
@@ -449,16 +728,14 @@ def _generate_randomised_notebooks(
             "per_student": {},
         }
 
-        notebook_file_mode = 0o644 | (S_IWGRP if self.coursedir.groupshared else 0)
-        notebook_dir_mode = 0o755 | (
-            (S_ISGID | S_IWGRP) if self.coursedir.groupshared else 0
-        )
+        notebook_file_mode = 0o644 | (S_IWGRP if groupshared else 0)
+        notebook_dir_mode = 0o755 | ((S_ISGID | S_IWGRP) if groupshared else 0)
 
         for student in students:
             seed_value = _seed(seed_salt, course_slug, assignment, student)
             rng = random.Random(seed_value)
-            selected = weighted_without_replacement(
-                question_ids, weights, pick_count, rng
+            selected = draw_questions(
+                question_ids, weights, subtopics, pick_count, rng, one_per_subtopic
             )
             selected_ids = set(selected)
             generated_notebook = build_notebook(
@@ -478,14 +755,22 @@ def _generate_randomised_notebooks(
                 file_mode=notebook_file_mode,
                 dir_mode=notebook_dir_mode,
             )
+            if question_files_root is not None:
+                _copy_question_files(
+                    question_files_root,
+                    selected,
+                    notebook_dir / question_files_root.name,
+                    file_mode=notebook_file_mode,
+                    dir_mode=notebook_dir_mode,
+                )
 
             manifest["per_student"][student] = {
                 "seed": seed_value,
                 "selected_question_ids": selected,
                 "path": str(notebook_file_path),
             }
-        file_mode = 0o600 | (S_IWGRP if self.coursedir.groupshared else 0)
-        dir_mode = 0o700 | (0o070 | S_ISGID if self.coursedir.groupshared else 0)
+        file_mode = 0o600 | (S_IWGRP if groupshared else 0)
+        dir_mode = 0o700 | (0o070 | S_ISGID if groupshared else 0)
         _write_json(
             manifest_file_path,
             manifest,
@@ -511,34 +796,3 @@ def _generate_randomised_notebooks(
             lock_path.unlink(missing_ok=True)
         except OSError:
             pass
-
-
-# def main() -> int:
-#     args = parse_args()
-#     students = _load_students_from_values(args.students, args.students_file)
-#     if not students:
-#         print("No students provided; nothing to generate.", file=sys.stderr)
-#         return 2
-
-#     if args.pick_count <= 0:
-#         raise ValueError("pick_count must be > 0")
-
-#     _generate_randomised_notebooks(
-#         course_slug=args.course_slug,
-#         assignment=args.assignment,
-#         source_path=Path(args.source_notebook),
-#         output_dir=Path(args.output_dir),
-#         pick_count=args.pick_count,
-#         students=students,
-#         seed_salt=args.seed_salt,
-#         question_metadata_key=args.question_metadata_key,
-#         weight_key=args.weight_key,
-#         force=args.force,
-#         lock_timeout=args.lock_timeout,
-#         logger=None,
-#     )
-#     return 0
-
-
-# if __name__ == "__main__":
-#     raise SystemExit(main())
