@@ -12,33 +12,50 @@ import os
 import sys
 from collections import defaultdict
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 # import time
+import anyio
 import dateutil.parser
 import requests
+
+tz = ZoneInfo("Europe/Helsinki")
 
 API = "http://localhost:8081/hub/api/"
 # This file needs two lines in it: 0th line is token, 1st line is
 # username to spawn servers of.  This can be made from the JH Token
 # page.
 AUTH_DATA_FILE = "secrets/spawn_test_token.txt"
+PAM_AUTH_FILE = "/srv/jupyterhub/pam-test-credentials.txt"
 
 INTERVAL_SPAWN_ATTEMPT = 60
 INTERVAL_SPAWN_LIMIT = 130
+INTERVAL_PAM_LOGIN_ATTEMPT = 60
 
 LAST_SUCCESSFUL_SPAWN_TIME = None
 LAST_SUCCESSFUL_SPAWN_ATTEMPT_TIME = None
+LAST_SUCCESSFUL_PAM_LOGIN_TIME = None
+LAST_SUCCESSFUL_PAM_LOGIN_ATTEMPT_TIME = None
+PAM_LOGIN_SUCCESSFUL = None
+
+SSSD_RESTART_COUNT = 0
+
 if "-v" in sys.argv:
     logging.basicConfig(level=logging.DEBUG)
 else:
-    logging.basicConfig(level=logging.WARN)
-logging.getLogger("requests").setLevel(logging.WARN)
+    logging.basicConfig(level=logging.WARNING)
+logging.getLogger("requests").setLevel(logging.WARNING)
 log = logging.getLogger("test_spawn")
 
 if "--no-spawn-test" in sys.argv:
     DISABLE_SPAWN_TEST = True
 else:
     DISABLE_SPAWN_TEST = False
+
+if "--no-pam-login-test" in sys.argv:
+    DISABLE_PAM_LOGIN_TEST = True
+else:
+    DISABLE_PAM_LOGIN_TEST = False
 
 
 # Automatic authentication class for requests
@@ -74,7 +91,7 @@ def get_requests(path):
 
 ########################################
 def get_stats(get):
-    now = datetime.datetime.now().timestamp()
+    now = datetime.datetime.now(tz).timestamp()
     STATUS = {}
 
     # JH version
@@ -152,6 +169,17 @@ def get_stats(get):
         STATUS["spawn_test_successful"] = 0
     STATUS["spawn_test_last_attempt_ts"] = LAST_SUCCESSFUL_SPAWN_ATTEMPT_TIME
 
+    if LAST_SUCCESSFUL_PAM_LOGIN_TIME:
+        STATUS["pam_login_last_successful"] = now - LAST_SUCCESSFUL_PAM_LOGIN_TIME
+        STATUS["pam_login_last_successful_ts"] = LAST_SUCCESSFUL_PAM_LOGIN_TIME
+        STATUS["pam_login_successful"] = PAM_LOGIN_SUCCESSFUL
+    else:
+        STATUS["pam_login_last_successful"] = None
+        STATUS["pam_login_last_successful_ts"] = None
+        STATUS["pam_login_successful"] = 0
+    STATUS["pam_login_last_attempt_ts"] = LAST_SUCCESSFUL_PAM_LOGIN_ATTEMPT_TIME
+    STATUS["sssd_restart_count"] = SSSD_RESTART_COUNT
+
     r = get("services")
     STATUS["services_active"] = len(r)
 
@@ -170,7 +198,7 @@ def get_stats(get):
 
 async def test_spawn():
     global LAST_SUCCESSFUL_SPAWN_TIME, LAST_SUCCESSFUL_SPAWN_ATTEMPT_TIME
-    LAST_SUCCESSFUL_SPAWN_ATTEMPT_TIME = datetime.datetime.now().timestamp()
+    LAST_SUCCESSFUL_SPAWN_ATTEMPT_TIME = datetime.datetime.now(tz).timestamp()
     # print("Testing spawn", file=sys.stdout)
     log.info("Testing spawn")
     try:
@@ -191,13 +219,61 @@ async def test_spawn():
     except Exception:
         import traceback
 
-        log.error(traceback.format_exc().decode())
+        log.error(traceback.format_exc())
         return False
-    LAST_SUCCESSFUL_SPAWN_TIME = datetime.datetime.now().timestamp()
+    LAST_SUCCESSFUL_SPAWN_TIME = datetime.datetime.now(tz).timestamp()
     return True
 
 
-def make_prom_line(key, val, labels={}):
+def restart_sssd():
+    """Restart sssd service to clear PAM cache."""
+    import subprocess
+
+    try:
+        subprocess.run(["service", "sssd", "restart"], check=True)
+        log.info("Successfully restarted sssd service.")
+    except subprocess.CalledProcessError as e:
+        log.error(f"Failed to restart sssd service: {e}")
+    global SSSD_RESTART_COUNT
+    SSSD_RESTART_COUNT += 1
+
+
+async def test_pam_login() -> bool:
+    global \
+        LAST_SUCCESSFUL_PAM_LOGIN_TIME, \
+        LAST_SUCCESSFUL_PAM_LOGIN_ATTEMPT_TIME, \
+        PAM_LOGIN_SUCCESSFUL
+    LAST_SUCCESSFUL_PAM_LOGIN_ATTEMPT_TIME = datetime.datetime.now(tz).timestamp()
+    """Test PAM login for the user in the spawn test file."""
+    async with await anyio.open_file(PAM_AUTH_FILE) as auth_file:
+        auth_data = await auth_file.readlines()
+    username = auth_data[0].strip()
+    password = auth_data[1].strip()
+
+    import pamela
+
+    try:
+        pamela.authenticate(username, password)
+    except pamela.PAMError as e:
+        log.error("PAM authentication test failed: %s, attempting to restart sssd", e)
+        PAM_LOGIN_SUCCESSFUL = False
+        restart_sssd()
+        await anyio.sleep(20)  # Wait for sssd to restart
+        try:
+            pamela.authenticate(username, password)
+        except pamela.PAMError as e:
+            log.error("PAM authentication test failed after sssd restart: %s", e)
+            PAM_LOGIN_SUCCESSFUL = False
+            return False
+    LAST_SUCCESSFUL_PAM_LOGIN_TIME = datetime.datetime.now(tz).timestamp()
+    log.info("PAM authentication test succeeded")
+    PAM_LOGIN_SUCCESSFUL = True
+    return True
+
+
+def make_prom_line(key, val, labels=None):
+    if labels is None:
+        labels = {}
     label_list = []
     for label_key, label in labels.items():
         if isinstance(label, str) and label.startswith("le_"):
@@ -286,19 +362,26 @@ if __name__ == "__main__":
         url = urlparse("http://0.0.0.0:36541")
         http_server.listen(url.port, url.hostname)
 
-        if DISABLE_SPAWN_TEST:
-            log.info("Spawn test disabled.")
-        else:
-            log.info(
-                "Spawn test enabled. Testing spawn every %d seconds."
-                % INTERVAL_SPAWN_ATTEMPT
-            )
-            # Background thread that tests spawning.
-            pc = PeriodicCallback(test_spawn, 1e3 * INTERVAL_SPAWN_ATTEMPT)
-            pc.start()
-            # But do it right now, too...
-            IOLoop.current().add_callback(test_spawn)
+        callbacks = (
+            (test_spawn, "Spawn", INTERVAL_SPAWN_ATTEMPT, DISABLE_SPAWN_TEST),
+            (
+                test_pam_login,
+                "PAM Login",
+                INTERVAL_PAM_LOGIN_ATTEMPT,
+                DISABLE_PAM_LOGIN_TEST,
+            ),
+        )
 
+        for callback, name, interval, disabled in callbacks:
+            if disabled:
+                log.info(f"({name}) disabled.")
+            else:
+                log.info(f"({name}) enabled. Testing every {interval} seconds.")
+                # Background thread that tests the callback.
+                pc = PeriodicCallback(callback, interval * 1000)  # ms
+                pc.start()
+                # But do it right now, too...
+                IOLoop.current().add_callback(callback)
         IOLoop.current().start()
 
     else:
