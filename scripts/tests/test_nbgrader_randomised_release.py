@@ -86,7 +86,7 @@ def test_rejects_invalid_selection_arguments(arguments, message):
 
 
 def test_extract_bank_groups_question_cells_and_keeps_first_seen_order():
-    common, questions, weights, groups, order = release.extract_bank(
+    common, questions, weights, order = release.extract_bank(
         make_notebook(),
         question_metadata_key="aalto_nbgrader_bank",
         weight_key="weight",
@@ -96,7 +96,6 @@ def test_extract_bank_groups_question_cells_and_keeps_first_seen_order():
     assert list(questions) == ["q1", "q2"]
     assert len(questions["q1"]) == 2
     assert weights == {"q1": 1.0, "q2": 3.0}
-    assert groups == {"q1": None, "q2": None}
     assert order == ["q1", "q2"]
 
 
@@ -149,51 +148,17 @@ def test_extract_bank_multiple_weights():
         },
     ]
 
-    _, questions, weights, groups, order = release.extract_bank(
+    _, questions, weights, order = release.extract_bank(
         notebook, question_metadata_key="aalto_nbgrader_bank", weight_key="weight"
     )
     assert list(questions) == ["q1", "q2", "q3"]
     assert weights == {"q1": 1.0, "q2": 2.0, "q3": 1.0}
-    assert groups == {"q1": None, "q2": None, "q3": None}
     assert order == ["q1", "q2", "q3"]
-
-
-def test_extract_bank_records_groups_and_rejects_inconsistent_group_metadata():
-    notebook = make_notebook()
-    notebook["cells"][1]["metadata"]["aalto_nbgrader_bank"]["group"] = "algebra"
-    notebook["cells"][2]["metadata"]["aalto_nbgrader_bank"]["group"] = "algebra"
-    notebook["cells"][3]["metadata"]["aalto_nbgrader_bank"]["group"] = "geometry"
-
-    _, _, _, groups, _ = release.extract_bank(
-        notebook, question_metadata_key="aalto_nbgrader_bank", weight_key="weight"
-    )
-    assert groups == {"q1": "algebra", "q2": "geometry"}
-
-    notebook["cells"][2]["metadata"]["aalto_nbgrader_bank"]["group"] = "geometry"
-    with pytest.raises(ValueError, match="inconsistent group"):
-        release.extract_bank(
-            notebook,
-            question_metadata_key="aalto_nbgrader_bank",
-            weight_key="weight",
-        )
-
-
-@pytest.mark.parametrize("group", ["", 1, []])
-def test_extract_bank_rejects_invalid_groups(group):
-    notebook = make_notebook()
-    notebook["cells"][1]["metadata"]["aalto_nbgrader_bank"]["group"] = group
-
-    with pytest.raises(ValueError, match="invalid group"):
-        release.extract_bank(
-            notebook,
-            question_metadata_key="aalto_nbgrader_bank",
-            weight_key="weight",
-        )
 
 
 def test_build_notebook_keeps_metadata_and_only_selected_question(monkeypatch):
     source = make_notebook()
-    common, questions, _, _, order = release.extract_bank(
+    common, questions, _, order = release.extract_bank(
         source, question_metadata_key="aalto_nbgrader_bank", weight_key="weight"
     )
     monkeypatch.setattr(release.time, "time", lambda: 1234)
@@ -225,7 +190,6 @@ def test_generation_writes_variants_manifest_and_uses_cache(tmp_path, monkeypatc
         "source_path": source_path,
         "output_dir": output_dir,
         "pick_count": 1,
-        "group_pick_counts": {},
         "students": ["alice", "bob"],
         "seed_salt": "salt",
         "question_metadata_key": "aalto_nbgrader_bank",
@@ -270,163 +234,12 @@ def test_generation_writes_variants_manifest_and_uses_cache(tmp_path, monkeypatc
     assert not (manifest_path.parent / ".randomisation.lock").exists()
 
 
-def test_generation_samples_each_group_and_ungrouped_pool(tmp_path, monkeypatch):
-    notebook = make_notebook()
-    notebook["cells"].extend(
-        [
-            {
-                "cell_type": "markdown",
-                "metadata": {
-                    "aalto_nbgrader_bank": {
-                        "question_id": "q3",
-                        "group": "algebra",
-                        "weight": 1,
-                    }
-                },
-                "source": ["Question three"],
-            },
-            {
-                "cell_type": "markdown",
-                "metadata": {
-                    "aalto_nbgrader_bank": {
-                        "question_id": "q4",
-                        "group": "algebra",
-                        "weight": 2,
-                    }
-                },
-                "source": ["Question four"],
-            },
-            {
-                "cell_type": "markdown",
-                "metadata": {
-                    "aalto_nbgrader_bank": {
-                        "question_id": "q5",
-                        "group": "geometry",
-                        "weight": 1,
-                    }
-                },
-                "source": ["Question five"],
-            },
-        ]
-    )
-    source_path = tmp_path / "assignment.ipynb"
-    output_dir = tmp_path / "randomised"
-    source_path.write_text(json.dumps(notebook), encoding="utf-8")
-    arguments = {
-        "course_slug": "course",
-        "assignment": "assignment",
-        "source_path": source_path,
-        "output_dir": output_dir,
-        "pick_count": 1,
-        "group_pick_counts": {"algebra": 1, "geometry": 1},
-        "students": ["alice"],
-        "seed_salt": "salt",
-        "question_metadata_key": "aalto_nbgrader_bank",
-        "weight_key": "weight",
-        "force": False,
-        "lock_timeout": 1,
-        "self": SimpleNamespace(coursedir=SimpleNamespace(groupshared=False)),
-        "logger": None,
-    }
-    monkeypatch.setattr(release.time, "time", lambda: 1000)
-
-    release._generate_randomised_notebooks(**arguments)
-
-    manifest_path = (
-        output_dir / "manifests" / "assignment" / "_randomisation_manifest.json"
-    )
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    student_manifest = manifest["per_student"]["alice"]
-    selected_by_group = student_manifest["selected_by_group"]
-    assert len(student_manifest["selected_ungrouped_question_ids"]) == 1
-    assert len(selected_by_group["algebra"]) == 1
-    assert selected_by_group["geometry"] == ["q5"]
-    assert manifest["config"]["group_pick_counts"] == {
-        "algebra": 1,
-        "geometry": 1,
-    }
-
-    notebook_path = Path(manifest["per_student"]["alice"]["path"])
-    notebook_path.write_text("cached", encoding="utf-8")
-    arguments["group_pick_counts"] = {"algebra": 2, "geometry": 1}
-    release._generate_randomised_notebooks(**arguments)
-    assert notebook_path.read_text(encoding="utf-8") != "cached"
-
-
-@pytest.mark.parametrize(
-    ("question_groups", "group_pick_counts", "message"),
-    [
-        ({"q1": None, "q2": "algebra"}, {}, "Missing group_pick_counts"),
-        ({"q1": None}, {"algebra": 1}, "unknown groups"),
-        ({"q1": None, "q2": "algebra"}, {"algebra": 0}, "must be > 0"),
-        (
-            {"q1": None, "q2": "algebra"},
-            {"algebra": 2},
-            "larger than question count",
-        ),
-    ],
-)
-def test_select_questions_rejects_invalid_group_quotas(
-    question_groups, group_pick_counts, message
-):
-    question_ids = list(question_groups)
-    with pytest.raises(ValueError, match=message):
-        release.select_questions(
-            question_ids,
-            {question_id: 1.0 for question_id in question_ids},
-            question_groups,
-            pick_count=1,
-            group_pick_counts=group_pick_counts,
-            rng=random.Random(1),
-        )
-
-
-def test_select_questions_samples_weighted_pools_deterministically(monkeypatch):
-    calls = []
-
-    def record_selection(population, weights, pick_count, rng):
-        calls.append((population, weights, pick_count))
-        return population[:pick_count]
-
-    monkeypatch.setattr(release, "weighted_without_replacement", record_selection)
-    arguments = {
-        "question_ids": ["u1", "u2", "a1", "a2", "g1"],
-        "question_weights": {
-            "u1": 1.0,
-            "u2": 2.0,
-            "a1": 3.0,
-            "a2": 4.0,
-            "g1": 5.0,
-        },
-        "question_groups": {
-            "u1": None,
-            "u2": None,
-            "a1": "algebra",
-            "a2": "algebra",
-            "g1": "geometry",
-        },
-        "pick_count": 1,
-        "group_pick_counts": {"algebra": 1, "geometry": 1},
-    }
-
-    first = release.select_questions(**arguments, rng=random.Random(42))
-    second = release.select_questions(**arguments, rng=random.Random(42))
-
-    assert first == second
-    assert calls[:3] == [
-        (["u1", "u2"], [1.0, 2.0], 1),
-        (["a1", "a2"], [3.0, 4.0], 1),
-        (["g1"], [5.0], 1),
-    ]
-
-
 def test_generation_rejects_empty_students_and_invalid_pick_count():
     base_arguments = {
         "course_slug": "course",
         "assignment": "assignment",
         "source_path": Path("unused.ipynb"),
         "output_dir": Path("unused"),
-        "group_pick_counts": {},
         "students": ["alice"],
         "seed_salt": "",
         "question_metadata_key": "aalto_nbgrader_bank",
