@@ -17,6 +17,9 @@ kubectl create secret -n "$NAMESPACE" generic localusers --from-file="$SCRIPTPAT
 kubectl delete secret -n "$NAMESPACE" chp-secret
 kubectl create secret -n "$NAMESPACE" generic chp-secret --from-file="$SCRIPTPATH/../secrets/chp-secret.txt"
 
+kubectl delete secret -n "$NAMESPACE" pam-test-credentials
+kubectl create secret -n "$NAMESPACE" generic pam-test-credentials --from-file="$SCRIPTPATH/../secrets/pam-test-credentials.txt"
+
 kubectl delete secret -n "$NAMESPACE" ssh-privkey
 kubectl create secret -n "$NAMESPACE" generic ssh-privkey --from-file="$SCRIPTPATH/../secrets/ssh_key"
 kubectl delete secret -n "$NAMESPACE" ssh-pubkey
