@@ -79,6 +79,7 @@ import shutil
 import time
 from pathlib import Path
 from stat import (
+    S_IRGRP,
     S_ISGID,
     S_IWGRP,
 )
@@ -769,7 +770,7 @@ def _generate_randomised_notebooks(
                 "selected_question_ids": selected,
                 "path": str(notebook_file_path),
             }
-        file_mode = 0o600 | (S_IWGRP if groupshared else 0)
+        file_mode = 0o600 | (S_IWGRP | S_IRGRP if groupshared else 0)
         dir_mode = 0o700 | (0o070 | S_ISGID if groupshared else 0)
         _write_json(
             manifest_file_path,
