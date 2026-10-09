@@ -1099,8 +1099,14 @@ async def pre_spawn_hook(spawner: KubeSpawner):
                     "pre_spawn_hook: course %s randomisation enabled, adding config entry and ExchangeFetch mount",
                     course_slug,
                 )
+
+                exam_fetch_message = str(
+                    randomisation_cfg.get("exam_fetch_message", "")
+                ).replace("\n", "\\n")
+
                 randomisation_config_lines = [
                     f"c.ExchangeFactory.fetch_assignment = '{NBGRADER_RANDOMISED_FETCH_MODULE}.RandomisedExchangeFetchAssignment'",
+                    f"c.ExchangeFetchFeedback.exam_fetch_message = '{exam_fetch_message}'",
                 ]
 
                 spawner.volume_mounts.append(
