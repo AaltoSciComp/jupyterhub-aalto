@@ -269,7 +269,7 @@ USER_RE = re.compile("^[a-z0-9.]+$")
 
 # Spawner config
 c.JupyterHub.spawner_class = "kubespawner.KubeSpawner"
-c.KubeSpawner.pod_security_context = { "seccompProfile": { "type": "RuntimeDefault" } }
+c.KubeSpawner.pod_security_context = {"seccompProfile": {"type": "RuntimeDefault"}}
 c.KubeSpawner.start_timeout = 60 * 5
 c.KubeSpawner.hub_connect_port = 8081
 c.KubeSpawner.http_timeout = 60
@@ -1545,11 +1545,11 @@ def _get_randomisation_lines(
 ):
     """Split into a separate function to make formatting a bit nicer"""
     return [
-        # f"c.ExchangeFactory.fetch_assignment = '{NBGRADER_RANDOMISED_FETCH_MODULE}.RandomisedExchangeFetchAssignment'",
+        f"c.ExchangeFactory.fetch_assignment = '{NBGRADER_RANDOMISED_FETCH_MODULE}.RandomisedExchangeFetchAssignment'",
         # f"c.RandomisedExchangeFetchAssignment.randomisation_root = '{output_dir}'",
         f"c.ExchangeFactory.release_assignment = '{NBGRADER_RANDOMISED_RELEASE_MODULE}.RandomisedExchangeReleaseAssignment'",
-        f"c.ExchangeFactory.list = '{NBGRADER_RANDOMISED_LIST_MODULE}.RandomisedExchangeList'",
-        f"c.RandomisedExchangeList.randomisation_root = '{output_dir}'",
+        # f"c.ExchangeFactory.list = '{NBGRADER_RANDOMISED_LIST_MODULE}.RandomisedExchangeList'",
+        # f"c.RandomisedExchangeList.randomisation_root = '{output_dir}'",
         "c.RandomisedExchangeReleaseAssignment.randomisation_enabled = True",
         f"c.RandomisedExchangeReleaseAssignment.randomisation_root = '{output_dir}'",
         f"c.RandomisedExchangeReleaseAssignment.pick_count = {pick_count}",
