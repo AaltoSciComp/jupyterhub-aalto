@@ -314,7 +314,7 @@ def main(argv: list[str] | None = None) -> None:
     fetch_to_submit(summary, show="durations" in show)
 
     n_sub = sum(1 for ev in per_user.values() if ev["submit"])
-    n_open = sum(1 for row in summary if row[9])
+    n_open = sum(1 for row in summary if row[8])  # row[8] = open_sess
     print(
         f"Total: {len(per_user)} students, {n_sub} submitted, "
         f"{len(missing)} fetched without submitting, "
