@@ -71,6 +71,9 @@ StudentSummary = namedtuple(
         "sess_total",  # sum of closed session durations
         "open_session",  # True if any session has no stop
         "last_save",
+        "first_start",  # first session start marker
+        "last_activity",  # later of last save and last submit
+        "work_total",  # first fetch -> last activity
     ],
 )
 
@@ -379,6 +382,9 @@ def main(argv: list[str] | None = None) -> None:
                     "total_session_time",
                     "open_session",
                     "submitted",
+                    "first_session_start",
+                    "last_activity",
+                    "work_total_first_fetch_to_last_activity",
                 ]
             )
             for row in summary:
@@ -396,6 +402,9 @@ def main(argv: list[str] | None = None) -> None:
                         fmt_delta(row.sess_total) if row.sessions else "",
                         "yes" if row.open_session else "",
                         "yes" if row.last_submit else "NO",
+                        row.first_start.isoformat() if row.first_start else "",
+                        row.last_activity.isoformat() if row.last_activity else "",
+                        fmt_delta(row.work_total) if row.work_total else "",
                     ]
                 )
         print(f"Summary CSV written to {args.csv}")
@@ -474,6 +483,10 @@ def per_student(
         sessions = pair_sessions(ev["start"], ev["stop"])
         sess_total = sum((sp - st for st, sp in sessions if sp), timedelta())
         open_sess = any(sp is None for st, sp in sessions)
+        first_start = min((s.start for s in sessions), default=None)
+        last_activity = max((t for t in (last_save, ls) if t is not None), default=None)
+        # Work time: first fetch -> later of last save / last submit.
+        work_total = last_activity - ff if ff and last_activity else None
         summary.append(
             StudentSummary(
                 sort_key=ff or ls or datetime.max,
@@ -486,6 +499,9 @@ def per_student(
                 sess_total=sess_total,
                 open_session=open_sess,
                 last_save=last_save,
+                first_start=first_start,
+                last_activity=last_activity,
+                work_total=work_total,
             )
         )
     summary.sort(key=lambda r: (r.sort_key, r.user))
@@ -497,7 +513,8 @@ def per_student(
         header = (
             f"{'username':<15}  {'fetch':>6}  {'submit':>7}  {'save':>6}  "
             f"{'sess':>5}  {'sess start':<17}  {'first fetch':<12}  "
-            f"{'last submit':<12}  {'last save':<12}  {'total':>12}  {'in sess':>12}"
+            f"{'last submit':<12}  {'last save':<12}  {'total':>12}  "
+            f"{'work total':>12}  {'in sess':>12}"
         )
         print(header)
         print("-" * len(header))
@@ -518,7 +535,8 @@ def per_student(
                 f"  {len(row.events['submit']):>7}  {len(row.events['save']):>6}"
                 f"  {len(row.sessions):>5}  "
                 f"{fs_s:<17}  {ff_s:<12}  {ls_s:<12}  {save_s:<12}"
-                f"  {fmt_delta(row.total):>12}  {sess_s:>12}"
+                f"  {fmt_delta(row.total):>12}  {fmt_delta(row.work_total):>12}"
+                f"  {sess_s:>12}"
             )
             print(hl(line, Colours.RED) if not row.last_submit else line)
         print()
