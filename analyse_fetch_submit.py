@@ -305,6 +305,12 @@ def main(argv: list[str] | None = None) -> None:
         default=None,
         help="print section 4: fetch -> submit durations",
     )
+    ap.add_argument(
+        "--unsubmitted-only",
+        action="store_true",
+        default=False,
+        help="In the summary, only show students who fetched but never submitted",
+    )
     args = ap.parse_args(argv)
     if args.verbose:
         logging.getLogger().setLevel(logging.INFO)
@@ -339,7 +345,9 @@ def main(argv: list[str] | None = None) -> None:
 
     missing = never_submitted(per_user, show="missing" in show)
 
-    summary = per_student(per_user, show="summary" in show)
+    summary = per_student(
+        per_user, show="summary" in show, unsubmitted_only=args.unsubmitted_only
+    )
 
     session_durations(summary, show="sessions" in show)
 
@@ -453,7 +461,9 @@ def session_durations(summary: list[StudentSummary], show: bool = True):
     print()
 
 
-def per_student(per_user, show: bool = True) -> list[StudentSummary]:
+def per_student(
+    per_user, show: bool = True, unsubmitted_only: bool = False
+) -> list[StudentSummary]:
     # ---- 2. per-student summary ----------------------------------------------
     summary: list[StudentSummary] = []
     for u, ev in per_user.items():
@@ -492,6 +502,8 @@ def per_student(per_user, show: bool = True) -> list[StudentSummary]:
         print(header)
         print("-" * len(header))
         for row in summary:
+            if unsubmitted_only and row.last_submit:
+                continue
             ff_s = f"{row.first_fetch:%Y-%m-%d %H:%M}" if row.first_fetch else "-"
             ls_s = f"{row.last_submit:%Y-%m-%d %H:%M}" if row.last_submit else "NEVER"
             save_s = f"{row.last_save:%m-%d %H:%M}" if row.last_save else "-"
