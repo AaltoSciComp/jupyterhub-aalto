@@ -25,7 +25,8 @@ The script:
 Usage:
     python3 analyse_fetch_submit.py [csvfile] [--csv summary.csv]
 
-Each output block can be toggled independently:
+Each output block can be selected; passing any block flag shows only the
+selected blocks, --no-<flag> disables a single block:
     --missing / --no-missing      section 1 (fetched but never submitted)
     --summary / --no-summary      section 2 (per-student summary table)
     --sessions / --no-sessions    section 3 (session durations)
@@ -231,30 +232,44 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument(
         "--missing",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=None,
         help="print section 1: students who fetched but never submitted",
     )
     ap.add_argument(
         "--summary",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=None,
         help="print section 2: per-student summary table",
     )
     ap.add_argument(
         "--sessions",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=None,
         help="print section 3: session start -> signal-15 durations",
     )
     ap.add_argument(
         "--durations",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=None,
         help="print section 4: fetch -> submit durations",
     )
     args = ap.parse_args(argv)
     if args.verbose:
         logging.getLogger().setLevel(logging.INFO)
+
+    # Block selection: with no block flags given, show everything. Passing
+    # any positive flag (--missing etc.) selects only those blocks; --no-<flag>
+    # removes a single block from the default set.
+    blocks = {
+        "missing": args.missing,
+        "summary": args.summary,
+        "sessions": args.sessions,
+        "durations": args.durations,
+    }
+    if any(v is True for v in blocks.values()):
+        show = {name for name, v in blocks.items() if v is True}
+    else:
+        show = {name for name, v in blocks.items() if v is not False}
 
     path = Path(args.csvfile)
     if not path.is_file():
@@ -270,13 +285,13 @@ def main(argv: list[str] | None = None) -> None:
     for user, action, ts in events:
         per_user[user][action].append(ts)
 
-    missing = never_submitted(per_user, show=args.missing)
+    missing = never_submitted(per_user, show="missing" in show)
 
-    summary = per_student(per_user, show=args.summary)
+    summary = per_student(per_user, show="summary" in show)
 
-    session_durations(summary, show=args.sessions)
+    session_durations(summary, show="sessions" in show)
 
-    fetch_to_submit(summary, show=args.durations)
+    fetch_to_submit(summary, show="durations" in show)
 
     n_sub = sum(1 for ev in per_user.values() if ev["submit"])
     n_open = sum(1 for row in summary if row[8])
