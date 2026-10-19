@@ -12,11 +12,14 @@ Input CSV (Kibana export) columns:
                      is still accepted)
 * session start:     + mkdir -p /usr/local/bin/start-notebook-user.d/
 * session end:       [C ... SingleUserLabApp serverapp:2127] received signal 15, stopping
+* file save:         [I ... SingleUserLabApp log:191] 204 PUT
+                     /user/luoz1/api/contents/... (luoz1@IP) 142.45ms
 
 The script:
   1. lists students who fetched the assignment but never submitted it,
   2. prints a per-student summary (first fetch -> last submit, number of
-     sessions and total time spent in sessions),
+     saves, time of last save, number of sessions and total time spent
+     in sessions),
   3. pairs every session start with its signal-15 stop and reports the
      duration of each session,
   4. pairs every submit with the most recent fetch at or before it and
@@ -45,7 +48,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 DEFAULT_CSV = (
-    Path(__file__).resolve().parent / "exam1_ student start_fetch_submit_stop.csv"
+    Path(__file__).resolve().parent / "exam1_ student start_fetch_save_submit_stop.csv"
 )
 
 POD_RE = re.compile(r"^jupyter-(?P<user>.+)-ml2026$")
@@ -53,6 +56,11 @@ POD_RE = re.compile(r"^jupyter-(?P<user>.+)-ml2026$")
 MSG_RE = re.compile(
     r"^\[[IWC]\s+(?P<ts>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+)\s+"
     r".*?/user/(?P<user>[^/]+)/assignments/(?P<action>fetch|submit)"
+)
+# Notebook file saves: PUT/POST to the contents API.
+SAVE_RE = re.compile(
+    r"^\[[IWC]\s+(?P<ts>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+)\s+"
+    r".*?(?:PUT|POST)\s+/user/(?P<user>[^/]+)/api/contents/"
 )
 # Timestamp embedded in a log message (the signal-15 lines carry one).
 MSG_TS_RE = re.compile(r"(?P<ts>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+)")
@@ -133,6 +141,13 @@ def parse_row(row: dict) -> tuple[str, str, datetime] | None:
         user = username_from_pod(pod) or m.group("user")
         ts = datetime.strptime(m.group("ts"), MSG_TS_FMT)
         return user, m.group("action"), ts
+
+    # Notebook saves: PUT/POST to the contents API.
+    m = SAVE_RE.match(msg)
+    if m:
+        user = username_from_pod(pod) or m.group("user")
+        ts = datetime.strptime(m.group("ts"), MSG_TS_FMT)
+        return user, "save", ts
 
     # Fallback: derive the action from the message, time from @timestamp.
     if "/assignments/fetch" in msg:
@@ -280,7 +295,7 @@ def main(argv: list[str] | None = None) -> None:
         ap.error("no fetch/submit events found in the file")
 
     per_user: dict[str, dict[str, list[datetime]]] = defaultdict(
-        lambda: {"fetch": [], "submit": [], "start": [], "stop": []}
+        lambda: {"fetch": [], "submit": [], "save": [], "start": [], "stop": []}
     )
     for user, action, ts in events:
         per_user[user][action].append(ts)
@@ -294,7 +309,7 @@ def main(argv: list[str] | None = None) -> None:
     fetch_to_submit(summary, show="durations" in show)
 
     n_sub = sum(1 for ev in per_user.values() if ev["submit"])
-    n_open = sum(1 for row in summary if row[8])
+    n_open = sum(1 for row in summary if row[9])
     print(
         f"Total: {len(per_user)} students, {n_sub} submitted, "
         f"{len(missing)} fetched without submitting, "
@@ -310,24 +325,31 @@ def main(argv: list[str] | None = None) -> None:
                     "username",
                     "fetches",
                     "submits",
+                    "saves",
                     "sessions",
                     "first_fetch",
                     "last_submit",
+                    "last_save",
                     "total_first_fetch_to_last_submit",
                     "total_session_time",
                     "open_session",
                     "submitted",
                 ]
             )
-            for _, u, ev, ff, ls, total, sessions, sess_total, open_sess in summary:
+            for row in summary:
+                _, u, ev, ff, ls, total, sessions, sess_total, open_sess, last_save = (
+                    row
+                )
                 w.writerow(
                     [
                         u,
                         len(ev["fetch"]),
                         len(ev["submit"]),
+                        len(ev["save"]),
                         len(sessions),
                         ff.isoformat() if ff else "",
                         ls.isoformat() if ls else "",
+                        last_save.isoformat() if last_save else "",
                         fmt_delta(total) if total else "",
                         fmt_delta(sess_total) if sessions else "",
                         "yes" if open_sess else "",
@@ -398,6 +420,7 @@ def per_student(per_user, show: bool = True):
     for u, ev in per_user.items():
         ff = min(ev["fetch"]) if ev["fetch"] else None
         ls = max(ev["submit"]) if ev["submit"] else None
+        last_save = max(ev["save"]) if ev["save"] else None
         total = ls - ff if ff and ls else None
         sessions = pair_sessions(ev["start"], ev["stop"])
         sess_total = sum((sp - st for st, sp in sessions if sp), timedelta())
@@ -413,29 +436,35 @@ def per_student(per_user, show: bool = True):
                 sessions,
                 sess_total,
                 open_sess,
+                last_save,
             )
         )
     summary.sort(key=lambda r: (r[0], r[1]))
 
     if show:
         print("=" * 78)
-        print("PER-STUDENT SUMMARY (first fetch -> last submit, with session time)")
+        print("PER-STUDENT SUMMARY (first fetch -> last submit, saves, session time)")
         print("=" * 78)
         header = (
-            f"{'username':<15}{'fetch':>6}{'submit':>7}{'sess':>6}  "
-            f"{'first fetch':<17}{'last submit':<17}{'total':>12}{'in sess':>12}"
+            f"{'username':<15}{'fetch':>6}{'submit':>7}{'save':>6}{'sess':>6}  "
+            f"{'first fetch':<17}{'last submit':<17}{'last save':<17}"
+            f"{'total':>12}{'in sess':>12}"
         )
         print(header)
         print("-" * len(header))
-        for _, u, ev, ff, ls, total, sessions, sess_total, open_sess in summary:
+        for row in summary:
+            _, u, ev, ff, ls, total, sessions, sess_total, open_sess, last_save = row
             ff_s = f"{ff:%Y-%m-%d %H:%M}" if ff else "-"
             ls_s = f"{ls:%Y-%m-%d %H:%M}" if ls else "NEVER"
+            save_s = f"{last_save:%m-%d %H:%M}" if last_save else "-"
             sess_s = fmt_delta(sess_total) if sessions else "-"
             if open_sess:
                 sess_s += "+"
             line = (
-                f"{u:<15}{len(ev['fetch']):>6}{len(ev['submit']):>7}{len(sessions):>6}  "
-                f"{ff_s:<17}{ls_s:<17}{fmt_delta(total):>12}{sess_s:>12}"
+                f"{u:<15}{len(ev['fetch']):>6}{len(ev['submit']):>7}"
+                f"{len(ev['save']):>6}{len(sessions):>6}  "
+                f"{ff_s:<17}{ls_s:<17}{save_s:<17}"
+                f"{fmt_delta(total):>12}{sess_s:>12}"
             )
             print(hl(line, "1;31") if not ls else line)
         print()
