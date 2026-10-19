@@ -495,27 +495,30 @@ def per_student(
         print("PER-STUDENT SUMMARY (first fetch -> last submit, saves, session time)")
         print("=" * 78)
         header = (
-            f"{'username':<15}{'fetch':>6}{'submit':>7}{'save':>6}{'sess':>6}  "
-            f"{'first fetch':<17}{'last submit':<17}{'last save':<17}"
-            f"{'total':>12}{'in sess':>12}"
+            f"{'username':<15}  {'fetch':>6}  {'submit':>7}  {'save':>6}  "
+            f"{'sess':>5}  {'sess start':<17}  {'first fetch':<12}  "
+            f"{'last submit':<12}  {'last save':<12}  {'total':>12}  {'in sess':>12}"
         )
         print(header)
         print("-" * len(header))
         for row in summary:
             if unsubmitted_only and row.last_submit:
                 continue
-            ff_s = f"{row.first_fetch:%Y-%m-%d %H:%M}" if row.first_fetch else "-"
-            ls_s = f"{row.last_submit:%Y-%m-%d %H:%M}" if row.last_submit else "NEVER"
+            # Year is shown only in the first date column (sess start).
+            first_sess = min((s.start for s in row.sessions), default=None)
+            fs_s = f"{first_sess:%Y-%m-%d %H:%M}" if first_sess else "-"
+            ff_s = f"{row.first_fetch:%m-%d %H:%M}" if row.first_fetch else "-"
+            ls_s = f"{row.last_submit:%m-%d %H:%M}" if row.last_submit else "NEVER"
             save_s = f"{row.last_save:%m-%d %H:%M}" if row.last_save else "-"
             sess_s = fmt_delta(row.sess_total) if row.sessions else "-"
             if row.open_session:
                 sess_s += "+"
             line = (
-                f"{row.user:<15}{len(row.events['fetch']):>6}"
-                f"{len(row.events['submit']):>7}{len(row.events['save']):>6}"
-                f"{len(row.sessions):>6}  "
-                f"{ff_s:<17}{ls_s:<17}{save_s:<17}"
-                f"{fmt_delta(row.total):>12}{sess_s:>12}"
+                f"{row.user:<15}  {len(row.events['fetch']):>6}"
+                f"  {len(row.events['submit']):>7}  {len(row.events['save']):>6}"
+                f"  {len(row.sessions):>5}  "
+                f"{fs_s:<17}  {ff_s:<12}  {ls_s:<12}  {save_s:<12}"
+                f"  {fmt_delta(row.total):>12}  {sess_s:>12}"
             )
             print(hl(line, Colours.RED) if not row.last_submit else line)
         print()
