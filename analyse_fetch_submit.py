@@ -75,7 +75,7 @@ StudentSummary = namedtuple(
 )
 
 DEFAULT_CSV = (
-    Path(__file__).resolve().parent / "exam1_ student start_fetch_save_submit_stop.csv"
+    Path(__file__).resolve().parent / "exam1_ student start_fetch_save_submit_stop2.csv"
 )
 
 POD_RE = re.compile(r"^jupyter-(?P<user>.+)-ml2026$")
