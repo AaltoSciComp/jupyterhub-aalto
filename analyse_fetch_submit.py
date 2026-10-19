@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import enum
 import logging
 import re
 import sys
@@ -102,10 +103,17 @@ logging.basicConfig(level=logging.WARNING, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 
-def hl(text: str, code: str = "1;33") -> str:
+class Colours(enum.Enum):
+    RED = "1;31"
+    YELLOW = "1;33"
+    GREEN = "1;32"
+    CYAN = "1;36"
+
+
+def hl(text: str, code: Colours = Colours.YELLOW) -> str:
     """Wrap text in ANSI colour when stdout is a terminal."""
     if sys.stdout.isatty():
-        return f"\033[{code}m{text}\033[0m"
+        return f"\033[{code.value}m{text}\033[0m"
     return text
 
 
@@ -399,7 +407,7 @@ def fetch_to_submit(summary: list[StudentSummary], show: bool = True):
             print(
                 hl(
                     f"{row.user:<15}  fetched {len(fetches)}x, never submitted",
-                    "1;31",
+                    Colours.RED,
                 )
             )
             continue
@@ -416,7 +424,7 @@ def fetch_to_submit(summary: list[StudentSummary], show: bool = True):
                     hl(
                         f"{row.user:<15}  {sub:%m-%d %H:%M:%S}  "
                         f"submit WITHOUT prior fetch",
-                        "1;31",
+                        Colours.RED,
                     )
                 )
     print()
@@ -439,9 +447,7 @@ def session_durations(summary: list[StudentSummary], show: bool = True):
             else:
                 print(
                     hl(
-                        f"{row.user:<15}  {sess.start:%m-%d %H:%M:%S} -> "
-                        f"still running / no stop event",
-                        "1;33",
+                        f"{row.user:<15}  {sess.start:%m-%d %H:%M:%S} -> still running / no stop event"
                     )
                 )
     print()
@@ -499,7 +505,7 @@ def per_student(per_user, show: bool = True) -> list[StudentSummary]:
                 f"{ff_s:<17}{ls_s:<17}{save_s:<17}"
                 f"{fmt_delta(row.total):>12}{sess_s:>12}"
             )
-            print(hl(line, "1;31") if not row.last_submit else line)
+            print(hl(line, Colours.RED) if not row.last_submit else line)
         print()
     return summary
 
@@ -512,7 +518,7 @@ def never_submitted(per_user, show: bool = True):
     if not show:
         return missing
     print("=" * 78)
-    print(hl(f"FETCHED BUT NEVER SUBMITTED: {len(missing)} student(s)", "1;31"))
+    print(hl(f"FETCHED BUT NEVER SUBMITTED: {len(missing)} student(s)", Colours.RED))
     print("=" * 78)
     if missing:
         for u in missing:
