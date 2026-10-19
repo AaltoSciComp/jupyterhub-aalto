@@ -44,9 +44,34 @@ import csv
 import logging
 import re
 import sys
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from datetime import datetime, timedelta
 from pathlib import Path
+
+# One parsed log event: "fetch"/"submit"/"save" request or "start"/"stop"
+# session marker.
+Event = namedtuple("Event", ["user", "action", "ts"])
+
+# A session: start marker paired with the first following signal-15 stop
+# (stop is None when the session never ended within the log).
+Session = namedtuple("Session", ["start", "stop"])
+
+# Per-student aggregate used for the summary table and CSV export.
+StudentSummary = namedtuple(
+    "StudentSummary",
+    [
+        "sort_key",  # first fetch (or last submit, or datetime.max)
+        "user",
+        "events",  # dict of action -> list[datetime]
+        "first_fetch",
+        "last_submit",
+        "total",  # first fetch -> last submit
+        "sessions",  # list[Session]
+        "sess_total",  # sum of closed session durations
+        "open_session",  # True if any session has no stop
+        "last_save",
+    ],
+)
 
 DEFAULT_CSV = (
     Path(__file__).resolve().parent / "exam1_ student start_fetch_save_submit_stop.csv"
@@ -108,11 +133,12 @@ def _kibana_ts(raw: str) -> datetime | None:
         return None
 
 
-def parse_row(row: dict) -> tuple[str, str, datetime] | None:
-    """Return (username, action, timestamp) or None for unusable rows.
+def parse_row(row: dict) -> Event | None:
+    """Return an Event or None for unusable rows.
 
-    Actions: "fetch"/"submit" (nbgrader requests), "start" (session start,
-    the `mkdir -p` marker) and "stop" (session end, `signal 15`).
+    Actions: "fetch"/"submit" (nbgrader requests), "save" (file saves),
+    "start" (session start, the `mkdir -p` marker) and "stop" (session end,
+    `signal 15`).
     """
     msg = (row.get("message") or "").strip()
     pod = row.get("kubernetes.pod.name") or ""
@@ -123,7 +149,7 @@ def parse_row(row: dict) -> tuple[str, str, datetime] | None:
         user = username_from_pod(pod)
         ts = _kibana_ts(raw)
         if user and ts:
-            return user, "start", ts
+            return Event(user, "start", ts)
         logger.info(f"parse_row: skipping start marker without user/timestamp: {msg}")
         return None
 
@@ -133,7 +159,7 @@ def parse_row(row: dict) -> tuple[str, str, datetime] | None:
         m = MSG_TS_RE.search(msg)
         ts = datetime.strptime(m.group("ts"), MSG_TS_FMT) if m else _kibana_ts(raw)
         if user and ts:
-            return user, "stop", ts
+            return Event(user, "stop", ts)
         logger.info(f"parse_row: skipping stop marker without user/timestamp: {msg}")
         return None
 
@@ -142,7 +168,7 @@ def parse_row(row: dict) -> tuple[str, str, datetime] | None:
         # Prefer the username from the pod name, fall back to the one in the URL.
         user = username_from_pod(pod) or m.group("user")
         ts = datetime.strptime(m.group("ts"), MSG_TS_FMT)
-        return user, m.group("action"), ts
+        return Event(user, m.group("action"), ts)
 
     # Notebook saves: "Saving file at ..." or PUT/POST to the contents API.
     m = SAVE_RE.match(msg)
@@ -150,7 +176,7 @@ def parse_row(row: dict) -> tuple[str, str, datetime] | None:
         user = username_from_pod(pod)
         ts = datetime.strptime(m.group("ts"), MSG_TS_FMT)
         if user:
-            return user, "save", ts
+            return Event(user, "save", ts)
         logger.info(f"parse_row: skipping save without pod user: {msg}")
         return None
 
@@ -172,13 +198,13 @@ def parse_row(row: dict) -> tuple[str, str, datetime] | None:
     if ts is None:
         logger.info(f"parse_row: skipping row with unparseable timestamp: {raw}")
         return None
-    return user, action, ts
+    return Event(user, action, ts)
 
 
-def load_events(path: Path) -> list[tuple[str, str, datetime]]:
-    """Read the CSV and return sorted (username, action, timestamp) events."""
-    events: list[tuple[str, str, datetime]] = []
-    seen: set[tuple[str, str, datetime]] = set()
+def load_events(path: Path) -> list[Event]:
+    """Read the CSV and return sorted Event tuples."""
+    events: list[Event] = []
+    seen: set[Event] = set()
     # Session markers are logged twice (once per container) with ~1 ms skew,
     # so collapse repeats of the same marker within a one-second window.
     last_marker: dict[tuple[str, str], datetime] = {}
@@ -188,45 +214,43 @@ def load_events(path: Path) -> list[tuple[str, str, datetime]]:
             if parsed is None:
                 logger.info(f"load_events: could not parse row: {row}")
                 continue
-            user, action, ts = parsed
-            if action in ("start", "stop"):
-                key = (user, action)
+            if parsed.action in ("start", "stop"):
+                key = (parsed.user, parsed.action)
                 prev = last_marker.get(key)
-                if prev and abs((ts - prev).total_seconds()) <= 1.0:
+                if prev and abs((parsed.ts - prev).total_seconds()) <= 1.0:
                     logger.info(
-                        f"load_events: skipping duplicate {action} marker for {user}"
+                        f"load_events: skipping duplicate {parsed.action} marker "
+                        f"for {parsed.user}"
                     )
                     continue
-                last_marker[key] = ts
+                last_marker[key] = parsed.ts
             elif parsed in seen:  # duplicate log lines in the export
                 logger.info(f"load_events: skipping duplicate row: {row}")
                 continue
             else:
                 seen.add(parsed)
             events.append(parsed)
-    events.sort(key=lambda e: (e[2], e[0]))
+    events.sort(key=lambda e: (e.ts, e.user))
     return events
 
 
-def pair_sessions(
-    starts: list[datetime], stops: list[datetime]
-) -> list[tuple[datetime, datetime | None]]:
+def pair_sessions(starts: list[datetime], stops: list[datetime]) -> list[Session]:
     """Pair each session start with the first stop after it.
 
-    Returns a list of (start, stop) where stop is None when the session
+    Returns a list of Session tuples where stop is None when the session
     never ended within the log (server still running or log truncated).
     """
-    sessions: list[tuple[datetime, datetime | None]] = []
+    sessions: list[Session] = []
     stops = sorted(stops)
     j = 0
     for st in sorted(starts):
         while j < len(stops) and stops[j] <= st:
             j += 1
         if j < len(stops):
-            sessions.append((st, stops[j]))
+            sessions.append(Session(st, stops[j]))
             j += 1
         else:
-            sessions.append((st, None))
+            sessions.append(Session(st, None))
     return sessions
 
 
@@ -302,8 +326,8 @@ def main(argv: list[str] | None = None) -> None:
     per_user: dict[str, dict[str, list[datetime]]] = defaultdict(
         lambda: {"fetch": [], "submit": [], "save": [], "start": [], "stop": []}
     )
-    for user, action, ts in events:
-        per_user[user][action].append(ts)
+    for event in events:
+        per_user[event.user][event.action].append(event.ts)
 
     missing = never_submitted(per_user, show="missing" in show)
 
@@ -314,7 +338,7 @@ def main(argv: list[str] | None = None) -> None:
     fetch_to_submit(summary, show="durations" in show)
 
     n_sub = sum(1 for ev in per_user.values() if ev["submit"])
-    n_open = sum(1 for row in summary if row[8])  # row[8] = open_sess
+    n_open = sum(1 for row in summary if row.open_session)
     print(
         f"Total: {len(per_user)} students, {n_sub} submitted, "
         f"{len(missing)} fetched without submitting, "
@@ -342,86 +366,90 @@ def main(argv: list[str] | None = None) -> None:
                 ]
             )
             for row in summary:
-                _, u, ev, ff, ls, total, sessions, sess_total, open_sess, last_save = (
-                    row
-                )
                 w.writerow(
                     [
-                        u,
-                        len(ev["fetch"]),
-                        len(ev["submit"]),
-                        len(ev["save"]),
-                        len(sessions),
-                        ff.isoformat() if ff else "",
-                        ls.isoformat() if ls else "",
-                        last_save.isoformat() if last_save else "",
-                        fmt_delta(total) if total else "",
-                        fmt_delta(sess_total) if sessions else "",
-                        "yes" if open_sess else "",
-                        "yes" if ls else "NO",
+                        row.user,
+                        len(row.events["fetch"]),
+                        len(row.events["submit"]),
+                        len(row.events["save"]),
+                        len(row.sessions),
+                        row.first_fetch.isoformat() if row.first_fetch else "",
+                        row.last_submit.isoformat() if row.last_submit else "",
+                        row.last_save.isoformat() if row.last_save else "",
+                        fmt_delta(row.total) if row.total else "",
+                        fmt_delta(row.sess_total) if row.sessions else "",
+                        "yes" if row.open_session else "",
+                        "yes" if row.last_submit else "NO",
                     ]
                 )
         print(f"Summary CSV written to {args.csv}")
 
 
-def fetch_to_submit(summary, show: bool = True):
+def fetch_to_submit(summary: list[StudentSummary], show: bool = True):
     # ---- 4. fetch -> submit durations ------------------------------------------
     if not show:
         return
     print("=" * 78)
     print("FETCH -> SUBMIT DURATIONS (each submit paired with the latest prior fetch)")
     print("=" * 78)
-    for _, u, ev, *_ in summary:
-        fetches = sorted(ev["fetch"])
-        submits = sorted(ev["submit"])
+    for row in summary:
+        fetches = sorted(row.events["fetch"])
+        submits = sorted(row.events["submit"])
         if not submits:
-            print(hl(f"{u:<15}  fetched {len(fetches)}x, never submitted", "1;31"))
+            print(
+                hl(
+                    f"{row.user:<15}  fetched {len(fetches)}x, never submitted",
+                    "1;31",
+                )
+            )
             continue
         for sub in submits:
             prior = [f for f in fetches if f <= sub]
             if prior:
                 f = prior[-1]
                 print(
-                    f"{u:<15}  {f:%m-%d %H:%M:%S} -> {sub:%m-%d %H:%M:%S}"
+                    f"{row.user:<15}  {f:%m-%d %H:%M:%S} -> {sub:%m-%d %H:%M:%S}"
                     f"  = {fmt_delta(sub - f)}"
                 )
             else:
                 print(
                     hl(
-                        f"{u:<15}  {sub:%m-%d %H:%M:%S}  submit WITHOUT prior fetch",
+                        f"{row.user:<15}  {sub:%m-%d %H:%M:%S}  "
+                        f"submit WITHOUT prior fetch",
                         "1;31",
                     )
                 )
     print()
 
 
-def session_durations(summary, show: bool = True):
+def session_durations(summary: list[StudentSummary], show: bool = True):
     # ---- 3. session durations --------------------------------------------------
     if not show:
         return
     print("=" * 78)
     print("SESSIONS (start marker -> signal 15)")
     print("=" * 78)
-    for _, u, ev, *_rest in summary:
-        for st, sp in pair_sessions(ev["start"], ev["stop"]):
-            if sp:
+    for row in summary:
+        for sess in row.sessions:
+            if sess.stop:
                 print(
-                    f"{u:<15}  {st:%m-%d %H:%M:%S} -> {sp:%m-%d %H:%M:%S}"
-                    f"  = {fmt_delta(sp - st)}"
+                    f"{row.user:<15}  {sess.start:%m-%d %H:%M:%S} -> "
+                    f"{sess.stop:%m-%d %H:%M:%S}  = {fmt_delta(sess.stop - sess.start)}"
                 )
             else:
                 print(
                     hl(
-                        f"{u:<15}  {st:%m-%d %H:%M:%S} -> still running / no stop event",
+                        f"{row.user:<15}  {sess.start:%m-%d %H:%M:%S} -> "
+                        f"still running / no stop event",
                         "1;33",
                     )
                 )
     print()
 
 
-def per_student(per_user, show: bool = True):
+def per_student(per_user, show: bool = True) -> list[StudentSummary]:
     # ---- 2. per-student summary ----------------------------------------------
-    summary = []
+    summary: list[StudentSummary] = []
     for u, ev in per_user.items():
         ff = min(ev["fetch"]) if ev["fetch"] else None
         ls = max(ev["submit"]) if ev["submit"] else None
@@ -431,20 +459,20 @@ def per_student(per_user, show: bool = True):
         sess_total = sum((sp - st for st, sp in sessions if sp), timedelta())
         open_sess = any(sp is None for st, sp in sessions)
         summary.append(
-            (
-                ff or ls or datetime.max,
-                u,
-                ev,
-                ff,
-                ls,
-                total,
-                sessions,
-                sess_total,
-                open_sess,
-                last_save,
+            StudentSummary(
+                sort_key=ff or ls or datetime.max,
+                user=u,
+                events=ev,
+                first_fetch=ff,
+                last_submit=ls,
+                total=total,
+                sessions=sessions,
+                sess_total=sess_total,
+                open_session=open_sess,
+                last_save=last_save,
             )
         )
-    summary.sort(key=lambda r: (r[0], r[1]))
+    summary.sort(key=lambda r: (r.sort_key, r.user))
 
     if show:
         print("=" * 78)
@@ -458,20 +486,20 @@ def per_student(per_user, show: bool = True):
         print(header)
         print("-" * len(header))
         for row in summary:
-            _, u, ev, ff, ls, total, sessions, sess_total, open_sess, last_save = row
-            ff_s = f"{ff:%Y-%m-%d %H:%M}" if ff else "-"
-            ls_s = f"{ls:%Y-%m-%d %H:%M}" if ls else "NEVER"
-            save_s = f"{last_save:%m-%d %H:%M}" if last_save else "-"
-            sess_s = fmt_delta(sess_total) if sessions else "-"
-            if open_sess:
+            ff_s = f"{row.first_fetch:%Y-%m-%d %H:%M}" if row.first_fetch else "-"
+            ls_s = f"{row.last_submit:%Y-%m-%d %H:%M}" if row.last_submit else "NEVER"
+            save_s = f"{row.last_save:%m-%d %H:%M}" if row.last_save else "-"
+            sess_s = fmt_delta(row.sess_total) if row.sessions else "-"
+            if row.open_session:
                 sess_s += "+"
             line = (
-                f"{u:<15}{len(ev['fetch']):>6}{len(ev['submit']):>7}"
-                f"{len(ev['save']):>6}{len(sessions):>6}  "
+                f"{row.user:<15}{len(row.events['fetch']):>6}"
+                f"{len(row.events['submit']):>7}{len(row.events['save']):>6}"
+                f"{len(row.sessions):>6}  "
                 f"{ff_s:<17}{ls_s:<17}{save_s:<17}"
-                f"{fmt_delta(total):>12}{sess_s:>12}"
+                f"{fmt_delta(row.total):>12}{sess_s:>12}"
             )
-            print(hl(line, "1;31") if not ls else line)
+            print(hl(line, "1;31") if not row.last_submit else line)
         print()
     return summary
 
