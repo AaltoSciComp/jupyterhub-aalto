@@ -240,23 +240,110 @@ def main(argv: list[str] | None = None) -> None:
     for user, action, ts in events:
         per_user[user][action].append(ts)
 
-    # ---- 1. students who fetched but never submitted -------------------------
-    missing = sorted(
-        u for u, ev in per_user.items() if ev["fetch"] and not ev["submit"]
+    missing = never_submitted(per_user)
+
+    summary = per_student(per_user)
+
+    session_durations(summary)
+
+    fetch_to_submit(summary)
+
+    n_sub = sum(1 for ev in per_user.values() if ev["submit"])
+    n_open = sum(1 for row in summary if row[8])
+    print(
+        f"Total: {len(per_user)} students, {n_sub} submitted, "
+        f"{len(missing)} fetched without submitting, "
+        f"{n_open} with a still-open session "
+        f"({len(events)} log events after removing duplicates)."
     )
-    print("=" * 78)
-    print(hl(f"FETCHED BUT NEVER SUBMITTED: {len(missing)} student(s)", "1;31"))
-    print("=" * 78)
-    if missing:
-        for u in missing:
-            first = min(per_user[u]["fetch"])
-            print(
-                hl(f"  !!! {u:<14} fetched {first:%Y-%m-%d %H:%M:%S}, no submit ever")
+
+    if args.csv:
+        with open(args.csv, "w", newline="", encoding="utf-8") as fh:
+            w = csv.writer(fh)
+            w.writerow(
+                [
+                    "username",
+                    "fetches",
+                    "submits",
+                    "sessions",
+                    "first_fetch",
+                    "last_submit",
+                    "total_first_fetch_to_last_submit",
+                    "total_session_time",
+                    "open_session",
+                    "submitted",
+                ]
             )
-    else:
-        print("  (none - every student who fetched also submitted)")
+            for _, u, ev, ff, ls, total, sessions, sess_total, open_sess in summary:
+                w.writerow(
+                    [
+                        u,
+                        len(ev["fetch"]),
+                        len(ev["submit"]),
+                        len(sessions),
+                        ff.isoformat() if ff else "",
+                        ls.isoformat() if ls else "",
+                        fmt_delta(total) if total else "",
+                        fmt_delta(sess_total) if sessions else "",
+                        "yes" if open_sess else "",
+                        "yes" if ls else "NO",
+                    ]
+                )
+        print(f"Summary CSV written to {args.csv}")
+
+
+def fetch_to_submit(summary):
+    # ---- 4. fetch -> submit durations ------------------------------------------
+    print("=" * 78)
+    print("FETCH -> SUBMIT DURATIONS (each submit paired with the latest prior fetch)")
+    print("=" * 78)
+    for _, u, ev, *_ in summary:
+        fetches = sorted(ev["fetch"])
+        submits = sorted(ev["submit"])
+        if not submits:
+            print(hl(f"{u:<15}  fetched {len(fetches)}x, never submitted", "1;31"))
+            continue
+        for sub in submits:
+            prior = [f for f in fetches if f <= sub]
+            if prior:
+                f = prior[-1]
+                print(
+                    f"{u:<15}  {f:%m-%d %H:%M:%S} -> {sub:%m-%d %H:%M:%S}"
+                    f"  = {fmt_delta(sub - f)}"
+                )
+            else:
+                print(
+                    hl(
+                        f"{u:<15}  {sub:%m-%d %H:%M:%S}  submit WITHOUT prior fetch",
+                        "1;31",
+                    )
+                )
     print()
 
+
+def session_durations(summary):
+    # ---- 3. session durations --------------------------------------------------
+    print("=" * 78)
+    print("SESSIONS (start marker -> signal 15)")
+    print("=" * 78)
+    for _, u, ev, *_rest in summary:
+        for st, sp in pair_sessions(ev["start"], ev["stop"]):
+            if sp:
+                print(
+                    f"{u:<15}  {st:%m-%d %H:%M:%S} -> {sp:%m-%d %H:%M:%S}"
+                    f"  = {fmt_delta(sp - st)}"
+                )
+            else:
+                print(
+                    hl(
+                        f"{u:<15}  {st:%m-%d %H:%M:%S} -> still running / no stop event",
+                        "1;33",
+                    )
+                )
+    print()
+
+
+def per_student(per_user):
     # ---- 2. per-student summary ----------------------------------------------
     print("=" * 78)
     print("PER-STUDENT SUMMARY (first fetch -> last submit, with session time)")
@@ -303,96 +390,27 @@ def main(argv: list[str] | None = None) -> None:
         )
         print(hl(line, "1;31") if not ls else line)
     print()
+    return summary
 
-    # ---- 3. session durations --------------------------------------------------
-    print("=" * 78)
-    print("SESSIONS (start marker -> signal 15)")
-    print("=" * 78)
-    for _, u, ev, *_rest in summary:
-        for st, sp in pair_sessions(ev["start"], ev["stop"]):
-            if sp:
-                print(
-                    f"{u:<15}  {st:%m-%d %H:%M:%S} -> {sp:%m-%d %H:%M:%S}"
-                    f"  = {fmt_delta(sp - st)}"
-                )
-            else:
-                print(
-                    hl(
-                        f"{u:<15}  {st:%m-%d %H:%M:%S} -> still running / no stop event",
-                        "1;33",
-                    )
-                )
-    print()
 
-    # ---- 4. fetch -> submit durations ------------------------------------------
-    print("=" * 78)
-    print("FETCH -> SUBMIT DURATIONS (each submit paired with the latest prior fetch)")
-    print("=" * 78)
-    for _, u, ev, *_ in summary:
-        fetches = sorted(ev["fetch"])
-        submits = sorted(ev["submit"])
-        if not submits:
-            print(hl(f"{u:<15}  fetched {len(fetches)}x, never submitted", "1;31"))
-            continue
-        for sub in submits:
-            prior = [f for f in fetches if f <= sub]
-            if prior:
-                f = prior[-1]
-                print(
-                    f"{u:<15}  {f:%m-%d %H:%M:%S} -> {sub:%m-%d %H:%M:%S}"
-                    f"  = {fmt_delta(sub - f)}"
-                )
-            else:
-                print(
-                    hl(
-                        f"{u:<15}  {sub:%m-%d %H:%M:%S}  submit WITHOUT prior fetch",
-                        "1;31",
-                    )
-                )
-    print()
-
-    n_sub = sum(1 for ev in per_user.values() if ev["submit"])
-    n_open = sum(1 for row in summary if row[8])
-    print(
-        f"Total: {len(per_user)} students, {n_sub} submitted, "
-        f"{len(missing)} fetched without submitting, "
-        f"{n_open} with a still-open session "
-        f"({len(events)} log events after removing duplicates)."
+def never_submitted(per_user):
+    # ---- 1. students who fetched but never submitted -------------------------
+    missing = sorted(
+        u for u, ev in per_user.items() if ev["fetch"] and not ev["submit"]
     )
-
-    if args.csv:
-        with open(args.csv, "w", newline="", encoding="utf-8") as fh:
-            w = csv.writer(fh)
-            w.writerow(
-                [
-                    "username",
-                    "fetches",
-                    "submits",
-                    "sessions",
-                    "first_fetch",
-                    "last_submit",
-                    "total_first_fetch_to_last_submit",
-                    "total_session_time",
-                    "open_session",
-                    "submitted",
-                ]
+    print("=" * 78)
+    print(hl(f"FETCHED BUT NEVER SUBMITTED: {len(missing)} student(s)", "1;31"))
+    print("=" * 78)
+    if missing:
+        for u in missing:
+            first = min(per_user[u]["fetch"])
+            print(
+                hl(f"  !!! {u:<14} fetched {first:%Y-%m-%d %H:%M:%S}, no submit ever")
             )
-            for _, u, ev, ff, ls, total, sessions, sess_total, open_sess in summary:
-                w.writerow(
-                    [
-                        u,
-                        len(ev["fetch"]),
-                        len(ev["submit"]),
-                        len(sessions),
-                        ff.isoformat() if ff else "",
-                        ls.isoformat() if ls else "",
-                        fmt_delta(total) if total else "",
-                        fmt_delta(sess_total) if sessions else "",
-                        "yes" if open_sess else "",
-                        "yes" if ls else "NO",
-                    ]
-                )
-        print(f"Summary CSV written to {args.csv}")
+    else:
+        print("  (none - every student who fetched also submitted)")
+    print()
+    return missing
 
 
 if __name__ == "__main__":
