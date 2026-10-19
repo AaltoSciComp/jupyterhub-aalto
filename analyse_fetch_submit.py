@@ -12,8 +12,9 @@ Input CSV (Kibana export) columns:
                      is still accepted)
 * session start:     + mkdir -p /usr/local/bin/start-notebook-user.d/
 * session end:       [C ... SingleUserLabApp serverapp:2127] received signal 15, stopping
-* file save:         [I ... SingleUserLabApp log:191] 204 PUT
-                     /user/luoz1/api/contents/... (luoz1@IP) 142.45ms
+* file save:         [I ... SingleUserLabApp handlers:184] Saving file at
+                     /notebooks/ml2026/exam/exam.ipynb
+                     (PUT/POST to /user/<user>/api/contents/ also accepted)
 
 The script:
   1. lists students who fetched the assignment but never submitted it,
@@ -57,10 +58,11 @@ MSG_RE = re.compile(
     r"^\[[IWC]\s+(?P<ts>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+)\s+"
     r".*?/user/(?P<user>[^/]+)/assignments/(?P<action>fetch|submit)"
 )
-# Notebook file saves: PUT/POST to the contents API.
+# Notebook file saves: "Saving file at /notebooks/..." (autosave) or
+# PUT/POST to the contents API.
 SAVE_RE = re.compile(
     r"^\[[IWC]\s+(?P<ts>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+)\s+"
-    r".*?(?:PUT|POST)\s+/user/(?P<user>[^/]+)/api/contents/"
+    r"(?:.*?Saving file at\s+|.*?(?:PUT|POST)\s+/user/[^/]+/api/contents/)"
 )
 # Timestamp embedded in a log message (the signal-15 lines carry one).
 MSG_TS_RE = re.compile(r"(?P<ts>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+)")
@@ -142,12 +144,15 @@ def parse_row(row: dict) -> tuple[str, str, datetime] | None:
         ts = datetime.strptime(m.group("ts"), MSG_TS_FMT)
         return user, m.group("action"), ts
 
-    # Notebook saves: PUT/POST to the contents API.
+    # Notebook saves: "Saving file at ..." or PUT/POST to the contents API.
     m = SAVE_RE.match(msg)
     if m:
-        user = username_from_pod(pod) or m.group("user")
+        user = username_from_pod(pod)
         ts = datetime.strptime(m.group("ts"), MSG_TS_FMT)
-        return user, "save", ts
+        if user:
+            return user, "save", ts
+        logger.info(f"parse_row: skipping save without pod user: {msg}")
+        return None
 
     # Fallback: derive the action from the message, time from @timestamp.
     if "/assignments/fetch" in msg:
