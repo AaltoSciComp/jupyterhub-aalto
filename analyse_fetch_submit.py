@@ -106,6 +106,14 @@ logging.basicConfig(level=logging.WARNING, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 
+class Config:
+    def __init__(self) -> None:
+        self.colours = False
+
+
+config = Config()
+
+
 class Colours(enum.Enum):
     RED = "1;31"
     YELLOW = "1;33"
@@ -115,7 +123,7 @@ class Colours(enum.Enum):
 
 def hl(text: str, code: Colours = Colours.YELLOW) -> str:
     """Wrap text in ANSI colour when stdout is a terminal."""
-    if sys.stdout.isatty():
+    if sys.stdout.isatty() or config.colours:
         return f"\033[{code.value}m{text}\033[0m"
     return text
 
@@ -314,9 +322,17 @@ def main(argv: list[str] | None = None) -> None:
         default=False,
         help="In the summary, only show students who fetched but never submitted",
     )
+    ap.add_argument(
+        "--force-colour",
+        action="store_true",
+        default=False,
+        help="Output colours even when not connected to a TTY.",
+    )
     args = ap.parse_args(argv)
     if args.verbose:
         logging.getLogger().setLevel(logging.INFO)
+
+    config.colours = args.force_colour
 
     # Block selection: with no block flags given, show everything. Passing
     # any positive flag (--missing etc.) selects only those blocks; --no-<flag>
