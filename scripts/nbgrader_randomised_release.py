@@ -732,8 +732,10 @@ def _generate_randomised_notebooks(
         notebook_file_mode = 0o644 | (S_IWGRP if groupshared else 0)
         notebook_dir_mode = 0o755 | ((S_ISGID | S_IWGRP) if groupshared else 0)
 
+        # Use same seed if assignment is the review
+        seed_assignment = assignment.replace("_review", "")
         for student in students:
-            seed_value = _seed(seed_salt, course_slug, assignment, student)
+            seed_value = _seed(seed_salt, course_slug, seed_assignment, student)
             rng = random.Random(seed_value)
             selected = draw_questions(
                 question_ids, weights, subtopics, pick_count, rng, one_per_subtopic
